@@ -19,7 +19,7 @@ export interface DiaryImageInput {
 // 그대로 사용합니다. App.css의 퍼센트 배치를 바꾸면 이 값도 맞춰야 합니다.
 const WIDTH = 1058;
 const HEIGHT = 1487;
-const TEMPLATE_URL = "/picture-diary-frame.png";
+const TEMPLATE_URL = "public/picture-diary-frame.png";
 
 const HEADER = { x: 0.047, y: 0.119, width: 0.906, height: 0.0485 };
 const TITLE = { x: 0.122, y: 0.1675, right: 0.047, height: 0.038 };
