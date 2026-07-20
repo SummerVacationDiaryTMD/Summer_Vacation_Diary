@@ -107,7 +107,7 @@ function HighlightedContent({
     }
     const row = Math.floor(index / columnCount);
     const column = index % columnCount;
-    const previous = correctionRuns.at(-1);
+    const previous = correctionRuns[correctionRuns.length - 1];
     if (
       previous !== undefined &&
       previous.mark === cell.mark &&
