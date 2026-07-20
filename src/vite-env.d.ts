@@ -3,15 +3,10 @@
 // Typed env vars: without this augmentation `import.meta.env.VITE_*` is `any`,
 // which would let typos through the type checker silently.
 interface ImportMetaEnv {
-  /** OpenAI API key for stage 2 analysis. Absent → mock analysis mode. */
-  readonly VITE_OPENAI_API_KEY?: string;
-  /** Optional vision model override. Empty → gpt-4o-mini. */
-  readonly VITE_OPENAI_MODEL?: string;
-  readonly VITE_OPENAI_IMAGE_MODEL?: string;
-  readonly VITE_OPENAI_IMAGE_QUALITY?:
-    | "low"
-    | "medium"
-    | "high";  
+  /** Public Supabase project URL. Both values absent → local mock mode. */
+  readonly VITE_SUPABASE_URL?: string;
+  /** Public sb_publishable_* key; database access must still be protected by RLS. */
+  readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
 }
 
 interface ImportMeta {

@@ -39,9 +39,10 @@ React 18 + TypeScript + Vite 6 on `@apps-in-toss/web-framework` 3.0.0-beta — t
 
 - `src/App.tsx` owns a single `step` state machine — `upload → write → preview` — and coordinates all hooks and services; there are no routes.
 - Every input funnels into one `DiaryDraft` object (`hooks/useDiaryDraft.ts`), persisted to localStorage key `summer-vacation-diary:draft:v2` (400ms debounce, immediate flush on page hide, corrupt data recovers to defaults). Photos live inside the draft as base64 JPEG data URLs, downscaled on upload to ≤1280px / quality 0.85 (`utils/image.ts`) to fit localStorage quota.
-- `src/services/` is the external-AI boundary, and every service is mock-first: without `VITE_OPENAI_API_KEY` the app runs deterministic local mocks (체험 모드), so the full flow works offline.
-  - `diaryAnalysis.ts` — OpenAI vision chat (default `gpt-4o-mini`) returning keywords, emotions, highlight words/sentences, and a teacher-style comment capped at 50 characters, including spaces; preview and export display up to two lines with an ellipsis on overflow. Validation drops any highlight target that is not literally a substring of the diary text.
-  - `styleTransfer.ts` — photo → colored-pencil sketch via the OpenAI Images edits endpoint (default `gpt-image-1`).
+- `src/services/` is the external-AI boundary, and every service is mock-first: without the two `VITE_SUPABASE_*` public settings the app runs deterministic local mocks (체험 모드), so the full flow works offline. With Supabase configured, both operations call the `diary-ai` Edge Function; the OpenAI key and model settings never ship in the client.
+  - `diaryAnalysis.ts` — requests vision analysis returning keywords, emotions, highlight words/sentences, and a teacher-style comment capped at 50 characters, including spaces; preview and export display up to two lines with an ellipsis on overflow. Validation drops any highlight target that is not literally a substring of the diary text.
+  - `styleTransfer.ts` — requests photo → colored-pencil sketch conversion through the Edge Function.
+  - `supabaseEdge.ts` — shared typed fetch boundary for the `diary-ai` Edge Function.
   - `diaryExport.ts` — composes the final keepsake image on a canvas (`utils/diaryImage.ts`) and saves it to the device.
 - Sketch generation is kicked off when the user leaves the upload step, hiding its latency behind diary writing. Failed generations surface an explicit retry button; never auto-retry on navigation.
 - `hooks/useDiaryAnalysis.ts` keys everything on an input signature: result cache, in-flight promise reuse, and request-id checks prevent duplicate API calls and stale responses overwriting newer input.
@@ -62,10 +63,10 @@ React 18 + TypeScript + Vite 6 on `@apps-in-toss/web-framework` 3.0.0-beta — t
 
 ## Environment variables
 
-Optional `.env` in the repository root (gitignored); with no key the app runs in mock mode:
-`VITE_OPENAI_API_KEY`, `VITE_OPENAI_MODEL` (analysis, default `gpt-4o-mini`), `VITE_OPENAI_IMAGE_MODEL` (sketch, default `gpt-image-1`), `VITE_OPENAI_IMAGE_QUALITY`.
+Optional `.env` in the repository root (gitignored); with no Supabase config the app runs in mock mode:
+`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`.
 
-- Vite inlines all `VITE_*` values into the client bundle. That is accepted for the challenge demo only — before any public release the OpenAI calls must move behind a backend proxy (whose CORS must allow `https://<appName>.web.tossmini.com`).
+- Vite inlines all `VITE_*` values into the client bundle, so only the public Supabase URL and publishable key belong there. `OPENAI_API_KEY` is a Supabase Edge Function Secret.
 - When adding a `VITE_*` var, declare it in `src/vite-env.d.ts` too (currently only the first two are typed).
 
 ## Known pending work
