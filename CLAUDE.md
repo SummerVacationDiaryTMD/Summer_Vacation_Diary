@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-A three-person team entry (EHoon, idonmin, kimjun; changes land via GitHub PRs) for the Apps in Toss vibecoding challenge, deadline 2026-07-29. The product is a summer-vacation picture diary (그림일기) mini-app that runs inside the Toss app as a WebView. The runnable app lives entirely in `summer-vacation-diary/`; the root-level markdown files are planning and reference docs.
+A three-person team entry (EHoon, idonmin, kimjun; changes land via GitHub PRs) for the Apps in Toss vibecoding challenge, deadline 2026-07-29. The product is a summer-vacation picture diary (그림일기) mini-app that runs inside the Toss app as a WebView. The runnable app and its configuration live at the repository root alongside planning and reference docs.
 
 Hard challenge constraint: the word "AI" must never appear in the app name. `appName` stays `summer-vacation-diary`; the user-facing display name ("나의 여름방학일기") and icon are configured in the Apps in Toss console, not in this repo.
 
 ## Commands
 
-Run everything from `summer-vacation-diary/`:
+Run everything from the repository root:
 
 ```bash
 npm install        # depends on the "overrides" block in package.json — see below
@@ -31,11 +31,11 @@ npm run format     # Prettier
 - `AI_weekly_picture_diary_2.md` — the product spec; source of the upload/validation rules and the AI response shape. Its Python/FastAPI backend architecture was never built (the app is frontend-only), and where spec and code disagree — e.g. diary max length is 55 chars (11×5 manuscript grid) in code vs 500 in the spec — the code wins.
 - `explain.md` — thorough architecture walkthrough, but written before the SDK migration and Stages 3–4: it claims sketch conversion and image composition are unimplemented (both exist now) and references `granite.config.ts` and `docs/skills/` (both deleted). Trust its data-flow reasoning, not its feature status or file inventory.
 - `TO_DO_LIST.md` — pending feature checklist. Note: the commit "Add : 참 잘했어요 도장" only added that item to this list — no stamp feature exists in `src/` yet.
-- `summer-vacation-diary/README.md` — env-var setup and deploy links.
+- `README.md` — env-var setup and deploy links.
 
 ## Architecture
 
-React 18 + TypeScript + Vite 6 on `@apps-in-toss/web-framework` 3.0.0-beta — the WebView track of Apps in Toss (this is a web app; the React Native/Granite track was deliberately not used). UI is TDS Mobile (`@toss/tds-mobile` + `@toss/tds-mobile-ait`; the app is wrapped in `TDSMobileAITProvider` in `main.tsx`). App config is `apps-in-toss.config.ts` (SDK 3.x style; `.granite/` is a pre-migration leftover). No router, no state library, no backend, no database.
+React 18 + TypeScript + Vite 6 on `@apps-in-toss/web-framework` 3.0.0-beta — the WebView track of Apps in Toss (this is a web app; the React Native/Granite track was deliberately not used). UI is TDS Mobile (`@toss/tds-mobile` + `@toss/tds-mobile-ait`; the app is wrapped in `TDSMobileAITProvider` in `main.tsx`). App config is `apps-in-toss.config.ts` (SDK 3.x style). No router, no state library, no backend, no database.
 
 - `src/App.tsx` owns a single `step` state machine — `upload → write → preview` — and coordinates all hooks and services; there are no routes.
 - Every input funnels into one `DiaryDraft` object (`hooks/useDiaryDraft.ts`), persisted to localStorage key `summer-vacation-diary:draft:v2` (400ms debounce, immediate flush on page hide, corrupt data recovers to defaults). Photos live inside the draft as base64 JPEG data URLs, downscaled on upload to ≤1280px / quality 0.85 (`utils/image.ts`) to fit localStorage quota.
@@ -62,7 +62,7 @@ React 18 + TypeScript + Vite 6 on `@apps-in-toss/web-framework` 3.0.0-beta — t
 
 ## Environment variables
 
-Optional `.env` in `summer-vacation-diary/` (gitignored); with no key the app runs in mock mode:
+Optional `.env` in the repository root (gitignored); with no key the app runs in mock mode:
 `VITE_OPENAI_API_KEY`, `VITE_OPENAI_MODEL` (analysis, default `gpt-4o-mini`), `VITE_OPENAI_IMAGE_MODEL` (sketch, default `gpt-image-1`), `VITE_OPENAI_IMAGE_QUALITY`.
 
 - Vite inlines all `VITE_*` values into the client bundle. That is accepted for the challenge demo only — before any public release the OpenAI calls must move behind a backend proxy (whose CORS must allow `https://<appName>.web.tossmini.com`).

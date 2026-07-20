@@ -1,8 +1,11 @@
 # Toss Summer App 코드 구조 설명
 
+> 이 문서는 SDK 마이그레이션과 기능 확장 전에 작성된 역사적 설명서이다. 현재 파일 목록과
+> 기능 상태는 `AGENTS.md`와 실제 코드를 기준으로 한다.
+
 ## 1. 프로젝트 개요
 
-이 저장소의 실제 실행 앱은 `summer-vacation-diary/`에 있는 **여름방학 그림일기 미니앱**이다. React와 TypeScript로 작성되었고, Vite를 Apps in Toss의 Granite 개발·배포 도구로 감싸서 실행한다. 화면 구성에는 Toss Design System Mobile(TDS Mobile)을 사용한다.
+이 저장소의 실제 실행 앱은 저장소 루트에 있는 **여름방학 그림일기 미니앱**이다. React와 TypeScript로 작성되었고, Vite와 Apps in Toss Web Framework로 실행한다. 화면 구성에는 Toss Design System Mobile(TDS Mobile)을 사용한다.
 
 현재 앱에서 동작하는 범위는 다음과 같다.
 
@@ -48,7 +51,8 @@ Toss_Summer_app/
    │     ├─ apps-in-toss.md
    │     └─ tds-mobile.md
    ├─ public/
-   │  └─ appsintoss-logo.png
+   │  ├─ fonts/
+   │  └─ picture-diary-frame.png
    ├─ src/
    │  ├─ components/
    │  │  ├─ PhotoUploadStep.tsx
@@ -217,7 +221,7 @@ interface DiaryDraft {
 | `.granite/app.json` | Granite용 앱 식별자와 권한 목록의 간단한 메타데이터다. 현재 `appName`은 `summer-vacation-diary`, 권한은 빈 배열이다. |
 | `docs/skills/apps-in-toss.md` | 앱 등록, WebView API, 권한, 빌드·배포 등 Apps in Toss 개발자 문서를 로컬에 모아 둔 참고 자료다. |
 | `docs/skills/tds-mobile.md` | TDS Mobile 컴포넌트, 훅, 색상, 타이포그래피와 접근성 사용법을 모아 둔 참고 자료다. |
-| `public/appsintoss-logo.png` | Apps in Toss 로고 이미지 에셋이다. 현재 소스 코드에서는 참조하지 않아 화면에 표시되지 않는다. |
+| `public/picture-diary-frame.png` | 미리보기와 저장 이미지가 공통으로 사용하는 그림일기 프레임이다. |
 
 ### 6.4 `src/` 진입점과 스타일
 
@@ -291,7 +295,7 @@ Vite의 `VITE_*` 값은 브라우저용 JavaScript 번들에 포함되므로 사
 
 ## 9. 실행 명령
 
-다음 명령은 `summer-vacation-diary/` 폴더에서 실행한다.
+다음 명령은 저장소 루트에서 실행한다.
 
 ```bash
 npm install       # 의존성 설치
