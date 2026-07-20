@@ -9,21 +9,20 @@ npm install
 npm run dev
 ```
 
-OpenAI API 키가 없어도 로컬 체험 모드로 전체 흐름을 실행할 수 있습니다.
+Supabase 연결 설정이 없어도 로컬 체험 모드로 전체 흐름을 실행할 수 있습니다.
 
 ## 환경 변수 (선택)
 
-저장소 루트에 `.env` 파일을 만들고 필요한 값을 설정합니다.
+저장소 루트의 `.env.example`을 `.env`로 복사한 뒤 Supabase 공개 설정을 입력합니다.
 
 ```bash
-VITE_OPENAI_API_KEY=sk-...
-VITE_OPENAI_MODEL=gpt-4o-mini
-VITE_OPENAI_IMAGE_MODEL=gpt-image-1
-VITE_OPENAI_IMAGE_QUALITY=
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-> Vite의 `VITE_*` 값은 클라이언트 번들에 포함됩니다. 공개 배포 전에는
-> OpenAI 호출을 백엔드 프록시로 옮겨야 합니다.
+`OPENAI_API_KEY`는 앱 `.env`가 아니라 Supabase Edge Function Secret에만
+저장합니다. Edge Function 생성·Secret 등록·배포 방법은
+[`SUPABASE_EDGE_FUNCTION.md`](./SUPABASE_EDGE_FUNCTION.md)를 참고하세요.
 
 ## 확인 및 배포
 

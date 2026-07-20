@@ -1,15 +1,19 @@
 import { weatherLabel } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
+import {
+  EdgeFunctionError,
+  invokeDiaryAi,
+  isSupabaseConfigured,
+} from "./supabaseEdge";
 
 // ---------------------------------------------------------------------------
 // Stage 2 (AI 분석) service layer.
 //
 // The UI only talks to `analyzeDiary()`. Behind it there are two providers:
-//  - OpenAI (vision chat completion) when VITE_OPENAI_API_KEY is set
+//  - a Supabase Edge Function when the public Supabase config is set
 //  - a deterministic local mock otherwise, so the whole flow can be built
 //    and tested before any key exists
-// Keeping this seam here also makes the future "move behind our own backend
-// proxy" change a one-file swap instead of a UI rewrite.
+// The OpenAI key and model configuration live only in Supabase Secrets.
 // ---------------------------------------------------------------------------
 
 export interface DiaryAnalysisInput {
@@ -42,10 +46,7 @@ export type AnalysisErrorCode =
 export const ANALYSIS_ERROR_MESSAGES: Record<AnalysisErrorCode, string> = {
   timeout: "분석이 너무 오래 걸려요. 잠시 후 다시 시도해 주세요.",
   network: "네트워크 연결을 확인하고 다시 시도해 주세요.",
-  // Distinct message for a bad key: it's the most likely failure on the very
-  // first real call after the user fills in .env, and "connection failed"
-  // would send them debugging the wrong thing.
-  "invalid-key": "API 키가 올바르지 않아요. .env의 키를 확인해 주세요.",
+  "invalid-key": "AI 연결 설정을 확인해 주세요.",
   "rate-limited": "지금은 요청이 많아요. 잠시 후 다시 시도해 주세요.",
   "api-error": "분석 서비스에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
   "invalid-response": "분석 결과를 읽지 못했어요. 다시 시도해 주세요.",
@@ -65,16 +66,7 @@ export function analysisErrorMessage(error: unknown): string {
   return ANALYSIS_ERROR_MESSAGES["api-error"];
 }
 
-// Vite inlines VITE_* variables into the client bundle at build time, so the
-// key is readable by anyone who inspects the shipped app. That is acceptable
-// for local development and the challenge demo, but before a public release
-// this call must move behind our own backend so the key never ships.
-// Trimmed once here: a key pasted into .env with stray whitespace would pass
-// the connectivity check below but send a malformed Authorization header.
-const apiKey = (import.meta.env.VITE_OPENAI_API_KEY ?? "").trim();
-const model = (import.meta.env.VITE_OPENAI_MODEL ?? "").trim() || "gpt-4o-mini";
-
-export const isAiConnected = apiKey !== "";
+export const isAiConnected = isSupabaseConfigured;
 
 /**
  * Analyzes the photo + diary text and returns keywords, emotions, highlight
@@ -83,61 +75,16 @@ export const isAiConnected = apiKey !== "";
 export function analyzeDiary(
   input: DiaryAnalysisInput,
 ): Promise<DiaryAnalysis> {
-  return isAiConnected ? analyzeWithOpenAi(input) : analyzeWithMock(input);
+  return isAiConnected
+    ? analyzeWithEdgeFunction(input)
+    : analyzeWithMock(input);
 }
 
-// --- OpenAI provider --------------------------------------------------------
+// --- Supabase Edge Function provider ---------------------------------------
 
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 // The spec's 예외 처리 section requires a timeout path; 30s matches its
 // "평균 생성 시간 30초 이내" target.
 const REQUEST_TIMEOUT_MS = 30_000;
-
-// Keys are snake_case to mirror the planning doc's "AI 반환 데이터 예시",
-// so the prompt, the doc and the parser all describe the same shape.
-const SYSTEM_PROMPT = `당신은 여름방학 그림일기를 읽고 따뜻한 한줄평을 써 주는 선생님입니다.
-사용자가 올린 사진과 일기를 함께 분석해서, 아래 키를 가진 JSON 객체만 응답하세요.
-- "photo_keywords": 사진 속 장소·사물·분위기 키워드 (한국어, 최대 3개)
-- "diary_keywords": 일기의 주요 키워드 (한국어, 최대 4개)
-- "emotions": 일기에서 느껴지는 핵심 감정 (한국어, 최대 3개)
-- "highlight_words": 일기 본문에 '그대로' 등장하는 의미 있는 단어 2~4개 (본문에 없는 단어는 금지)
-- "highlight_sentence": 일기 본문에 '그대로' 등장하는 가장 인상적인 문장 1개 (마땅한 문장이 없으면 null)
-- "comment": 사진 장면과 일기의 감정을 함께 담은 따뜻한 한줄평. 존댓말 한 문장, 공백 포함 50자 이내. 어린아이에게 말하듯 하지 말고, 평가나 지적 대신 감상과 공감을 담으세요.`;
-
-type ChatContentPart =
-  | { type: "text"; text: string }
-  | { type: "image_url"; image_url: { url: string; detail: "low" } };
-
-interface ChatMessage {
-  role: "system" | "user";
-  content: string | ChatContentPart[];
-}
-
-function buildMessages(input: DiaryAnalysisInput): ChatMessage[] {
-  const userParts: ChatContentPart[] = [
-    {
-      type: "text",
-      text: [
-        `제목: ${input.title}`,
-        `날씨: ${weatherLabel(input.weather)}`,
-        "일기:",
-        input.content,
-      ].join("\n"),
-    },
-  ];
-  if (input.photoDataUrl !== null) {
-    // detail "low": the photo is already downscaled to ≤1280px, and keyword /
-    // mood extraction doesn't need high-res tiles — this keeps token cost flat.
-    userParts.push({
-      type: "image_url",
-      image_url: { url: input.photoDataUrl, detail: "low" },
-    });
-  }
-  return [
-    { role: "system", content: SYSTEM_PROMPT },
-    { role: "user", content: userParts },
-  ];
-}
 
 function toStringArray(value: unknown, max: number): string[] {
   if (!Array.isArray(value)) {
@@ -154,13 +101,7 @@ function toStringArray(value: unknown, max: number): string[] {
 // The model's JSON is untrusted input: every field is validated, and highlight
 // targets that are not verbatim substrings of the diary are dropped so the
 // preview never marks text that isn't there.
-function parseAnalysis(rawJson: string, content: string): DiaryAnalysis {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(rawJson);
-  } catch {
-    throw new AnalysisError("invalid-response");
-  }
+function parseAnalysis(parsed: unknown, content: string): DiaryAnalysis {
   if (typeof parsed !== "object" || parsed === null) {
     throw new AnalysisError("invalid-response");
   }
@@ -198,70 +139,50 @@ function parseAnalysis(rawJson: string, content: string): DiaryAnalysis {
   };
 }
 
-async function analyzeWithOpenAi(
+async function analyzeWithEdgeFunction(
   input: DiaryAnalysisInput,
 ): Promise<DiaryAnalysis> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-  let body: unknown;
-  // The abort timer must stay armed through the BODY read too — clearing it
-  // when headers arrive would let a stalled body hang the loading UI forever.
-  let phase: "request" | "body" = "request";
   try {
-    const response = await fetch(OPENAI_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+    const body = await invokeDiaryAi(
+      {
+        action: "analyze",
+        input: {
+          photoDataUrl: input.photoDataUrl,
+          title: input.title,
+          content: input.content,
+          weather: weatherLabel(input.weather),
+        },
       },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model,
-        // max_completion_tokens (not the deprecated max_tokens) and no
-        // explicit temperature: keeps the request valid if the user points
-        // VITE_OPENAI_MODEL at a reasoning-family model, which rejects both.
-        // 1200 leaves room for a long verbatim highlight_sentence from a
-        // 500-char diary — as a cap it doesn't add cost when unused.
-        max_completion_tokens: 1200,
-        // Forces a JSON object back, so parsing failures become rare instead
-        // of routine.
-        response_format: { type: "json_object" },
-        messages: buildMessages(input),
-      }),
-    });
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        throw new AnalysisError("invalid-key");
-      }
-      if (response.status === 429) {
-        throw new AnalysisError("rate-limited");
-      }
-      throw new AnalysisError("api-error");
-    }
-    phase = "body";
-    body = await response.json();
+      REQUEST_TIMEOUT_MS,
+    );
+    return parseAnalysis(body, input.content);
   } catch (error) {
     if (error instanceof AnalysisError) {
       throw error;
     }
-    if (controller.signal.aborted) {
-      throw new AnalysisError("timeout");
+    if (error instanceof EdgeFunctionError) {
+      if (error.kind === "timeout") {
+        throw new AnalysisError("timeout");
+      }
+      if (error.kind === "network") {
+        throw new AnalysisError("network");
+      }
+      if (error.kind === "invalid-response") {
+        throw new AnalysisError("invalid-response");
+      }
+      if (
+        error.status === 401 ||
+        error.status === 403 ||
+        error.code === "invalid-key"
+      ) {
+        throw new AnalysisError("invalid-key");
+      }
+      if (error.status === 429 || error.code === "rate-limited") {
+        throw new AnalysisError("rate-limited");
+      }
     }
-    // A non-abort failure while requesting is a network problem; while
-    // reading/parsing the body it's a malformed response.
-    throw new AnalysisError(
-      phase === "request" ? "network" : "invalid-response",
-    );
-  } finally {
-    clearTimeout(timer);
+    throw new AnalysisError("api-error");
   }
-  const raw = (body as { choices?: Array<{ message?: { content?: unknown } }> })
-    .choices?.[0]?.message?.content;
-  if (typeof raw !== "string") {
-    throw new AnalysisError("invalid-response");
-  }
-  return parseAnalysis(raw, input.content);
 }
 
 // --- Mock provider ----------------------------------------------------------
