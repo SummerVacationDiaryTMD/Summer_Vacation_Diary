@@ -7,6 +7,11 @@ interface ImportMetaEnv {
   readonly VITE_OPENAI_API_KEY?: string;
   /** Optional vision model override. Empty → gpt-4o-mini. */
   readonly VITE_OPENAI_MODEL?: string;
+  readonly VITE_OPENAI_IMAGE_MODEL?: string;
+  readonly VITE_OPENAI_IMAGE_QUALITY?:
+    | "low"
+    | "medium"
+    | "high";  
 }
 
 interface ImportMeta {
