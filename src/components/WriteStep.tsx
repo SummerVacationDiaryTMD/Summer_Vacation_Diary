@@ -39,88 +39,116 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
   const titleBlank = draft.title.length > 0 && draft.title.trim() === "";
 
   return (
-    <div className="step-body">
-      <TextField
-        variant="line"
-        label="제목"
-        labelOption="sustain"
-        placeholder="오늘의 제목을 지어주세요"
-        maxLength={TITLE_MAX_LENGTH}
-        value={draft.title}
-        hasError={titleBlank}
-        help={
-          titleBlank
-            ? "공백 말고 제목을 입력해 주세요"
-            : // maxLength cuts input silently; explain the limit once it's hit.
-              draft.title.length >= TITLE_MAX_LENGTH
-              ? `제목은 ${TITLE_MAX_LENGTH}자까지 적을 수 있어요`
-              : undefined
-        }
-        onChange={(event) => onChange({ title: event.target.value })}
-      />
-
-      <div className="field-row">
-        <Paragraph typography="t7" color={adaptive.grey600}>
-          날짜
-        </Paragraph>
-        {/* Native date input: the OS date picker on mobile beats any custom
-            calendar for effort-to-quality, and TDS has no date picker widget. */}
-        <input
-          className="date-input"
-          type="date"
-          aria-label="일기 날짜"
-          value={draft.date}
-          onChange={(event) => {
-            // Some browsers emit an empty string while the picker is being
-            // cleared; keep the previous date instead of storing an invalid one.
-            if (event.target.value !== "") {
-              onChange({ date: event.target.value });
+    <div className="step-body write-form">
+      <div className="write-form-surface">
+        <section className="diary-form-section field-row field-row-column">
+          <Paragraph
+            className="form-section-label"
+            typography="t7"
+            color={adaptive.grey600}
+          >
+            제목
+          </Paragraph>
+          <TextField
+            variant="line"
+            aria-label="제목"
+            placeholder="오늘의 제목을 지어주세요"
+            maxLength={TITLE_MAX_LENGTH}
+            value={draft.title}
+            hasError={titleBlank}
+            help={
+              titleBlank
+                ? "공백 말고 제목을 입력해 주세요"
+                : // maxLength cuts input silently; explain the limit once it's hit.
+                  draft.title.length >= TITLE_MAX_LENGTH
+                  ? `제목은 ${TITLE_MAX_LENGTH}자까지 적을 수 있어요`
+                  : undefined
             }
-          }}
-        />
-      </div>
+            onChange={(event) => onChange({ title: event.target.value })}
+          />
+        </section>
 
-      <div className="field-row field-row-column">
-        <Paragraph typography="t7" color={adaptive.grey600}>
-          날씨
-        </Paragraph>
-        {/* aria-label goes on the control itself so the name lands on the
-            radiogroup element SegmentedControl renders, not on a wrapper. */}
-        <SegmentedControl
-          aria-label="날씨"
-          alignment="fluid"
-          value={draft.weather}
-          onChange={(value) => onChange({ weather: value as WeatherValue })}
-        >
-          {WEATHER_OPTIONS.map((option) => (
-            <SegmentedControl.Item key={option.value} value={option.value}>
-              {option.label}
-            </SegmentedControl.Item>
-          ))}
-        </SegmentedControl>
-      </div>
+        <section className="diary-form-section field-row date-field-row">
+          <Paragraph
+            className="form-section-label"
+            typography="t7"
+            color={adaptive.grey600}
+          >
+            날짜
+          </Paragraph>
+          {/* Native date input: the OS date picker on mobile beats any custom
+              calendar for effort-to-quality, and TDS has no date picker widget. */}
+          <input
+            className="date-input"
+            type="date"
+            aria-label="일기 날짜"
+            value={draft.date}
+            onChange={(event) => {
+              // Some browsers emit an empty string while the picker is being
+              // cleared; keep the previous date instead of storing an invalid one.
+              if (event.target.value !== "") {
+                onChange({ date: event.target.value });
+              }
+            }}
+          />
+        </section>
 
-      <TextArea
-        variant="line"
-        label="일기"
-        labelOption="sustain"
-        placeholder={`오늘의 이야기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요`}
-        minHeight={180}
-        maxLength={CONTENT_MAX_LENGTH}
-        value={draft.content}
-        hasError={contentTooShort}
-        help={
-          contentTooShort
-            ? `${CONTENT_MIN_LENGTH}자 이상 적어주세요 (${contentLength}/${CONTENT_MAX_LENGTH})`
-            : `${contentLength}/${CONTENT_MAX_LENGTH}`
-        }
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-          }
-        }}
-        onChange={(event) => handleContentChange(event.target.value)}
-      />
+        <section className="diary-form-section field-row field-row-column">
+          <Paragraph
+            className="form-section-label"
+            typography="t7"
+            color={adaptive.grey600}
+          >
+            날씨
+          </Paragraph>
+          {/* aria-label goes on the control itself so the name lands on the
+              radiogroup element SegmentedControl renders, not on a wrapper. */}
+          <div className="weather-scroll-region">
+            <SegmentedControl
+              aria-label="날씨"
+              alignment="fluid"
+              value={draft.weather}
+              onChange={(value) => onChange({ weather: value as WeatherValue })}
+            >
+              {WEATHER_OPTIONS.map((option) => (
+                <SegmentedControl.Item key={option.value} value={option.value}>
+                  {option.label}
+                </SegmentedControl.Item>
+              ))}
+            </SegmentedControl>
+          </div>
+        </section>
+
+        <section className="diary-form-section field-row field-row-column">
+          <Paragraph
+            className="form-section-label"
+            typography="t7"
+            color={adaptive.grey600}
+          >
+            일기
+          </Paragraph>
+          <TextArea
+            variant="line"
+            aria-label="일기"
+            placeholder={`오늘의 이야기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요`}
+            minHeight={180}
+            maxLength={CONTENT_MAX_LENGTH}
+            value={draft.content}
+            hasError={contentTooShort}
+            help={
+              contentTooShort
+                ? `${CONTENT_MIN_LENGTH}자 이상 적어주세요 (${contentLength}/${CONTENT_MAX_LENGTH})`
+                : `${contentLength}/${CONTENT_MAX_LENGTH}`
+            }
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+              }
+            }}
+            onChange={(event) => handleContentChange(event.target.value)}
+          />
+        </section>
+      </div>
     </div>
   );
 }
