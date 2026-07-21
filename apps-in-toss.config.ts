@@ -8,6 +8,6 @@ export default defineConfig({
     primaryColor: "#4A9DF8",
   },
 
-  permissions: [{ name: "clipboard", access: "write" }],
+  permissions: [],
   webBundleDir: "dist",
 });

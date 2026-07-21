@@ -1,7 +1,6 @@
 import {
   getOperationalEnvironment,
   getTossShareLink,
-  setClipboardText,
   share as shareThroughToss,
 } from "@apps-in-toss/web-framework";
 
@@ -10,7 +9,6 @@ const SHARE_TITLE = "나의 여름방학일기";
 const SHARE_TEXT = "사진 한 장으로 나만의 여름방학 그림일기를 만들어 보세요!";
 
 export type LinkShareOutcome = "shared" | "copied" | "cancelled";
-export type ImageShareOutcome = "shared" | "unsupported" | "cancelled";
 
 export class DiaryShareError extends Error {
   constructor(public readonly userMessage: string) {
@@ -68,21 +66,6 @@ async function copyWithBrowser(text: string): Promise<void> {
   }
 }
 
-export async function copyDiaryAppLink(): Promise<void> {
-  const link = await getDiaryAppShareLink();
-  try {
-    if (isInsideTossApp()) {
-      await setClipboardText(link);
-    } else {
-      await copyWithBrowser(link);
-    }
-  } catch {
-    throw new DiaryShareError(
-      "링크를 복사하지 못했어요. 클립보드 권한을 확인해 주세요.",
-    );
-  }
-}
-
 /** Opens Toss/OS sharing. KakaoTalk appears when installed and available. */
 export async function shareDiaryAppLink(): Promise<LinkShareOutcome> {
   const link = await getDiaryAppShareLink();
@@ -109,65 +92,6 @@ export async function shareDiaryAppLink(): Promise<LinkShareOutcome> {
     }
     throw new DiaryShareError(
       "공유창을 열지 못했어요. 잠시 후 다시 시도해 주세요.",
-    );
-  }
-}
-
-function dataUrlToFile(dataUrl: string, fileName: string): File {
-  const comma = dataUrl.indexOf(",");
-  const header = dataUrl.slice(0, comma);
-  const mime = /^data:([^;]+);base64$/.exec(header)?.[1];
-  if (comma === -1 || mime === undefined) {
-    throw new DiaryShareError("공유할 이미지를 준비하지 못했어요.");
-  }
-
-  const binary = atob(dataUrl.slice(comma + 1));
-  const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
-  return new File([bytes], fileName, { type: mime });
-}
-
-/**
- * Uses the OS file share sheet. Instagram and other SNS apps appear only when
- * the device/browser reports that they can accept this image.
- */
-export async function shareDiaryImage(
-  dataUrl: string,
-  fileName: string,
-): Promise<ImageShareOutcome> {
-  const file = dataUrlToFile(dataUrl, fileName);
-  let shareText = SHARE_TEXT;
-  try {
-    shareText = `${SHARE_TEXT}\n${await getDiaryAppShareLink()}`;
-  } catch {
-    // Sharing the user's image is still useful if link generation is briefly
-    // unavailable, so do not turn that secondary failure into a hard stop.
-  }
-  const shareData: ShareData = {
-    title: SHARE_TITLE,
-    text: shareText,
-    files: [file],
-  };
-
-  if (
-    navigator.share === undefined ||
-    navigator.canShare === undefined ||
-    !navigator.canShare({ files: [file] })
-  ) {
-    return "unsupported";
-  }
-
-  try {
-    await navigator.share(shareData);
-    return "shared";
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      return "cancelled";
-    }
-    throw new DiaryShareError(
-      "이미지 공유창을 열지 못했어요. 이미지를 저장한 뒤 공유해 주세요.",
     );
   }
 }
