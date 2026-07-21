@@ -27,6 +27,9 @@ interface WriteStepProps {
  */
 export function WriteStep({ draft, onChange }: WriteStepProps) {
   const contentLength = draft.content.length;
+  const handleContentChange = (value: string) => {
+    onChange({ content: value.replace(/[\r\n]+/g, " ") });
+  };
   // Validate on trimmed length so whitespace padding can't satisfy the
   // 20-char minimum; the visible counter still shows the raw length.
   const contentTooShort =
@@ -111,7 +114,12 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
             ? `${CONTENT_MIN_LENGTH}자 이상 적어주세요 (${contentLength}/${CONTENT_MAX_LENGTH})`
             : `${contentLength}/${CONTENT_MAX_LENGTH}`
         }
-        onChange={(event) => onChange({ content: event.target.value })}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+          }
+        }}
+        onChange={(event) => handleContentChange(event.target.value)}
       />
     </div>
   );
