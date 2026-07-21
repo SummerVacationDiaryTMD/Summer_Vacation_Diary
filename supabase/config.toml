@@ -1,0 +1,4 @@
+project_id = "summer-vacation-diary"
+
+[functions.diary-ai]
+verify_jwt = false

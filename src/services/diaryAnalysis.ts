@@ -40,6 +40,7 @@ export type AnalysisErrorCode =
   | "network"
   | "invalid-key"
   | "rate-limited"
+  | "daily-limit-exceeded"
   | "api-error"
   | "invalid-response";
 
@@ -48,6 +49,8 @@ export const ANALYSIS_ERROR_MESSAGES: Record<AnalysisErrorCode, string> = {
   network: "네트워크 연결을 확인하고 다시 시도해 주세요.",
   "invalid-key": "AI 연결 설정을 확인해 주세요.",
   "rate-limited": "지금은 요청이 많아요. 잠시 후 다시 시도해 주세요.",
+  "daily-limit-exceeded":
+    "오늘 사용할 수 있는 횟수를 모두 사용했어요. 내일 다시 이용해 주세요.",
   "api-error": "분석 서비스에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
   "invalid-response": "분석 결과를 읽지 못했어요. 다시 시도해 주세요.",
 };
@@ -176,6 +179,9 @@ async function analyzeWithEdgeFunction(
         error.code === "invalid-key"
       ) {
         throw new AnalysisError("invalid-key");
+      }
+      if (error.code === "daily-limit-exceeded") {
+        throw new AnalysisError("daily-limit-exceeded");
       }
       if (error.status === 429 || error.code === "rate-limited") {
         throw new AnalysisError("rate-limited");
