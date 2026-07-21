@@ -8,6 +8,7 @@ import {
 import { useState } from "react";
 
 import "./App.css";
+import { DiaryShareModal } from "./components/DiaryShareModal";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
 import { PreviewStep } from "./components/PreviewStep";
 import { WriteStep } from "./components/WriteStep";
@@ -15,7 +16,6 @@ import { CONTENT_MIN_LENGTH } from "./constants/diary";
 import { useDiaryAnalysis } from "./hooks/useDiaryAnalysis";
 import { useDiaryDraft } from "./hooks/useDiaryDraft";
 import { useSketch } from "./hooks/useSketch";
-import { DiaryExportError, exportDiaryImage } from "./services/diaryExport";
 import { composeDiaryImage } from "./utils/diaryImage";
 
 // Plain state instead of a router: the flow is a strict 3-step wizard with no
@@ -69,6 +69,10 @@ function App() {
   const { openConfirm } = useDialog();
   const toast = useToast();
   const [saving, setSaving] = useState(false);
+  const [finishedDiary, setFinishedDiary] = useState<{
+    imageDataUrl: string;
+    fileName: string;
+  } | null>(null);
 
   const header = STEP_HEADERS[step];
   const canWrite = draft.photoDataUrl !== null;
@@ -78,7 +82,8 @@ function App() {
     draft.title.trim() !== "" &&
     draft.content.trim().length >= CONTENT_MIN_LENGTH;
 
-  // Stage 4: compose the finished diary into one image and save it.
+  // Stage 4: compose the finished diary once, then let the result sheet reuse
+  // the exact same file for save, SNS share and preview.
   const handleFinish = async () => {
     if (draft.photoDataUrl === null || saving) {
       return;
@@ -137,36 +142,14 @@ function App() {
         analysis:
           analysisState.status === "success" ? analysisState.analysis : null,
       });
-      const outcome = await exportDiaryImage(
+      setFinishedDiary({
         imageDataUrl,
         // ASCII name (some Android managers mangle Korean) + a time suffix so
-        // saving twice in one day can't collide on an identical fileName,
-        // whose duplicate handling the platform doesn't define.
-        `summer-diary-${draft.date}-${clockSuffix()}.jpg`,
-      );
-
-      // saveBase64Data only guarantees a device file save — it does not
-      // promise the photo album — so the copy stays location-neutral.
-      const keepViewing = await openConfirm({
-        title: "그림일기가 저장됐어요",
-        description:
-          outcome === "saved"
-            ? "그림일기를 기기에 저장했어요. 새 일기를 시작할까요?"
-            : "다운로드 폴더에 저장했어요. 새 일기를 시작할까요?",
-        // Safe action is primary: 새로 쓰기 wipes the (not-yet-re-editable)
-        // draft, so it's the de-emphasized cancel to avoid a reflex tap.
-        confirmButton: "계속 보기",
-        cancelButton: "새로 쓰기",
+        // saving twice in one day can't collide on an identical fileName.
+        fileName: `summer-diary-${draft.date}-${clockSuffix()}.jpg`,
       });
-      if (!keepViewing) {
-        clearDraft();
-        setStep("upload");
-      }
-    } catch (error) {
-      const message =
-        error instanceof DiaryExportError
-          ? error.userMessage
-          : "그림일기 저장에 실패했어요. 다시 시도해 주세요.";
+    } catch {
+      const message = "그림일기 이미지를 만들지 못했어요. 다시 시도해 주세요.";
       // Retry button keeps the failure recoverable in place instead of
       // vanishing with the 3s toast.
       toast.openToast(message, {
@@ -212,6 +195,20 @@ function App() {
           onRetry={retryAnalysis}
           sketchState={sketchState}
           onSketchRetry={retrySketch}
+        />
+      )}
+
+      {finishedDiary !== null && (
+        <DiaryShareModal
+          open
+          imageDataUrl={finishedDiary.imageDataUrl}
+          fileName={finishedDiary.fileName}
+          onClose={() => setFinishedDiary(null)}
+          onStartNew={() => {
+            setFinishedDiary(null);
+            clearDraft();
+            setStep("upload");
+          }}
         />
       )}
 

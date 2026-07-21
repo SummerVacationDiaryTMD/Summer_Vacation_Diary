@@ -44,6 +44,9 @@ React 18 + TypeScript + Vite 6 on `@apps-in-toss/web-framework` 3.0.0-beta — t
   - `styleTransfer.ts` — requests photo → colored-pencil sketch conversion through the Edge Function.
   - `supabaseEdge.ts` — shared typed fetch boundary for the `diary-ai` Edge Function.
   - `diaryExport.ts` — composes the final keepsake image on a canvas (`utils/diaryImage.ts`) and saves it to the device.
+- Every photo pick/replacement first shows an explicit transfer-and-analysis consent modal. It warns about sensitive data and explains the Supabase/OpenAI transfer and device/IP abuse controls.
+- The versioned `supabase/functions/diary-ai/` source enforces atomic per-device and per-IP short-window and daily quotas through the migration in `supabase/migrations/`. Raw identifiers are salted and hashed before storage; limit values live together in the Function's `USAGE_LIMITS` constant.
+- The completed-image modal can save the JPEG, copy a Toss app link, share the link through Toss/OS sharing, or pass the local image to the OS file-share sheet. KakaoTalk/Instagram availability is device-dependent; no diary image is uploaded to create a public result URL.
 - Sketch generation is kicked off when the user leaves the upload step, hiding its latency behind diary writing. Failed generations surface an explicit retry button; never auto-retry on navigation.
 - `hooks/useDiaryAnalysis.ts` keys everything on an input signature: result cache, in-flight promise reuse, and request-id checks prevent duplicate API calls and stale responses overwriting newer input.
 - `PreviewStep.tsx` renders the diary card as an 11×5 manuscript grid (원고지) inside `public/picture-diary-frame.png`, overlaying circle/wavy-underline annotations from `utils/highlight.ts` as plain React text (no `dangerouslySetInnerHTML`).
@@ -71,4 +74,4 @@ Optional `.env` in the repository root (gitignored); with no Supabase config the
 
 ## Known pending work
 
-`TO_DO_LIST.md` items (참 잘했어요 stamp, fonts, SNS sharing, page-flip effect, album/PDF export, diary features), plus pre-release requirements: backend proxy for API keys, console app registration, and a real-device save test.
+`TO_DO_LIST.md` items (참 잘했어요 stamp, fonts, page-flip effect, album/PDF export, diary features), plus pre-release requirements: deploy the checked-in Supabase proxy/migration, console app registration, and real-device save/share tests.

@@ -220,7 +220,7 @@ export function PreviewStep({
         <div className="diary-template">
           <img
             className="diary-template-frame"
-            src="public/picture-diary-frame.png"
+            src="/picture-diary-frame.png"
             alt=""
             aria-hidden
           />

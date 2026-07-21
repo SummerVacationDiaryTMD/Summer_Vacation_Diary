@@ -12,6 +12,7 @@ export type SketchErrorCode =
   | "invalid-key"
   | "model-unavailable"
   | "rate-limited"
+  | "daily-limit-exceeded"
   | "quota-exceeded"
   | "content-blocked"
   | "api-error"
@@ -24,6 +25,8 @@ export const SKETCH_ERROR_MESSAGES: Record<SketchErrorCode, string> = {
   "model-unavailable":
     "이 API 키로는 그림 변환 모델을 쓸 수 없어요. OpenAI 조직 인증 여부를 확인해 주세요.",
   "rate-limited": "지금은 요청이 많아요. 잠시 후 다시 시도해 주세요.",
+  "daily-limit-exceeded":
+    "오늘 사용할 수 있는 횟수를 모두 사용했어요. 내일 다시 이용해 주세요.",
   "quota-exceeded":
     "OpenAI 크레딧이 모두 소진됐어요. 결제 설정을 확인해 주세요.",
   "content-blocked":
@@ -49,7 +52,11 @@ export function sketchErrorCode(error: unknown): SketchErrorCode {
 }
 
 export function isSketchErrorRetryable(error: unknown): boolean {
-  return sketchErrorCode(error) !== "content-blocked";
+  return ![
+    "content-blocked",
+    "daily-limit-exceeded",
+    "quota-exceeded",
+  ].includes(sketchErrorCode(error));
 }
 
 export const isSketchAiConnected = isSupabaseConfigured;

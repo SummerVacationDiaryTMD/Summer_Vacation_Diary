@@ -108,6 +108,129 @@ html {
   background-color: #f2f4f6;
 }
 
+.photo-consent-modal {
+  width: min(calc(100vw - 32px), 448px);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  border-radius: 20px;
+}
+
+.photo-consent-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  color: #191f28;
+}
+
+.photo-consent-title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.photo-consent-description {
+  margin: 10px 0 0;
+  color: #4e5968;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.photo-consent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+  color: #4e5968;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.photo-consent-check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f2f4f6;
+}
+
+.photo-consent-check-label {
+  flex: 1;
+  padding: 1px 0;
+  border: 0;
+  background: transparent;
+  color: #333d4b;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+
+.photo-consent-actions {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 8px;
+}
+
+/* --- Finished diary save/share sheet --- */
+
+.diary-share-modal {
+  width: min(calc(100vw - 32px), 448px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  border-radius: 20px;
+}
+
+.diary-share-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  color: #191f28;
+}
+
+.diary-share-title {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.diary-share-description,
+.diary-share-note {
+  margin: 8px 0 0;
+  color: #6b7684;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.diary-share-preview {
+  display: block;
+  width: 100%;
+  max-height: 34vh;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #f2f4f6;
+}
+
+.diary-share-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.diary-share-note {
+  margin: 0;
+  font-size: 13px;
+}
+
+.diary-share-footer {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 8px;
+}
+
 /* --- Write step --- */
 
 .field-row {

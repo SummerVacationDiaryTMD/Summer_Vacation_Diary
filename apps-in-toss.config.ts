@@ -5,9 +5,9 @@ export default defineConfig({
 
   brand: {
     // Summer-sky blue to match the seasonal diary concept.
-    primaryColor: "#4A9DF8"
+    primaryColor: "#4A9DF8",
   },
 
-  permissions: [],
-  webBundleDir: "dist"
+  permissions: [{ name: "clipboard", access: "write" }],
+  webBundleDir: "dist",
 });
