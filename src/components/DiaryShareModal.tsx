@@ -2,12 +2,7 @@ import { Button, Modal, useToast } from "@toss/tds-mobile";
 import { useState } from "react";
 
 import { DiaryExportError, exportDiaryImage } from "../services/diaryExport";
-import {
-  copyDiaryAppLink,
-  DiaryShareError,
-  shareDiaryAppLink,
-  shareDiaryImage,
-} from "../services/diaryShare";
+import { DiaryShareError, shareDiaryAppLink } from "../services/diaryShare";
 
 interface DiaryShareModalProps {
   open: boolean;
@@ -17,7 +12,7 @@ interface DiaryShareModalProps {
   onStartNew: () => void;
 }
 
-type ShareAction = "save" | "copy" | "message" | "social";
+type ShareAction = "save" | "share";
 
 export function DiaryShareModal({
   open,
@@ -42,21 +37,10 @@ export function DiaryShareModal({
             ? "그림일기를 기기에 저장했어요."
             : "그림일기를 다운로드했어요.",
         );
-      } else if (action === "copy") {
-        await copyDiaryAppLink();
-        toast.openToast("앱 링크를 복사했어요.");
-      } else if (action === "message") {
+      } else {
         const outcome = await shareDiaryAppLink();
         if (outcome === "copied") {
           toast.openToast("공유 기능이 없어 앱 링크를 복사했어요.");
-        }
-      } else {
-        const outcome = await shareDiaryImage(imageDataUrl, fileName);
-        if (outcome === "unsupported") {
-          await exportDiaryImage(imageDataUrl, fileName);
-          toast.openToast(
-            "이 환경은 이미지 공유를 지원하지 않아 먼저 저장했어요.",
-          );
         }
       }
     } catch (error) {
@@ -78,7 +62,7 @@ export function DiaryShareModal({
           <div>
             <h2 className="diary-share-title">그림일기가 완성됐어요</h2>
             <p className="diary-share-description">
-              이미지로 저장하거나 친구에게 앱 링크와 결과물을 공유해 보세요.
+              이미지로 저장하거나 친구에게 앱 링크를 공유해 보세요.
             </p>
           </div>
 
@@ -99,39 +83,18 @@ export function DiaryShareModal({
             </Button>
             <Button
               display="block"
-              disabled={busyAction !== null && busyAction !== "copy"}
+              disabled={busyAction !== null && busyAction !== "share"}
               variant="weak"
               color="dark"
-              loading={busyAction === "copy"}
-              onClick={() => void run("copy")}
+              loading={busyAction === "share"}
+              onClick={() => void run("share")}
             >
-              앱 링크 복사
-            </Button>
-            <Button
-              display="block"
-              disabled={busyAction !== null && busyAction !== "message"}
-              variant="weak"
-              color="dark"
-              loading={busyAction === "message"}
-              onClick={() => void run("message")}
-            >
-              카카오톡 · 메시지 공유
-            </Button>
-            <Button
-              display="block"
-              disabled={busyAction !== null && busyAction !== "social"}
-              variant="weak"
-              color="dark"
-              loading={busyAction === "social"}
-              onClick={() => void run("social")}
-            >
-              인스타그램 · SNS 공유
+              공유하기
             </Button>
           </div>
 
           <p className="diary-share-note">
-            공유창에 표시되는 앱은 기기와 설치 상태에 따라 달라요. 일기 이미지는
-            공개 링크로 업로드되지 않아요.
+            공유하기를 누르면 설치된 메신저·SNS 앱을 선택할 수 있어요.
           </p>
 
           <div className="diary-share-footer">
