@@ -87,6 +87,27 @@ function App() {
     (isSketchAiConnected && sketchState.status === "success") ||
     (isAiConnected && analysisState.status === "success");
 
+  const handleStartWriting = async () => {
+    if (!canWrite) {
+      return;
+    }
+
+    // Show the notice every time the user leaves the upload step. A saved
+    // draft can keep its photo between visits, so tying this only to the file
+    // picker would let returning users start the upload without seeing it.
+    const confirmed = await openConfirm({
+      title: "사진 전송 및 분석 안내",
+      description:
+        "선택한 사진은 색연필 그림과 그림일기를 만들기 위해 Supabase 서버를 거쳐 OpenAI로 전송돼요. 개인정보가 포함된 사진은 사용하지 않는 것을 권장해요.",
+      confirmButton: "확인하고 일기 쓰기",
+      cancelButton: "취소",
+    });
+
+    if (confirmed) {
+      setStep("write");
+    }
+  };
+
   // Stage 4: compose the finished diary once, then let the result sheet reuse
   // the exact same file for save, SNS share and preview.
   const handleFinish = async () => {
@@ -219,7 +240,10 @@ function App() {
       )}
 
       {step === "upload" && (
-        <FixedBottomCTA disabled={!canWrite} onClick={() => setStep("write")}>
+        <FixedBottomCTA
+          disabled={!canWrite}
+          onClick={() => void handleStartWriting()}
+        >
           일기 쓰러 가기
         </FixedBottomCTA>
       )}
