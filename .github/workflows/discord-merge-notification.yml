@@ -1,0 +1,67 @@
+name: Discord Main Merge Notification
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  notify-discord:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          MERGED_BY: ${{ github.event.pull_request.merged_by.login }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            TITLE="GitHub Actions 알림 테스트"
+            DESCRIPTION="**${REPOSITORY}**
+
+          Discord Webhook 연결이 정상적으로 완료되었습니다.
+
+          이후 PR이 \`main\` 브랜치에 Merge되면 자동으로 알림이 전송됩니다."
+          else
+            TITLE="main 브랜치 Merge 완료"
+            DESCRIPTION="**${REPOSITORY}**의 main 브랜치가 업데이트되었습니다.
+
+          **PR:** [#${PR_NUMBER} ${PR_TITLE}](${PR_URL})
+          **Merge한 사람:** ${MERGED_BY}
+
+          작업 중인 변경사항을 먼저 커밋하거나 stash한 뒤 최신 main을 받아주세요.
+
+          \`\`\`bash
+          git switch main
+          git pull origin main
+          \`\`\`"
+          fi
+
+          jq -n \
+            --arg title "$TITLE" \
+            --arg description "$DESCRIPTION" \
+            '{
+              username: "GitHub Merge 알림",
+              embeds: [
+                {
+                  title: $title,
+                  description: $description,
+                  color: 5763719
+                }
+              ]
+            }' \
+          | curl --fail-with-body \
+              --request POST \
+              --header "Content-Type: application/json" \
+              --data-binary @- \
+              "$DISCORD_WEBHOOK_URL"
