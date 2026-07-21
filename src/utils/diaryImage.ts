@@ -13,6 +13,7 @@ export interface DiaryImageInput {
   date: string;
   weather: WeatherValue;
   analysis: DiaryAnalysis | null;
+  includesAiGeneratedContent: boolean;
 }
 
 // 저장 이미지는 미리보기의 picture-diary-frame.png 원본 크기와 좌표를
@@ -41,12 +42,15 @@ const CONTENT_FONT = `400 34px ${DIARY_FONT_STACK}`;
 const COMMENT_LABEL_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
 const COMMENT_FONT = `500 30px ${SYSTEM_FONT_STACK}`;
 const TAG_FONT = `400 22px ${SYSTEM_FONT_STACK}`;
+const AI_WATERMARK_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
 
 const TEXT_COLOR = "#333333";
 const COMMENT_COLOR = "#6b5e3f";
 const LABEL_COLOR = "#806d3d";
 const TAG_BACKGROUND = "#f3ecd2";
 const MARK_COLOR = "rgba(224, 62, 46, 0.78)";
+const AI_WATERMARK_COLOR = "#376baf";
+const AI_WATERMARK_TEXT = "AI 생성 콘텐츠 포함";
 
 interface DiaryCell {
   text: string;
@@ -301,6 +305,29 @@ function roundRectPath(
   }
 }
 
+function drawAiContentWatermark(context: CanvasRenderingContext2D) {
+  context.save();
+  context.font = AI_WATERMARK_FONT;
+  context.textBaseline = "middle";
+
+  const paddingX = 18;
+  const height = 42;
+  const width = context.measureText(AI_WATERMARK_TEXT).width + paddingX * 2;
+  const x = WIDTH - pxX(0.047) - width;
+  const y = pxY(0.071);
+
+  context.fillStyle = "rgba(255, 255, 255, 0.9)";
+  context.strokeStyle = "rgba(74, 125, 190, 0.5)";
+  context.lineWidth = 2;
+  roundRectPath(context, x, y, width, height, height / 2);
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = AI_WATERMARK_COLOR;
+  context.fillText(AI_WATERMARK_TEXT, x + paddingX, y + height / 2 + 1);
+  context.restore();
+}
+
 /** 감정 → 사진 키워드 → 일기 키워드 순서로 중복 없이 최대 6개. */
 export function buildDiaryTags(analysis: DiaryAnalysis): string[] {
   return [
@@ -496,6 +523,9 @@ export async function composeDiaryImage(
 
   drawContent(context, input.content, input.analysis);
   drawComment(context, input.analysis);
+  if (input.includesAiGeneratedContent) {
+    drawAiContentWatermark(context);
+  }
 
   return canvas.toDataURL("image/jpeg", 0.92);
 }

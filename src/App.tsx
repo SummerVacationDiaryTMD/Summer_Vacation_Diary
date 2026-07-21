@@ -16,6 +16,8 @@ import { CONTENT_MIN_LENGTH } from "./constants/diary";
 import { useDiaryAnalysis } from "./hooks/useDiaryAnalysis";
 import { useDiaryDraft } from "./hooks/useDiaryDraft";
 import { useSketch } from "./hooks/useSketch";
+import { isAiConnected } from "./services/diaryAnalysis";
+import { isSketchAiConnected } from "./services/styleTransfer";
 import { composeDiaryImage } from "./utils/diaryImage";
 
 // Plain state instead of a router: the flow is a strict 3-step wizard with no
@@ -81,6 +83,9 @@ function App() {
   const canPreview =
     draft.title.trim() !== "" &&
     draft.content.trim().length >= CONTENT_MIN_LENGTH;
+  const includesAiGeneratedContent =
+    (isSketchAiConnected && sketchState.status === "success") ||
+    (isAiConnected && analysisState.status === "success");
 
   // Stage 4: compose the finished diary once, then let the result sheet reuse
   // the exact same file for save, SNS share and preview.
@@ -141,6 +146,7 @@ function App() {
         weather: draft.weather,
         analysis:
           analysisState.status === "success" ? analysisState.analysis : null,
+        includesAiGeneratedContent,
       });
       setFinishedDiary({
         imageDataUrl,

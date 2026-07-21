@@ -7,6 +7,7 @@ import type { DiaryDraft } from "../hooks/useDiaryDraft";
 import type { SketchState } from "../hooks/useSketch";
 import { isAiConnected } from "../services/diaryAnalysis";
 import type { DiaryAnalysis } from "../services/diaryAnalysis";
+import { isSketchAiConnected } from "../services/styleTransfer";
 import { buildDiaryTags } from "../utils/diaryImage";
 import { handwritingVariation } from "../utils/handwriting";
 import { buildHighlightSegments } from "../utils/highlight";
@@ -188,6 +189,9 @@ export function PreviewStep({
   const sketchUrl =
     sketchState.status === "success" ? sketchState.sketchDataUrl : null;
   const showsSketch = sketchUrl !== null && !showOriginal;
+  const includesAiGeneratedContent =
+    (isSketchAiConnected && sketchState.status === "success") ||
+    (isAiConnected && analysisState.status === "success");
 
   // Announced through the always-mounted live region below. A region that
   // mounts together with its text is often not read at all — only TEXT
@@ -224,6 +228,10 @@ export function PreviewStep({
             alt=""
             aria-hidden
           />
+
+          {includesAiGeneratedContent && (
+            <span className="ai-content-watermark">AI 생성 콘텐츠 포함</span>
+          )}
 
           <div className="diary-card-header">
             <span>
