@@ -113,8 +113,10 @@ function persistDraft(draft: DiaryDraft) {
  * Trade-off: localStorage is per-device and can be cleared by the OS,
  * but that is acceptable for a draft (not the final saved diary).
  */
-export function useDiaryDraft() {
-  const [draft, setDraft] = useState<DiaryDraft>(loadDraft);
+export function useDiaryDraft({ restoreOnStart = true } = {}) {
+  const [draft, setDraft] = useState<DiaryDraft>(() =>
+    restoreOnStart ? loadDraft() : emptyDraft(),
+  );
 
   const draftRef = useRef(draft);
   useEffect(() => {

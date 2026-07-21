@@ -53,7 +53,11 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
 
 function App() {
   const [step, setStep] = useState<Step>("upload");
-  const { draft, updateDraft, clearDraft } = useDiaryDraft();
+  // Always open on a fresh diary. Draft persistence remains available in the
+  // hook, but this flow must not restore a previous visit's photo or text.
+  const { draft, updateDraft, clearDraft } = useDiaryDraft({
+    restoreOnStart: false,
+  });
   // Analysis runs only while the preview is visible; results are cached by
   // input inside the hook, so re-entering preview without edits is free.
   const { state: analysisState, retry: retryAnalysis } = useDiaryAnalysis(
