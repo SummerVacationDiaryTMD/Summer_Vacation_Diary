@@ -679,7 +679,7 @@ html {
   margin: 0;
   overflow: visible;
   /* 50자 한줄평이 작은 카드에서도 두 줄 안에 전부 들어오게 맞춥니다. */
-  font-size: clamp(7px, 2.55cqw, 11px) !important;
+  font-size: 2.84cqw !important;
   line-height: 1.18 !important;
   word-break: break-all;
   -webkit-box-orient: initial !important;
