@@ -14,11 +14,13 @@
    into view; this padding keeps it clear of the fixed bottom CTA. */
 html {
   scroll-padding-bottom: 120px;
+  -webkit-text-size-adjust: 100%;
 }
 
 #root {
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   box-sizing: border-box;
 }
 
@@ -37,8 +39,10 @@ html {
 .step-body {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 8px 24px 24px;
+  gap: clamp(16px, 4.2vw, 20px);
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px clamp(16px, 5vw, 24px) calc(112px + env(safe-area-inset-bottom));
 }
 
 /* --- Photo upload step --- */
@@ -51,7 +55,8 @@ html {
   justify-content: center;
   gap: 4px;
   width: 100%;
-  min-height: 320px;
+  height: clamp(220px, 52dvh, 360px);
+  min-height: 0;
   padding: 0;
   overflow: hidden;
   border: 1px solid #d6d0c5;
@@ -103,24 +108,43 @@ html {
   border-radius: 16px;
   /* The photo keeps its own aspect ratio; capping height prevents a portrait
      shot from pushing the CTA below the fold on small screens. */
-  max-height: 60vh;
+  max-height: min(60dvh, 520px);
   object-fit: contain;
   background-color: #f2f4f6;
 }
 
 .photo-consent-modal {
-  width: min(calc(100vw - 32px), 448px);
-  max-height: calc(100dvh - 48px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  width: min(calc(100vw - 24px), 448px) !important;
+  height: min(720px, calc(100dvh - 24px - env(safe-area-inset-bottom)));
+  max-height: calc(100dvh - 24px - env(safe-area-inset-bottom)) !important;
+  overflow: hidden !important;
   border-radius: 20px;
 }
 
 .photo-consent-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 24px;
+  min-height: 0;
+  height: 100%;
   color: #191f28;
+}
+
+.modal-scroll-body {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.photo-consent-scroll-body {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 4vw, 20px);
+  padding: clamp(16px, 5vw, 24px);
 }
 
 .photo-consent-title {
@@ -170,26 +194,40 @@ html {
 }
 
 .photo-consent-actions {
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 8px;
+  padding: 12px clamp(16px, 5vw, 24px) calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid #e5e8eb;
+  background: #ffffff;
 }
 
 /* --- Finished diary save/share sheet --- */
 
 .diary-share-modal {
-  width: min(calc(100vw - 32px), 448px);
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  width: min(calc(100vw - 24px), 448px) !important;
+  height: min(720px, calc(100dvh - 24px - env(safe-area-inset-bottom)));
+  max-height: calc(100dvh - 24px - env(safe-area-inset-bottom)) !important;
+  overflow: hidden !important;
   border-radius: 20px;
 }
 
 .diary-share-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 24px;
+  min-height: 0;
+  height: 100%;
   color: #191f28;
+}
+
+.diary-share-scroll-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: clamp(16px, 5vw, 24px);
 }
 
 .diary-share-title {
@@ -226,19 +264,59 @@ html {
 }
 
 .diary-share-footer {
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: 1fr 1.4fr;
   gap: 8px;
+  padding: 12px clamp(16px, 5vw, 24px) calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid #e5e8eb;
+  background: #ffffff;
 }
 
 /* --- Write step --- */
+
+.write-form {
+  gap: 0;
+}
+
+.write-form-surface {
+  overflow: hidden;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.05);
+}
+
+.diary-form-section {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 14px 16px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.diary-form-section:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: 40px;
+  bottom: 0;
+  left: 40px;
+  height: 1px;
+  background: #edf0f2;
+}
 
 .field-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 6px;
+  padding: 14px 16px;
 }
 
 .field-row-column {
@@ -246,7 +324,37 @@ html {
   align-items: stretch;
 }
 
+.diary-form-section .form-section-label {
+  margin-left: 24px !important;
+}
+
 .date-input {
+  width: min(176px, calc(100% - 82px));
+  margin-right: 24px;
+}
+
+.weather-scroll-region {
+  width: calc(100% + 32px);
+  box-sizing: border-box;
+  margin: 0 -16px;
+  padding: 0 16px 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: 16px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.weather-scroll-region [role="radiogroup"] {
+  width: max-content;
+  min-width: 100%;
+}
+
+.date-input {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   font: inherit;
   font-size: 15px;
   padding: 8px 12px;
@@ -262,9 +370,14 @@ html {
 
 .diary-card {
   position: relative;
+  width: 100%;
+  max-width: 432px;
+  margin-right: auto;
+  margin-left: auto;
   margin-top: 4px;
   background: transparent;
   color: #292929;
+  container-type: inline-size;
 }
 
 /* 아이가 직접 쓴 부분에만 손글씨 폰트를 적용합니다:
@@ -295,12 +408,12 @@ html {
   z-index: 3;
   top: 7.1%;
   right: 4.7%;
-  padding: 3px 7px;
-  border: 1px solid rgba(74, 125, 190, 0.5);
+  padding: max(2px, 0.69cqw) max(4px, 1.62cqw);
+  border: max(1px, 0.23cqw) solid rgba(74, 125, 190, 0.5);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.9);
   color: #376baf;
-  font-size: 9px;
+  font-size: clamp(6px, 2.08cqw, 9px);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.2px;
@@ -372,7 +485,7 @@ html {
   left: 4.7%;
   width: 90.6%;
   height: 4.85%;
-  font-size: 11px;
+  font-size: clamp(7px, 2.55cqw, 11px);
   color: #555;
 }
 
@@ -402,7 +515,7 @@ html {
 
 .diary-card-header strong {
   color: #222;
-  font-size: 12px;
+  font-size: clamp(8px, 2.78cqw, 12px);
 }
 
 .diary-weather {
@@ -418,11 +531,11 @@ html {
   display: flex;
   align-items: center;
   padding: 0;
-  font-size: 13px;
+  font-size: clamp(8px, 3.01cqw, 13px);
 }
 
 .diary-title-row strong {
-  font-size: 14px;
+  font-size: clamp(9px, 3.24cqw, 14px);
   word-break: break-word;
 }
 
@@ -452,9 +565,9 @@ html {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 160px;
+  height: 100%;
   color: #b0a988;
-  font-size: 14px;
+  font-size: clamp(9px, 3.24cqw, 14px);
 }
 
 .diary-card-title {
@@ -481,7 +594,7 @@ html {
   padding: 0;
   overflow: visible;
   border: 0;
-  font-size: 14px;
+  font-size: clamp(9px, 3.24cqw, 14px);
   color: #333;
 }
 
@@ -517,8 +630,8 @@ html {
 }
 
 .diary-correction-circle {
-  margin: -3px -5px;
-  border: 2px solid rgba(224, 62, 46, 0.78);
+  margin: max(-3px, -0.69cqw) max(-5px, -1.16cqw);
+  border: max(1px, 0.46cqw) solid rgba(224, 62, 46, 0.78);
   border-radius: 48% 52% 46% 54% / 58% 44% 56% 42%;
   transform: rotate(-1.5deg) scaleY(0.78);
   filter: drop-shadow(0 0 0.4px rgba(180, 38, 28, 0.5));
@@ -539,29 +652,38 @@ html {
   width: 90.8%;
   height: 11.97%;
   box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  row-gap: max(1px, 0.46cqw);
   margin: 0;
-  padding: 5px 10px;
+  padding: clamp(3px, 1.16cqw, 5px) clamp(6px, 2.31cqw, 10px);
   overflow: hidden;
   border: 0;
   background: transparent;
 }
 
 .diary-comment-label {
-  margin-bottom: 2px;
-  font-size: 9px;
+  margin: 0;
+  font-size: clamp(6px, 2.08cqw, 9px);
+  line-height: 1.15;
   font-weight: 700;
   color: #806d3d;
 }
 
-.diary-card-comment p {
-  display: -webkit-box;
+.diary-card-comment .diary-comment-text {
+  display: block !important;
+  align-self: start;
+  height: auto !important;
+  min-height: 0;
+  max-height: none;
   margin: 0;
-  overflow: hidden;
-  /* 저장 이미지의 30px와 같은 비율로 보이도록 미리보기는 12px를 씁니다. */
-  font-size: 12px !important;
-  line-height: 1.25 !important;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  overflow: visible;
+  /* 50자 한줄평이 작은 카드에서도 두 줄 안에 전부 들어오게 맞춥니다. */
+  font-size: clamp(7px, 2.55cqw, 11px) !important;
+  line-height: 1.18 !important;
+  word-break: break-all;
+  -webkit-box-orient: initial !important;
+  -webkit-line-clamp: unset !important;
 }
 
 /* --- Stage 2: analysis marks, tags and comment states --- */
@@ -594,8 +716,8 @@ mark.highlight-underline {
 .diary-grid-cell > .highlight-circle::after {
   content: "";
   position: absolute;
-  inset: 3px;
-  border: 2px solid rgba(224, 82, 60, 0.65);
+  inset: max(2px, 0.69cqw);
+  border: max(1px, 0.46cqw) solid rgba(224, 82, 60, 0.65);
   border-radius: 48% 52% 46% 54% / 58% 44% 56% 42%;
 }
 
@@ -621,25 +743,26 @@ mark.highlight-underline {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: clamp(4px, 1.85cqw, 8px);
   background: rgba(255, 253, 245, 0.75);
-  font-size: 13px;
+  font-size: clamp(9px, 3.01cqw, 13px);
   color: #6b5e3f;
 }
 
 .sketch-toggle {
   position: absolute;
-  right: 10px;
-  bottom: 10px;
+  right: clamp(6px, 2.31cqw, 10px);
+  bottom: clamp(6px, 2.31cqw, 10px);
   border: none;
   border-radius: 14px;
-  padding: 6px 12px;
-  font-size: 12px;
+  padding: clamp(4px, 1.39cqw, 6px) clamp(8px, 2.78cqw, 12px);
+  font-size: clamp(9px, 2.78cqw, 12px);
   color: #ffffff;
   /* Dark chip: it must stay readable on both a bright original photo and
      the pale pencil drawing. */
   background: rgba(0, 0, 0, 0.55);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 /* Invisible hit-area extension: the chip stays visually small, but its tap
@@ -652,7 +775,8 @@ mark.highlight-underline {
   inset: -10px;
 }
 
-.sketch-error {
+.sketch-error,
+.preview-status-panel {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -689,20 +813,17 @@ mark.highlight-underline {
 }
 
 .comment-error {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
+  display: block;
 }
 
 .diary-tags {
-  position: absolute;
-  right: 10px;
-  bottom: 5px;
-  left: 10px;
+  position: static;
   display: flex;
+  align-self: end;
   flex-wrap: nowrap;
-  gap: 3px;
+  width: 100%;
+  min-width: 0;
+  gap: max(2px, 0.69cqw);
   margin-top: 0;
   overflow: hidden;
 }
@@ -710,12 +831,55 @@ mark.highlight-underline {
 .diary-tag {
   min-width: 0;
   overflow: hidden;
-  font-size: 9px;
-  line-height: 14px;
+  font-size: clamp(6px, 2.08cqw, 9px);
+  line-height: clamp(9px, 3.24cqw, 14px);
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #6b5e3f;
   background-color: #f3ecd2;
   border-radius: 10px;
-  padding: 1px 5px;
+  padding: max(1px, 0.23cqw) clamp(3px, 1.16cqw, 5px);
+}
+
+.preview-mode-note {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f7f3e9;
+  color: #6b5e3f;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+@media (max-width: 359px) {
+  .photo-consent-actions,
+  .diary-share-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .photo-consent-title,
+  .diary-share-title {
+    font-size: 20px;
+  }
+}
+
+@media (max-height: 600px) {
+  .photo-consent-scroll-body,
+  .diary-share-scroll-body {
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .photo-consent-title,
+  .diary-share-title {
+    font-size: 20px;
+  }
+
+  .photo-placeholder {
+    height: 210px;
+  }
+
+  .diary-share-preview {
+    max-height: 26dvh;
+  }
 }

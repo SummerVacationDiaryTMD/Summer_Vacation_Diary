@@ -317,7 +317,12 @@ export function PreviewStep({
             {analysisState.status === "loading" && (
               <div className="comment-loading">
                 <Loader size="small" />
-                <Paragraph as="span" typography="t7" color="#8a7d55">
+                <Paragraph
+                  as="span"
+                  className="diary-comment-text"
+                  typography="t7"
+                  color="#8a7d55"
+                >
                   선생님이 일기를 읽고 있어요...
                 </Paragraph>
               </div>
@@ -325,23 +330,25 @@ export function PreviewStep({
 
             {analysisState.status === "error" && (
               <div className="comment-error">
-                <Paragraph typography="t7" color="#8a7d55">
-                  {analysisState.message}
-                </Paragraph>
-                <Button
-                  size="small"
-                  variant="weak"
-                  color="dark"
-                  onClick={onRetry}
+                <Paragraph
+                  as="span"
+                  className="diary-comment-text"
+                  typography="t7"
+                  color="#8a7d55"
                 >
-                  다시 시도
-                </Button>
+                  한줄평을 불러오지 못했어요
+                </Paragraph>
               </div>
             )}
 
             {analysis !== null && (
               <>
-                <Paragraph typography="t6" fontWeight="medium" color="#6b5e3f">
+                <Paragraph
+                  className="diary-comment-text"
+                  typography="t6"
+                  fontWeight="medium"
+                  color="#6b5e3f"
+                >
                   ✏️ {analysis.comment}
                 </Paragraph>
                 {tags.length > 0 && (
@@ -355,22 +362,27 @@ export function PreviewStep({
                 )}
               </>
             )}
-
-            {/* Outside the analysis-success branch on purpose: keyless users
-              see the mock drawing even while the analysis is loading or has
-              failed, and it must never pass for the real AI conversion. */}
-            {!isAiConnected && (
-              <Paragraph
-                typography="t7"
-                color="#6b5e3f"
-                style={{ marginTop: 8 }}
-              >
-                체험 모드 · AI와 연결되지 않아 예시 분석과 간단한 그림 효과가
-                보여요
-              </Paragraph>
-            )}
           </div>
         </div>
+
+        {analysisState.status === "error" && (
+          <div className="preview-status-panel" role="alert">
+            <Paragraph typography="t7" color="#6b5e3f">
+              {analysisState.message}
+            </Paragraph>
+            <Button size="small" variant="weak" color="dark" onClick={onRetry}>
+              한줄평 다시 시도
+            </Button>
+          </div>
+        )}
+
+        {/* Keep mode guidance outside the fixed-ratio paper. Content placed in
+            the printed comment box must scale with it and cannot grow freely. */}
+        {!isAiConnected && (
+          <div className="preview-mode-note">
+            체험 모드 · 예시 분석과 간단한 그림 효과가 보여요
+          </div>
+        )}
 
         {sketchState.status === "error" && (
           <div className="sketch-error">
