@@ -8,6 +8,7 @@ import type { SketchState } from "../hooks/useSketch";
 import { isAiConnected } from "../services/diaryAnalysis";
 import type { DiaryAnalysis } from "../services/diaryAnalysis";
 import { isSketchAiConnected } from "../services/styleTransfer";
+import { isAiTestMode } from "../services/supabaseEdge";
 import { buildDiaryTags } from "../utils/diaryImage";
 import { handwritingVariation } from "../utils/handwriting";
 import { buildHighlightSegments } from "../utils/highlight";
@@ -187,7 +188,9 @@ export function PreviewStep({
   // product's wow moment, so comparing must be one tap, not a re-upload.
   const [showOriginal, setShowOriginal] = useState(false);
   const sketchUrl =
-    sketchState.status === "success" ? sketchState.sketchDataUrl : null;
+    sketchState.status === "success" && !isAiTestMode
+      ? sketchState.sketchDataUrl
+      : null;
   const showsSketch = sketchUrl !== null && !showOriginal;
   const includesAiGeneratedContent =
     (isSketchAiConnected && sketchState.status === "success") ||
@@ -201,7 +204,9 @@ export function PreviewStep({
     sketchState.status === "loading"
       ? "사진을 색연필 그림으로 바꾸고 있어요"
       : sketchState.status === "success"
-        ? "색연필 그림이 완성됐어요"
+        ? isAiTestMode
+          ? "원본 사진으로 미리보기를 준비했어요"
+          : "색연필 그림이 완성됐어요"
         : sketchState.status === "error"
           ? "그림 변환에 실패해서 원본 사진이 보여요"
           : "";
@@ -370,7 +375,13 @@ export function PreviewStep({
             <Paragraph typography="t7" color="#6b5e3f">
               {analysisState.message}
             </Paragraph>
-            <Button size="small" variant="weak" color="dark" onClick={onRetry}>
+            <Button
+              className="app-stable-button-state"
+              size="small"
+              variant="weak"
+              color="dark"
+              onClick={onRetry}
+            >
               한줄평 다시 시도
             </Button>
           </div>
@@ -378,9 +389,13 @@ export function PreviewStep({
 
         {/* Keep mode guidance outside the fixed-ratio paper. Content placed in
             the printed comment box must scale with it and cannot grow freely. */}
-        {!isAiConnected && (
+        {(isAiTestMode || !isAiConnected) && (
           <div className="preview-mode-note">
-            체험 모드 · 예시 분석과 간단한 그림 효과가 보여요
+            {isAiTestMode
+              ? isAiConnected
+                ? "테스트 모드 · 원본 사진으로 분석만 진행해요"
+                : "테스트 모드 · 원본 사진과 예시 분석이 보여요"
+              : "체험 모드 · 예시 분석과 간단한 그림 효과가 보여요"}
           </div>
         )}
 
@@ -395,6 +410,7 @@ export function PreviewStep({
               </Paragraph>
               {sketchState.retryable && (
                 <Button
+                  className="app-stable-button-state"
                   size="small"
                   variant="weak"
                   color="dark"

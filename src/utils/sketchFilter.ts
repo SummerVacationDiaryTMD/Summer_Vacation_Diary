@@ -2,7 +2,7 @@ import { ImageProcessError, loadImageFromDataUrl } from "./image";
 
 // ---------------------------------------------------------------------------
 // Local "colored pencil" filter — the stand-in provider for stage 3 when no
-// API key is configured (체험 모드). Pure canvas pixel work, no network:
+// API key is configured and AI test mode is off. Pure canvas pixel work, no network:
 //  1. posterize      — flatten colors into a few levels, like crayon fills
 //  2. edge darkening — Sobel edges become pencil outlines
 //  3. paper grain    — deterministic noise so flat areas look hand-shaded
@@ -73,8 +73,10 @@ export async function applyPencilFilter(dataUrl: string): Promise<string> {
       const bottomLeft = luma[yp * width + xm];
       const bottom = luma[yp * width + x];
       const bottomRight = luma[yp * width + xp];
-      const gx = -topLeft - 2 * left - bottomLeft + topRight + 2 * right + bottomRight;
-      const gy = -topLeft - 2 * top - topRight + bottomLeft + 2 * bottom + bottomRight;
+      const gx =
+        -topLeft - 2 * left - bottomLeft + topRight + 2 * right + bottomRight;
+      const gy =
+        -topLeft - 2 * top - topRight + bottomLeft + 2 * bottom + bottomRight;
       const magnitude = Math.min(1, Math.hypot(gx, gy) / 255);
       const edge = 1 - magnitude * EDGE_STRENGTH;
 

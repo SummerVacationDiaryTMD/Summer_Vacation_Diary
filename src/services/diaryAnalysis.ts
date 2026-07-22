@@ -69,6 +69,8 @@ export function analysisErrorMessage(error: unknown): string {
   return ANALYSIS_ERROR_MESSAGES["api-error"];
 }
 
+// Analysis remains available in test mode. Only the costly image-generation
+// operation is bypassed there.
 export const isAiConnected = isSupabaseConfigured;
 
 /**

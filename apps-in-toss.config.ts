@@ -9,5 +9,13 @@ export default defineConfig({
   },
 
   permissions: [],
+  // The Apps in Toss SDK renders the native non-game navigation itself.
+  // Keep only the required controls: back, app title/logo, more and close.
+  navigationBar: {
+    withBackButton: true,
+    withHomeButton: false,
+    transparentBackground: false,
+    theme: "light",
+  },
   webBundleDir: "dist",
 });

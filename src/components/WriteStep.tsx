@@ -26,14 +26,20 @@ interface WriteStepProps {
  * (or the app) never loses input — the draft hook persists it.
  */
 export function WriteStep({ draft, onChange }: WriteStepProps) {
-  const contentLength = draft.content.length;
+  const contentLength = Array.from(draft.content).length;
   const handleContentChange = (value: string) => {
-    onChange({ content: value.replace(/[\r\n]+/g, " ") });
+    const singleLineContent = value.replace(/[\r\n]+/g, " ");
+    const limitedContent = Array.from(singleLineContent)
+      .slice(0, CONTENT_MAX_LENGTH)
+      .join("");
+    onChange({ content: limitedContent });
   };
   // Validate on trimmed length so whitespace padding can't satisfy the
   // 20-char minimum; the visible counter still shows the raw length.
   const contentTooShort =
-    contentLength > 0 && draft.content.trim().length < CONTENT_MIN_LENGTH;
+    contentLength > 0 &&
+    Array.from(draft.content.trim()).length < CONTENT_MIN_LENGTH;
+  const contentAtLimit = contentLength >= CONTENT_MAX_LENGTH;
   // A whitespace-only title also blocks the preview button (App.tsx trims it),
   // so surface the reason here instead of leaving the button silently disabled.
   const titleBlank = draft.title.length > 0 && draft.title.trim() === "";
@@ -134,11 +140,13 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
             minHeight={140}
             maxLength={CONTENT_MAX_LENGTH}
             value={draft.content}
-            hasError={contentTooShort}
+            hasError={contentTooShort || contentAtLimit}
             help={
               contentTooShort
                 ? `${CONTENT_MIN_LENGTH}자 이상 적어주세요 (${contentLength}/${CONTENT_MAX_LENGTH})`
-                : `${contentLength}/${CONTENT_MAX_LENGTH}`
+                : contentAtLimit
+                  ? `최대 ${CONTENT_MAX_LENGTH}자까지 적을 수 있어요 (${contentLength}/${CONTENT_MAX_LENGTH})`
+                  : `${contentLength}/${CONTENT_MAX_LENGTH}`
             }
             onKeyDown={(event) => {
               if (event.key === "Enter") {

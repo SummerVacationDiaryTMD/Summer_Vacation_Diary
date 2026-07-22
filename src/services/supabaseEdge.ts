@@ -7,10 +7,17 @@ const publishableKey = (
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? ""
 ).trim();
 
+// Cost-safe by default: test mode keeps the inexpensive analysis path but
+// skips image generation. Setting false explicitly enables both operations.
+const aiTestModeValue = (import.meta.env.VITE_AI_TEST_MODE ?? "true")
+  .trim()
+  .toLowerCase();
+
 const DIARY_AI_FUNCTION_URL = `${supabaseUrl}/functions/v1/diary-ai`;
 const CLIENT_ID_STORAGE_KEY = "summer-vacation-diary:client-id:v1";
 let sessionClientId: string | null = null;
 
+export const isAiTestMode = !["false", "0", "off"].includes(aiTestModeValue);
 export const isSupabaseConfigured = supabaseUrl !== "" && publishableKey !== "";
 
 export type EdgeFunctionErrorKind =

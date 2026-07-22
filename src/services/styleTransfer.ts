@@ -3,6 +3,7 @@ import { applyPencilFilter } from "../utils/sketchFilter";
 import {
   EdgeFunctionError,
   invokeDiaryAi,
+  isAiTestMode,
   isSupabaseConfigured,
 } from "./supabaseEdge";
 
@@ -59,10 +60,15 @@ export function isSketchErrorRetryable(error: unknown): boolean {
   ].includes(sketchErrorCode(error));
 }
 
-export const isSketchAiConnected = isSupabaseConfigured;
+export const isSketchAiConnected = isSupabaseConfigured && !isAiTestMode;
 
 /** Converts a photo through Supabase, or uses the local filter in mock mode. */
 export function transferPhotoToSketch(photoDataUrl: string): Promise<string> {
+  // Test mode deliberately uses the original photo unchanged. It avoids both
+  // the paid image model and the local pencil filter while analysis continues.
+  if (isAiTestMode) {
+    return Promise.resolve(photoDataUrl);
+  }
   return isSketchAiConnected
     ? sketchWithEdgeFunction(photoDataUrl)
     : sketchWithLocalFilter(photoDataUrl);
