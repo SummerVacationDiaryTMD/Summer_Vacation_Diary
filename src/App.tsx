@@ -52,6 +52,7 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
 };
 
 function App() {
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const [step, setStep] = useState<Step>("upload");
   // Always open on a fresh diary. Draft persistence remains available in the
   // hook, but this flow must not restore a previous visit's photo or text.
@@ -90,6 +91,32 @@ function App() {
   const includesAiGeneratedContent =
     (isSketchAiConnected && sketchState.status === "success") ||
     (isAiConnected && analysisState.status === "success");
+
+  if (showOnboarding) {
+    return (
+      <main className="onboarding" aria-label="나의 여름방학일기 시작 화면">
+        <video
+          className="onboarding-video"
+          src="/onboarding.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+        />
+        <div className="onboarding-action-area">
+          <button
+            className="onboarding-start-button"
+            type="button"
+            onClick={() => setShowOnboarding(false)}
+          >
+            시작하기
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   const handleStartWriting = async () => {
     if (!canWrite) {
