@@ -101,6 +101,15 @@ function App() {
   } | null>(null);
 
   useEffect(() => {
+    const root = document.documentElement;
+    root.toggleAttribute("data-onboarding-open", showOnboarding);
+
+    return () => {
+      root.removeAttribute("data-onboarding-open");
+    };
+  }, [showOnboarding]);
+
+  useEffect(() => {
     const applyInsets = (insets: {
       top: number;
       right: number;
@@ -139,15 +148,11 @@ function App() {
   if (showOnboarding) {
     return (
       <main className="onboarding" aria-label="나의 여름방학일기 시작 화면">
-        <video
-          className="onboarding-video"
-          src="/onboarding.mp4"
-          poster="/onboarding-poster.jpg"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
+        <img
+          className="onboarding-animation"
+          src="/onboarding.webp"
+          alt=""
+          draggable={false}
           aria-hidden="true"
         />
         <div className="onboarding-action-area">
