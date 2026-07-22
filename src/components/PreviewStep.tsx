@@ -215,7 +215,7 @@ export function PreviewStep({
     : new Intl.DateTimeFormat("ko-KR", { weekday: "short" }).format(diaryDate);
 
   return (
-    <div className="step-body">
+    <div className="step-body preview-step">
       <p className="visually-hidden" role="status">
         {sketchAnnouncement}
       </p>

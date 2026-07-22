@@ -1,11 +1,6 @@
-import {
-  CTAButton,
-  FixedBottomCTA,
-  Top,
-  useDialog,
-  useToast,
-} from "@toss/tds-mobile";
-import { useState } from "react";
+import { Button, Top, useDialog, useToast } from "@toss/tds-mobile";
+import { SafeAreaInsets } from "@apps-in-toss/web-framework";
+import { useEffect, useState, type ReactNode } from "react";
 
 import "./App.css";
 import { DiaryShareModal } from "./components/DiaryShareModal";
@@ -51,6 +46,24 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
   },
 };
 
+function AppBottomBar({
+  children,
+  double = false,
+}: {
+  children: ReactNode;
+  double?: boolean;
+}) {
+  return (
+    <div className="app-bottom-bar">
+      <div
+        className={`app-bottom-bar-content${double ? " app-bottom-bar-content-double" : ""}`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [step, setStep] = useState<Step>("upload");
@@ -81,6 +94,30 @@ function App() {
     fileName: string;
   } | null>(null);
 
+  useEffect(() => {
+    const applyInsets = (insets: {
+      top: number;
+      right: number;
+      bottom: number;
+      left: number;
+    }) => {
+      const root = document.documentElement;
+      root.style.setProperty("--toss-safe-area-top", `${insets.top}px`);
+      root.style.setProperty("--toss-safe-area-right", `${insets.right}px`);
+      root.style.setProperty("--toss-safe-area-bottom", `${insets.bottom}px`);
+      root.style.setProperty("--toss-safe-area-left", `${insets.left}px`);
+    };
+
+    try {
+      applyInsets(SafeAreaInsets.get());
+      return SafeAreaInsets.subscribe({ onEvent: applyInsets });
+    } catch {
+      // Plain browsers do not have the Toss bridge. CSS env() remains the
+      // fallback there, so the local development flow needs no mock values.
+      return undefined;
+    }
+  }, []);
+
   const header = STEP_HEADERS[step];
   const canWrite = draft.photoDataUrl !== null;
   // trim() on both fields so whitespace-only input can't pass validation
@@ -98,6 +135,7 @@ function App() {
         <video
           className="onboarding-video"
           src="/onboarding.mp4"
+          poster="/onboarding-poster.jpg"
           autoPlay
           loop
           muted
@@ -274,51 +312,49 @@ function App() {
       )}
 
       {step === "upload" && (
-        <FixedBottomCTA
-          disabled={!canWrite}
-          onClick={() => void handleStartWriting()}
-        >
-          일기 쓰러 가기
-        </FixedBottomCTA>
+        <AppBottomBar>
+          <Button
+            display="block"
+            disabled={!canWrite}
+            onClick={() => void handleStartWriting()}
+          >
+            일기 쓰러 가기
+          </Button>
+        </AppBottomBar>
       )}
       {step === "write" && (
-        <FixedBottomCTA.Double
-          leftButton={
-            <CTAButton
-              color="dark"
-              variant="weak"
-              onClick={() => setStep("upload")}
-            >
-              이전
-            </CTAButton>
-          }
-          rightButton={
-            <CTAButton
-              disabled={!canPreview}
-              onClick={() => setStep("preview")}
-            >
-              미리보기
-            </CTAButton>
-          }
-        />
+        <AppBottomBar double>
+          <Button
+            display="block"
+            color="dark"
+            variant="weak"
+            onClick={() => setStep("upload")}
+          >
+            이전
+          </Button>
+          <Button
+            display="block"
+            disabled={!canPreview}
+            onClick={() => setStep("preview")}
+          >
+            미리보기
+          </Button>
+        </AppBottomBar>
       )}
       {step === "preview" && (
-        <FixedBottomCTA.Double
-          leftButton={
-            <CTAButton
-              color="dark"
-              variant="weak"
-              onClick={() => setStep("write")}
-            >
-              수정하기
-            </CTAButton>
-          }
-          rightButton={
-            <CTAButton loading={saving} onClick={handleFinish}>
-              완성하기
-            </CTAButton>
-          }
-        />
+        <AppBottomBar double>
+          <Button
+            display="block"
+            color="dark"
+            variant="weak"
+            onClick={() => setStep("write")}
+          >
+            수정하기
+          </Button>
+          <Button display="block" loading={saving} onClick={handleFinish}>
+            완성하기
+          </Button>
+        </AppBottomBar>
       )}
     </>
   );

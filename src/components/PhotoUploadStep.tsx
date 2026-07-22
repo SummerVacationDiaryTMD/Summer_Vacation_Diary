@@ -86,7 +86,7 @@ export function PhotoUploadStep({
   };
 
   return (
-    <div className="step-body">
+    <div className="step-body upload-step">
       {photoDataUrl !== null ? (
         <div className="photo-selected">
           <img
