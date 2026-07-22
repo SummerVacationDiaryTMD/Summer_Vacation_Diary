@@ -131,7 +131,7 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
             variant="line"
             aria-label="일기"
             placeholder={`오늘의 이야기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요`}
-            minHeight={180}
+            minHeight={140}
             maxLength={CONTENT_MAX_LENGTH}
             value={draft.content}
             hasError={contentTooShort}

@@ -412,14 +412,17 @@ function drawComment(
     2,
   );
 
+  const commentLineHeight = 34;
   commentLines.forEach((line, index) => {
-    context.fillText(line, x + paddingX, y + 62 + index * 36);
+    context.fillText(line, x + paddingX, y + 62 + index * commentLineHeight);
   });
 
   const tags = buildDiaryTags(analysis);
   context.font = TAG_FONT;
   let tagX = x + paddingX;
-  const tagY = y + height - 47;
+  // 짧은 한줄평에서도 태그를 박스 맨 아래에 고정하지 않습니다.
+  // 미리보기와 동일하게 실제 댓글 줄 수 바로 다음 행에 배치합니다.
+  const tagY = y + 50 + commentLines.length * commentLineHeight;
   for (const tag of tags) {
     const text = `#${tag}`;
     const tagWidth = context.measureText(text).width + 24;

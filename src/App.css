@@ -10,6 +10,23 @@
   font-weight: 400;
 }
 
+:root {
+  --toss-safe-area-top: 0px;
+  --toss-safe-area-right: 0px;
+  --toss-safe-area-bottom: 0px;
+  --toss-safe-area-left: 0px;
+  --app-safe-top: max(env(safe-area-inset-top), var(--toss-safe-area-top));
+  --app-safe-right: max(
+    env(safe-area-inset-right),
+    var(--toss-safe-area-right)
+  );
+  --app-safe-bottom: max(
+    env(safe-area-inset-bottom),
+    var(--toss-safe-area-bottom)
+  );
+  --app-safe-left: max(env(safe-area-inset-left), var(--toss-safe-area-left));
+}
+
 /* When the software keyboard opens, the browser scrolls the focused field
    into view; this padding keeps it clear of the fixed bottom CTA. */
 html {
@@ -18,10 +35,9 @@ html {
 }
 
 #root {
-  width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
   box-sizing: border-box;
+  scroll-padding-top: var(--app-safe-top);
+  scroll-padding-bottom: calc(96px + var(--app-safe-bottom));
 }
 
 /* --- Onboarding --- */
@@ -55,7 +71,7 @@ html {
 .onboarding-title-wrap {
   position: absolute;
   z-index: 2;
-  top: calc(72px + env(safe-area-inset-top));
+  top: calc(72px + var(--app-safe-top));
   right: 16px;
   left: 16px;
   display: flex;
@@ -114,8 +130,7 @@ html {
   left: 0;
   display: flex;
   align-items: flex-end;
-  padding: 72px clamp(16px, 5vw, 24px)
-    calc(20px + env(safe-area-inset-bottom));
+  padding: 72px clamp(16px, 5vw, 24px) calc(20px + var(--app-safe-bottom));
   background: linear-gradient(
     to bottom,
     rgba(245, 234, 213, 0),
@@ -170,10 +185,46 @@ html {
 .step-body {
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 4.2vw, 20px);
+  gap: clamp(12px, 3.6vw, 18px);
   width: 100%;
   box-sizing: border-box;
-  padding: 8px clamp(16px, 5vw, 24px) calc(112px + env(safe-area-inset-bottom));
+  padding: 8px clamp(16px, 5vw, 24px) calc(96px + var(--app-safe-bottom));
+}
+
+.app-bottom-bar {
+  position: fixed;
+  z-index: 50;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: min(100%, 480px);
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 10px max(20px, calc(16px + var(--app-safe-right)))
+    calc(16px + var(--app-safe-bottom))
+    max(20px, calc(16px + var(--app-safe-left)));
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.96) 20px,
+    #ffffff 100%
+  );
+  pointer-events: none;
+}
+
+.app-bottom-bar-content {
+  pointer-events: auto;
+}
+
+.app-bottom-bar-content-double {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.45fr);
+  gap: 8px;
+}
+
+.app-bottom-bar button {
+  min-width: 0;
+  white-space: nowrap;
 }
 
 /* --- Photo upload step --- */
@@ -186,7 +237,7 @@ html {
   justify-content: center;
   gap: 4px;
   width: 100%;
-  height: clamp(220px, 52dvh, 360px);
+  height: clamp(200px, 42dvh, 320px);
   min-height: 0;
   padding: 0;
   overflow: hidden;
@@ -239,7 +290,7 @@ html {
   border-radius: 16px;
   /* The photo keeps its own aspect ratio; capping height prevents a portrait
      shot from pushing the CTA below the fold on small screens. */
-  max-height: min(60dvh, 520px);
+  max-height: min(46dvh, 420px);
   object-fit: contain;
   background-color: #f2f4f6;
 }
@@ -248,8 +299,17 @@ html {
   display: flex;
   flex-direction: column;
   width: min(calc(100vw - 24px), 448px) !important;
-  height: min(720px, calc(100dvh - 24px - env(safe-area-inset-bottom)));
-  max-height: calc(100dvh - 24px - env(safe-area-inset-bottom)) !important;
+  height: min(
+    720px,
+    calc(100vh - 24px - var(--app-safe-top) - var(--app-safe-bottom))
+  );
+  height: min(
+    720px,
+    calc(100dvh - 24px - var(--app-safe-top) - var(--app-safe-bottom))
+  );
+  max-height: calc(
+    100dvh - 24px - var(--app-safe-top) - var(--app-safe-bottom)
+  ) !important;
   overflow: hidden !important;
   border-radius: 20px;
 }
@@ -329,7 +389,7 @@ html {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 8px;
-  padding: 12px clamp(16px, 5vw, 24px) calc(12px + env(safe-area-inset-bottom));
+  padding: 12px clamp(16px, 5vw, 24px) calc(12px + var(--app-safe-bottom));
   border-top: 1px solid #e5e8eb;
   background: #ffffff;
 }
@@ -340,8 +400,17 @@ html {
   display: flex;
   flex-direction: column;
   width: min(calc(100vw - 24px), 448px) !important;
-  height: min(720px, calc(100dvh - 24px - env(safe-area-inset-bottom)));
-  max-height: calc(100dvh - 24px - env(safe-area-inset-bottom)) !important;
+  height: min(
+    720px,
+    calc(100vh - 24px - var(--app-safe-top) - var(--app-safe-bottom))
+  );
+  height: min(
+    720px,
+    calc(100dvh - 24px - var(--app-safe-top) - var(--app-safe-bottom))
+  );
+  max-height: calc(
+    100dvh - 24px - var(--app-safe-top) - var(--app-safe-bottom)
+  ) !important;
   overflow: hidden !important;
   border-radius: 20px;
 }
@@ -354,9 +423,11 @@ html {
   color: #191f28;
 }
 
-.diary-share-scroll-body {
+.diary-share-body {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   gap: 16px;
   padding: clamp(16px, 5vw, 24px);
 }
@@ -375,18 +446,32 @@ html {
   line-height: 1.5;
 }
 
+.diary-share-preview-wrap {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  overflow: hidden;
+}
+
 .diary-share-preview {
   display: block;
   width: 100%;
-  max-height: 34vh;
+  height: 100%;
+  min-height: 0;
   object-fit: contain;
   border-radius: 12px;
   background: #f2f4f6;
 }
 
-.diary-share-actions {
+.diary-share-primary-actions {
   display: grid;
   gap: 8px;
+}
+
+.diary-share-primary-actions button {
+  white-space: nowrap;
 }
 
 .diary-share-note {
@@ -396,12 +481,64 @@ html {
 
 .diary-share-footer {
   flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: 1fr 1.4fr;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  padding: 12px clamp(16px, 5vw, 24px) calc(12px + env(safe-area-inset-bottom));
+  padding: 12px clamp(16px, 5vw, 24px) calc(14px + var(--app-safe-bottom));
   border-top: 1px solid #e5e8eb;
   background: #ffffff;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.diary-share-feedback {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.diary-share-feedback-success {
+  background: #e8f3ff;
+  color: #1b64da;
+}
+
+.diary-share-feedback-error {
+  background: #fff0f0;
+  color: #d22030;
+}
+
+.diary-share-secondary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+}
+
+.diary-share-text-action {
+  min-width: 0;
+  padding: 8px 14px;
+  border: 0;
+  background: transparent;
+  color: #4e5968;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.diary-share-text-action:disabled {
+  opacity: 0.4;
+}
+
+.diary-share-action-divider {
+  width: 1px;
+  height: 14px;
+  background: #d1d6db;
 }
 
 /* --- Write step --- */
@@ -509,6 +646,10 @@ html {
   background: transparent;
   color: #292929;
   container-type: inline-size;
+}
+
+.preview-step .diary-card {
+  width: min(100%, 44dvh);
 }
 
 /* 아이가 직접 쓴 부분에만 손글씨 폰트를 적용합니다:
@@ -784,7 +925,8 @@ html {
   height: 11.97%;
   box-sizing: border-box;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  align-content: start;
   row-gap: max(1px, 0.46cqw);
   margin: 0;
   padding: clamp(3px, 1.16cqw, 5px) clamp(6px, 2.31cqw, 10px);
@@ -802,19 +944,19 @@ html {
 }
 
 .diary-card-comment .diary-comment-text {
-  display: block !important;
+  display: -webkit-box !important;
   align-self: start;
   height: auto !important;
   min-height: 0;
-  max-height: none;
+  max-height: 2.36em;
   margin: 0;
-  overflow: visible;
-  /* 50자 한줄평이 작은 카드에서도 두 줄 안에 전부 들어오게 맞춥니다. */
+  overflow: hidden !important;
+  /* 저장 이미지와 동일하게 최대 두 줄만 쓰고 태그 행의 공간을 지킵니다. */
   font-size: 2.84cqw !important;
   line-height: 1.18 !important;
   word-break: break-all;
-  -webkit-box-orient: initial !important;
-  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
 }
 
 /* --- Stage 2: analysis marks, tags and comment states --- */
@@ -950,7 +1092,7 @@ mark.highlight-underline {
 .diary-tags {
   position: static;
   display: flex;
-  align-self: end;
+  align-self: start;
   flex-wrap: nowrap;
   width: 100%;
   min-width: 0;
@@ -983,8 +1125,7 @@ mark.highlight-underline {
 }
 
 @media (max-width: 359px) {
-  .photo-consent-actions,
-  .diary-share-footer {
+  .photo-consent-actions {
     grid-template-columns: 1fr;
   }
 
@@ -996,7 +1137,7 @@ mark.highlight-underline {
 
 @media (max-height: 600px) {
   .onboarding-title-wrap {
-    top: calc(34px + env(safe-area-inset-top));
+    top: calc(34px + var(--app-safe-top));
   }
 
   .onboarding-title {
@@ -1006,7 +1147,7 @@ mark.highlight-underline {
 
   .onboarding-action-area {
     padding-top: 48px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    padding-bottom: calc(12px + var(--app-safe-bottom));
   }
 
   .onboarding-start-button {
@@ -1016,7 +1157,7 @@ mark.highlight-underline {
   }
 
   .photo-consent-scroll-body,
-  .diary-share-scroll-body {
+  .diary-share-body {
     gap: 12px;
     padding: 14px 16px;
   }
@@ -1030,7 +1171,7 @@ mark.highlight-underline {
     height: 210px;
   }
 
-  .diary-share-preview {
-    max-height: 26dvh;
+  .diary-share-body {
+    gap: 10px;
   }
 }
