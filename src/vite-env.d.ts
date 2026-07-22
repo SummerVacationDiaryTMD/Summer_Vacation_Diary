@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
   /** Public sb_publishable_* key; database access must still be protected by RLS. */
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
+  /** Defaults to true: analyze only and skip image generation. */
+  readonly VITE_AI_TEST_MODE?: string;
 }
 
 interface ImportMeta {

@@ -94,6 +94,7 @@ export function DiaryShareModal({
           <div className="diary-share-footer">
             <div className="diary-share-primary-actions">
               <Button
+                className="app-stable-button-state"
                 display="block"
                 disabled={busyAction !== null && busyAction !== "save"}
                 loading={busyAction === "save"}
@@ -102,6 +103,7 @@ export function DiaryShareModal({
                 이미지 저장하기
               </Button>
               <Button
+                className="app-stable-button-state"
                 display="block"
                 disabled={busyAction !== null && busyAction !== "share"}
                 variant="weak"

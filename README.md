@@ -55,7 +55,8 @@
 - 사진 선택 단계를 마치면 글을 쓰는 동안 변환을 미리 시작해 대기 시간을 숨깁니다.
 - 미리보기에서 원본 사진과 색연필 그림을 한 번의 탭으로 비교할 수 있습니다.
 - 변환에 실패하면 원본 사진으로 계속 만들거나 사용자가 직접 다시 시도할 수 있습니다.
-- Supabase 설정이 없는 개발 환경에서는 로컬 색연필 필터가 같은 흐름을 대신합니다.
+- 테스트 모드에서는 원본 사진을 사용하며, 테스트 모드를 끈 상태에서 Supabase 설정이
+  없으면 로컬 색연필 필터가 같은 흐름을 대신합니다.
 
 ### 4. 일기 분석과 선생님 첨삭
 
@@ -119,8 +120,9 @@ npm run dev:web    # 브라우저 확인 전용 vite dev
 ```
 
 개발 서버 주소(`http://localhost:5173`)를 일반 브라우저에서 열어도 전체 흐름을
-확인할 수 있습니다. Supabase 환경 변수가 없으면 결정적인 로컬 목과 색연필 필터를
-사용하는 `체험 모드`로 동작하므로 API 키 없이 시작할 수 있습니다.
+확인할 수 있습니다. 기본 테스트 모드에서는 원본 사진과 결정적인 로컬 분석 예시를
+사용하므로 API 키 없이 전체 흐름을 확인할 수 있습니다. 테스트 모드를 끈 상태에서
+Supabase 환경 변수가 없으면 사진 변환만 로컬 색연필 필터로 대체됩니다.
 
 `npm run dev`가 실행 중이면 샌드박스 앱에서 `intoss://summer-vacation-diary`
 스킴으로 로컬 개발 서버에 바로 접속할 수 있습니다. iOS 시뮬레이터는 localhost로
@@ -138,7 +140,14 @@ npm run dev:web    # 브라우저 확인 전용 vite dev
 ```bash
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+VITE_AI_TEST_MODE=true
 ```
+
+`VITE_AI_TEST_MODE=true`이면 Supabase 설정이 있을 때 사진과 일기 분석만 실제로
+호출하고, 비용이 큰 그림 변환 모델과 로컬 색연필 필터는 모두 건너뛰어 원본 사진을
+사용합니다. Supabase 설정도 없으면 분석은 로컬 예시 결과로 대체됩니다. 실제 그림
+변환까지 확인할 때만 값을 `false`로 바꾸고 개발 서버를 다시 시작하거나 새로
+빌드하세요. 이 값은 기본적으로 `true`로 동작합니다.
 
 `VITE_*` 값은 클라이언트 번들에 포함됩니다. 따라서 `OPENAI_API_KEY`, Supabase
 service role key와 같은 비밀 값은 `.env`에 넣지 않고 Supabase Edge Function

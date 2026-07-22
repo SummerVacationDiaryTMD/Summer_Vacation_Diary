@@ -118,13 +118,115 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    let baselineHeight = Math.max(
+      window.innerHeight,
+      viewport?.height ?? window.innerHeight,
+    );
+    let settleTimer: number | undefined;
+    let lastTextEntry: HTMLElement | null = null;
+
+    const isTextEntry = (element: Element | null): element is HTMLElement => {
+      if (element instanceof HTMLTextAreaElement) {
+        return true;
+      }
+      if (element instanceof HTMLInputElement) {
+        return ["", "text", "search", "email", "tel", "url", "number"].includes(
+          element.type,
+        );
+      }
+      return element instanceof HTMLElement && element.isContentEditable;
+    };
+
+    const updateKeyboardArea = () => {
+      const visibleHeight = viewport?.height ?? window.innerHeight;
+      const viewportOffsetTop = viewport?.offsetTop ?? 0;
+      baselineHeight = Math.max(
+        baselineHeight,
+        window.innerHeight,
+        visibleHeight + viewportOffsetTop,
+      );
+
+      const coveredHeight = Math.max(
+        0,
+        baselineHeight - visibleHeight - viewportOffsetTop,
+      );
+      const focusedElement = isTextEntry(document.activeElement)
+        ? document.activeElement
+        : null;
+      if (focusedElement !== null) {
+        lastTextEntry = focusedElement;
+      }
+      const wasOpen = root.hasAttribute("data-keyboard-open");
+      const keyboardOpen =
+        coveredHeight > 80 && (focusedElement !== null || wasOpen);
+
+      root.toggleAttribute("data-keyboard-open", keyboardOpen);
+
+      // Let the browser do its normal keyboard resize, then move only the
+      // minimum distance needed once. Target the whole field section so its
+      // help text and character count stay visible above the keyboard.
+      if (keyboardOpen && !wasOpen && focusedElement !== null) {
+        window.requestAnimationFrame(() => {
+          const fieldSection = focusedElement.closest(".diary-form-section");
+          (fieldSection ?? focusedElement).scrollIntoView({
+            block: "nearest",
+            inline: "nearest",
+          });
+        });
+      } else if (!keyboardOpen && wasOpen && lastTextEntry !== null) {
+        window.requestAnimationFrame(() => {
+          const fieldSection = lastTextEntry?.closest(".diary-form-section");
+          (fieldSection ?? lastTextEntry)?.scrollIntoView({
+            block: "nearest",
+            inline: "nearest",
+          });
+        });
+      }
+    };
+
+    const settleBaseline = () => {
+      window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(() => {
+        if (!isTextEntry(document.activeElement)) {
+          baselineHeight = Math.max(
+            window.innerHeight,
+            viewport?.height ?? window.innerHeight,
+          );
+          updateKeyboardArea();
+        }
+      }, 350);
+    };
+
+    updateKeyboardArea();
+    viewport?.addEventListener("resize", updateKeyboardArea);
+    viewport?.addEventListener("scroll", updateKeyboardArea);
+    window.addEventListener("resize", updateKeyboardArea);
+    window.addEventListener("orientationchange", settleBaseline);
+    document.addEventListener("focusin", updateKeyboardArea);
+    document.addEventListener("focusout", settleBaseline);
+
+    return () => {
+      window.clearTimeout(settleTimer);
+      viewport?.removeEventListener("resize", updateKeyboardArea);
+      viewport?.removeEventListener("scroll", updateKeyboardArea);
+      window.removeEventListener("resize", updateKeyboardArea);
+      window.removeEventListener("orientationchange", settleBaseline);
+      document.removeEventListener("focusin", updateKeyboardArea);
+      document.removeEventListener("focusout", settleBaseline);
+      root.removeAttribute("data-keyboard-open");
+    };
+  }, []);
+
   const header = STEP_HEADERS[step];
   const canWrite = draft.photoDataUrl !== null;
   // trim() on both fields so whitespace-only input can't pass validation
   // (the spec's exception handling blocks empty/too-short diaries).
   const canPreview =
     draft.title.trim() !== "" &&
-    draft.content.trim().length >= CONTENT_MIN_LENGTH;
+    Array.from(draft.content.trim()).length >= CONTENT_MIN_LENGTH;
   const includesAiGeneratedContent =
     (isSketchAiConnected && sketchState.status === "success") ||
     (isAiConnected && analysisState.status === "success");
@@ -159,25 +261,15 @@ function App() {
     );
   }
 
-  const handleStartWriting = async () => {
+  const handleStartWriting = () => {
     if (!canWrite) {
       return;
     }
 
-    // Show the notice every time the user leaves the upload step. A saved
-    // draft can keep its photo between visits, so tying this only to the file
-    // picker would let returning users start the upload without seeing it.
-    const confirmed = await openConfirm({
-      title: "사진 전송 및 분석 안내",
-      description:
-        "선택한 사진은 색연필 그림과 그림일기를 만들기 위해 Supabase 서버를 거쳐 OpenAI로 전송돼요. 개인정보가 포함된 사진은 사용하지 않는 것을 권장해요.",
-      confirmButton: "확인하고 일기 쓰기",
-      cancelButton: "취소",
-    });
-
-    if (confirmed) {
-      setStep("write");
-    }
+    // PhotoUploadStep already collects the required processing consent before
+    // a photo can enter the draft, so another confirmation here would repeat
+    // the same notice and interrupt the user a second time.
+    setStep("write");
   };
 
   // Stage 4: compose the finished diary once, then let the result sheet reuse
@@ -314,9 +406,10 @@ function App() {
       {step === "upload" && (
         <AppBottomBar>
           <Button
+            className="app-stable-button-state"
             display="block"
             disabled={!canWrite}
-            onClick={() => void handleStartWriting()}
+            onClick={handleStartWriting}
           >
             일기 쓰러 가기
           </Button>
@@ -325,6 +418,7 @@ function App() {
       {step === "write" && (
         <AppBottomBar double>
           <Button
+            className="app-stable-button-state"
             display="block"
             color="dark"
             variant="weak"
@@ -333,6 +427,7 @@ function App() {
             이전
           </Button>
           <Button
+            className="app-stable-button-state"
             display="block"
             disabled={!canPreview}
             onClick={() => setStep("preview")}
@@ -344,6 +439,7 @@ function App() {
       {step === "preview" && (
         <AppBottomBar double>
           <Button
+            className="app-stable-button-state"
             display="block"
             color="dark"
             variant="weak"
@@ -351,7 +447,12 @@ function App() {
           >
             수정하기
           </Button>
-          <Button display="block" loading={saving} onClick={handleFinish}>
+          <Button
+            className="app-stable-button-state"
+            display="block"
+            loading={saving}
+            onClick={handleFinish}
+          >
             완성하기
           </Button>
         </AppBottomBar>
