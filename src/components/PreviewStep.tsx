@@ -1,5 +1,5 @@
 import { Button, Loader, Paragraph } from "@toss/tds-mobile";
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import { weatherLabel } from "../constants/diary";
 import { DiaryFrameBackground } from "./DiaryFrameBackground";
@@ -10,7 +10,7 @@ import { isAiConnected } from "../services/diaryAnalysis";
 import type { DiaryAnalysis } from "../services/diaryAnalysis";
 import { isSketchAiConnected } from "../services/styleTransfer";
 import { isAiTestMode } from "../services/supabaseEdge";
-import { buildDiaryTags } from "../utils/diaryImage";
+import { buildDiaryTags, composeDiaryImage } from "../utils/diaryImage";
 import {
   DIARY_FRAME,
   getDiaryFrameLayout,
@@ -153,18 +153,19 @@ function HighlightedContent({
         // 본문도 날짜·날씨·제목과 동일한 기본 강도 1을 사용합니다.
         const variation = handwritingVariation(cell.text, index, 1);
         return (
-          <span
-            key={index}
-            className="diary-grid-cell"
-            style={{
-              fontSize: `${variation.scale}em`,
-              // 본문에도 같은 굵기와 농도 변화를 적용합니다.
-              fontWeight: variation.fontWeight,
-              opacity: variation.opacity,
-              transform: `translate(${variation.offsetXEm}em, ${variation.offsetYEm}em) rotate(${variation.rotationDeg}deg)`,
-            }}
-          >
-            {cell.text === " " ? "\u00a0" : cell.text}
+          <span key={index} className="diary-grid-cell">
+            <span
+              className="diary-grid-character"
+              style={{
+                fontSize: `${variation.scale}em`,
+                // 본문에도 같은 굵기와 농도 변화를 적용합니다.
+                fontWeight: variation.fontWeight,
+                opacity: variation.opacity,
+                transform: `translate(${variation.offsetXEm}em, ${variation.offsetYEm}em) rotate(${variation.rotationDeg}deg)`,
+              }}
+            >
+              {cell.text === " " ? "\u00a0" : cell.text}
+            </span>
           </span>
         );
       })}
@@ -204,17 +205,45 @@ export function PreviewStep({
   const analysis =
     analysisState.status === "success" ? analysisState.analysis : null;
 
-  // Before/after toggle: seeing their own photo become the drawing is the
-  // product's wow moment, so comparing must be one tap, not a re-upload.
-  const [showOriginal, setShowOriginal] = useState(false);
   const sketchUrl =
     sketchState.status === "success" && !isAiTestMode
       ? sketchState.sketchDataUrl
       : null;
-  const showsSketch = sketchUrl !== null && !showOriginal;
+  const showsSketch = sketchUrl !== null;
   const includesAiGeneratedContent =
     (isSketchAiConnected && sketchState.status === "success") ||
     (isAiConnected && analysisState.status === "success");
+  const [renderedPreview, setRenderedPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    const imageDataUrl = draft.sketchDataUrl ?? draft.photoDataUrl;
+    if (imageDataUrl === null) {
+      setRenderedPreview(null);
+      return;
+    }
+
+    let cancelled = false;
+    setRenderedPreview(null);
+    void composeDiaryImage({
+      imageDataUrl,
+      title: draft.title.trim() || "제목 없는 일기",
+      content: draft.content,
+      date: draft.date,
+      weather: draft.weather,
+      analysis,
+      includesAiGeneratedContent,
+    })
+      .then((dataUrl) => {
+        if (!cancelled) setRenderedPreview(dataUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setRenderedPreview(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [analysis, draft, includesAiGeneratedContent]);
 
   // Announced through the always-mounted live region below. A region that
   // mounts together with its text is often not read at all — only TEXT
@@ -249,7 +278,9 @@ export function PreviewStep({
       <div className="diary-card">
         <div
           className="diary-template"
-          style={{ aspectRatio: `${frameLayout.width} / ${frameLayout.height}` }}
+          style={{
+            aspectRatio: `${frameLayout.width} / ${frameLayout.height}`,
+          }}
         >
           <DiaryFrameBackground layout={frameLayout} />
 
@@ -329,15 +360,6 @@ export function PreviewStep({
                     <span>사진을 색연필 그림으로 바꾸고 있어요</span>
                   </div>
                 )}
-                {sketchUrl !== null && (
-                  <button
-                    type="button"
-                    className="sketch-toggle"
-                    onClick={() => setShowOriginal((value) => !value)}
-                  >
-                    {showOriginal ? "그림 보기" : "원본 사진 보기"}
-                  </button>
-                )}
               </>
             ) : (
               <div className="diary-card-photo-empty">사진이 없어요</div>
@@ -410,6 +432,14 @@ export function PreviewStep({
               </>
             )}
           </div>
+
+          {renderedPreview !== null && (
+            <img
+              className="diary-rendered-preview"
+              src={renderedPreview}
+              alt="저장될 그림일기 미리보기"
+            />
+          )}
         </div>
 
         {analysisState.status === "error" && (

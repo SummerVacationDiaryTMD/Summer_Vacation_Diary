@@ -211,7 +211,7 @@ function drawWavyUnderline(
   let cursor = x;
   let direction = 1;
   while (cursor < x + width) {
-    const next = Math.min(cursor + 11, x + width);
+    const next = Math.min(cursor + 15, x + width);
     context.quadraticCurveTo(
       cursor + (next - cursor) / 2,
       y + direction * 6,
@@ -273,19 +273,11 @@ function drawContent(
       context.translate(runX + runWidth / 2, runY + cellHeight / 2);
       context.rotate(-0.025);
       context.beginPath();
-      context.ellipse(
-        0,
-        0,
-        runWidth / 2 + 10,
-        cellHeight * 0.38,
-        0,
-        0,
-        Math.PI * 2,
-      );
+      context.ellipse(0, 0, runWidth / 2, cellHeight * 0.39, 0, 0, Math.PI * 2);
       context.stroke();
       context.restore();
     } else {
-      drawWavyUnderline(context, runX, runY + cellHeight - 14, runWidth);
+      drawWavyUnderline(context, runX, runY + cellHeight - 12, runWidth);
     }
   }
 }
@@ -508,14 +500,7 @@ export async function composeDiaryImage(
 
   // DOM 미리보기와 같은 순서: 템플릿 → 사진 → 글자/첨삭 → 한줄평/태그.
   drawFrameTemplate(context, template, frameLayout);
-  drawCoverImage(
-    context,
-    image,
-    PHOTO.x,
-    PHOTO.y,
-    PHOTO.width,
-    PHOTO.height,
-  );
+  drawCoverImage(context, image, PHOTO.x, PHOTO.y, PHOTO.width, PHOTO.height);
 
   const [year = "", month = "", day = ""] = input.date.split("-");
   const diaryDate = new Date(`${input.date}T00:00:00`);
