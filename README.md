@@ -125,8 +125,17 @@ npm run dev:web    # 브라우저 확인 전용 vite dev
 Supabase 환경 변수가 없으면 사진 변환만 로컬 색연필 필터로 대체됩니다.
 
 `npm run dev`가 실행 중이면 샌드박스 앱에서 `intoss://summer-vacation-diary`
-스킴으로 로컬 개발 서버에 바로 접속할 수 있습니다. iOS 시뮬레이터는 localhost로
-바로 연결되고, Android는 `adb reverse tcp:8081 tcp:8081`과
+스킴으로 로컬 개발 서버에 바로 접속할 수 있습니다. 개발 서버는 실행한 컴퓨터의
+LAN IP를 자동으로 감지하며 Vite 로그의 `Network` 주소에서 확인할 수 있습니다.
+iOS 실기기는 같은 Wi-Fi에 연결한 뒤 샌드박스의 Metro 서버 주소에 이 IP를
+입력합니다. VPN 등으로 잘못된 주소가 선택되면 직접 지정할 수 있습니다.
+
+```bash
+AIT_DEV_HOST=192.168.0.23 npm run dev
+```
+
+iOS 시뮬레이터는 localhost로 바로 연결되고, Android는
+`adb reverse tcp:8081 tcp:8081`과
 `adb reverse tcp:5173 tcp:5173` 연결이 필요합니다.
 
 > SDK를 2.x로 내리면서 `package.json`의 `overrides` 블록은 제거했습니다.
