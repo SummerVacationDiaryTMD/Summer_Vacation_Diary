@@ -4,25 +4,21 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build && ait build",
+    "dev": "granite dev",
+    "dev:web": "vite dev",
+    "build": "ait build",
     "deploy": "ait deploy",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@apps-in-toss/web-framework": "^3.0.0-beta.b36d7b5",
+    "@apps-in-toss/web-framework": "^2.10.7",
     "@emotion/react": "^11.0.0",
     "@toss/tds-colors": "latest",
     "@toss/tds-mobile": "latest",
     "@toss/tds-mobile-ait": "latest",
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
-  },
-  "overrides": {
-    "@toss/tds-mobile-ait": {
-      "@apps-in-toss/web-framework": "$@apps-in-toss/web-framework"
-    }
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

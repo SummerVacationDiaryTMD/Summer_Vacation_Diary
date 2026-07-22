@@ -114,15 +114,22 @@
 
 ```bash
 npm install
-npm run dev
+npm run dev        # granite dev: vite(5173) + 샌드박스 브리지(8081)
+npm run dev:web    # 브라우저 확인 전용 vite dev
 ```
 
-개발 서버 주소를 일반 브라우저에서 열어도 전체 흐름을 확인할 수 있습니다.
-Supabase 환경 변수가 없으면 결정적인 로컬 목과 색연필 필터를 사용하는 `체험 모드`로
-동작하므로 API 키 없이 시작할 수 있습니다.
+개발 서버 주소(`http://localhost:5173`)를 일반 브라우저에서 열어도 전체 흐름을
+확인할 수 있습니다. Supabase 환경 변수가 없으면 결정적인 로컬 목과 색연필 필터를
+사용하는 `체험 모드`로 동작하므로 API 키 없이 시작할 수 있습니다.
 
-> `package.json`의 `overrides`는 현재 SDK와 TDS 패키지의 peer dependency를
-> 맞추는 설정입니다. 제거하면 `npm install`이 실패할 수 있습니다.
+`npm run dev`가 실행 중이면 샌드박스 앱에서 `intoss://summer-vacation-diary`
+스킴으로 로컬 개발 서버에 바로 접속할 수 있습니다. iOS 시뮬레이터는 localhost로
+바로 연결되고, Android는 `adb reverse tcp:8081 tcp:8081`과
+`adb reverse tcp:5173 tcp:5173` 연결이 필요합니다.
+
+> SDK를 2.x로 내리면서 `package.json`의 `overrides` 블록은 제거했습니다.
+> 3.0.0-beta 프리릴리스가 TDS 패키지의 peer dependency 범위를 충족하지 못해
+> 필요했던 설정으로, 정식 릴리스인 2.10.7에서는 필요하지 않습니다.
 
 ## 외부 분석 연결하기
 
@@ -165,27 +172,26 @@ Secret으로만 관리해야 합니다. 함수 배포, Secret 등록, 사용량 
    있다면 새로 만들지 말고 현재 값을 확인합니다.
 4. Sandbox와 실제 토스 앱에서 작은 크기 및 라이트/다크 모드 표시를 확인합니다.
 
-현재 설치된 `@apps-in-toss/web-framework` 3.0.0 beta의 설정 타입은
-`apps-in-toss.config.ts`에서 `brand.primaryColor`만 받습니다. 따라서 로컬 이미지
-경로를 `icon`으로 억지로 추가하지 말고 **현재 프로젝트에서는 콘솔 업로드를 기준**으로
-관리합니다. 이후 SDK를 업그레이드해 설치된 버전이 `brand.icon`을 지원한다면, 콘솔에
-올린 로고의 URL을 복사해 해당 버전의 공식 설정 방식에 맞춰 추가하세요.
+현재 설치된 `@apps-in-toss/web-framework` 2.10.7의 설정(`granite.config.ts`)은
+`brand.icon` 키를 요구하지만, **아이콘 관리는 여전히 콘솔 업로드를 기준**으로
+합니다. `granite.config.ts`의 `icon`은 빈 placeholder로 두었고, 콘솔에 올린
+로고의 공개 URL을 확보하면 그 값으로 채워도 됩니다.
 
 - [공식 콘솔 앱 등록 가이드](https://developers-apps-in-toss.toss.im/prepare/console-workspace.html)
 - [공식 미니앱 브랜딩 가이드](https://developers-apps-in-toss.toss.im/design/miniapp-branding-guide.html)
 
 ## 기술 구성
 
-| 영역 | 사용 기술 |
-| --- | --- |
-| UI | React 18, TypeScript, TDS Mobile |
-| 빌드 | Vite 6, Apps in Toss Web Framework 3 beta |
-| 실행 환경 | Toss WebView, 일반 모바일/데스크톱 브라우저 |
+| 영역      | 사용 기술                                                  |
+| --------- | ---------------------------------------------------------- |
+| UI        | React 18, TypeScript, TDS Mobile                           |
+| 빌드      | Vite 6, Apps in Toss Web Framework 2.x                     |
+| 실행 환경 | Toss WebView, 일반 모바일/데스크톱 브라우저                |
 | 상태 관리 | React state + 3단계 상태 머신 (`upload → write → preview`) |
-| 임시 저장 | 브라우저 `localStorage` |
-| 서버 경계 | Supabase Edge Function (`diary-ai`) |
-| 외부 모델 | 사진 분석 및 색연필 변환 요청 |
-| 결과 생성 | Canvas 기반 JPEG 합성 |
+| 임시 저장 | 브라우저 `localStorage`                                    |
+| 서버 경계 | Supabase Edge Function (`diary-ai`)                        |
+| 외부 모델 | 사진 분석 및 색연필 변환 요청                              |
+| 결과 생성 | Canvas 기반 JPEG 합성                                      |
 
 주요 디렉터리는 다음과 같습니다.
 
