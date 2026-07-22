@@ -24,6 +24,83 @@ html {
   box-sizing: border-box;
 }
 
+/* --- Onboarding --- */
+
+.onboarding {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #f5ead5;
+  isolation: isolate;
+}
+
+.onboarding-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(1.12);
+}
+
+@media (orientation: landscape) {
+  .onboarding-video {
+    object-fit: contain;
+  }
+}
+
+.onboarding-action-area {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 72px clamp(16px, 5vw, 24px)
+    calc(20px + env(safe-area-inset-bottom));
+  background: linear-gradient(
+    to bottom,
+    rgba(245, 234, 213, 0),
+    rgba(245, 234, 213, 0.18) 42%,
+    rgba(245, 234, 213, 0.52) 100%
+  );
+  pointer-events: none;
+}
+
+.onboarding-start-button {
+  width: 100%;
+  min-height: 58px;
+  padding: 15px 24px;
+  border: 0;
+  border-radius: 29px;
+  background: #3182f6;
+  box-shadow: 0 8px 24px rgba(49, 130, 246, 0.3);
+  color: #ffffff;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+  pointer-events: auto;
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease;
+}
+
+.onboarding-start-button:active {
+  transform: scale(0.98);
+  background: #1b64da;
+}
+
+.onboarding-start-button:focus-visible {
+  outline: 3px solid rgba(49, 130, 246, 0.35);
+  outline-offset: 3px;
+}
+
 @media (min-width: 481px) {
   #root {
     /* TDS token via CSS variable. @toss/tds-mobile-ait currently pins the
@@ -864,6 +941,17 @@ mark.highlight-underline {
 }
 
 @media (max-height: 600px) {
+  .onboarding-action-area {
+    padding-top: 48px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .onboarding-start-button {
+    min-height: 50px;
+    padding-block: 11px;
+    font-size: 16px;
+  }
+
   .photo-consent-scroll-body,
   .diary-share-scroll-body {
     gap: 12px;
