@@ -150,9 +150,6 @@ function App() {
           preload="auto"
           aria-hidden="true"
         />
-        <div className="onboarding-title-wrap">
-          <h1 className="onboarding-title">나의 여름방학일기</h1>
-        </div>
         <div className="onboarding-action-area">
           <button
             className="onboarding-start-button"
