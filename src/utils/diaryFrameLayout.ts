@@ -25,7 +25,7 @@ export const DIARY_FRAME = {
   baseHeight: 1487,
   columns: 11,
   baseRows: 5,
-  maxRows: 9,
+  maxRows: 10,
   rowHeight: 69,
   topHeight: 880,
   bottomSourceY: 1225,
@@ -36,7 +36,9 @@ export const DIARY_FRAME = {
   comment: { x: 49, y: 1247, width: 961, height: 178 },
 } as const;
 
-export const CONTENT_MAX_LENGTH = DIARY_FRAME.columns * DIARY_FRAME.maxRows;
+// The product limit is exactly 100 characters. The 11-column manuscript grid
+// needs a tenth row for the final character, leaving the unused cells blank.
+export const CONTENT_MAX_LENGTH = 100;
 
 function countOccupiedCells(content: string): number {
   let cellCount = 0;
