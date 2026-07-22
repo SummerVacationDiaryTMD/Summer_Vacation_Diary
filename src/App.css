@@ -890,6 +890,20 @@ html:has(.diary-content-section textarea:focus) {
   min-width: 100%;
 }
 
+.weather-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.weather-option-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
 .date-input {
   min-width: 0;
   max-width: 100%;
@@ -1098,7 +1112,18 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .diary-weather {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   white-space: nowrap;
+}
+
+.diary-weather-icon {
+  width: clamp(14px, 4.6cqw, 24px);
+  height: clamp(14px, 4.6cqw, 24px);
+  object-fit: contain;
+  flex: 0 0 auto;
 }
 
 .diary-title-row {

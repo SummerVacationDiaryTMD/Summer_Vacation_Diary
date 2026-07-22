@@ -2,11 +2,19 @@
 // so screens and validation never drift apart when a rule changes.
 
 export const WEATHER_OPTIONS = [
-  { value: "sunny", label: "☀️ 맑음" },
-  { value: "partly-cloudy", label: "⛅ 구름 조금" },
-  { value: "cloudy", label: "☁️ 흐림" },
-  { value: "rainy", label: "🌧️ 비" },
-  { value: "stormy", label: "⛈️ 천둥번개" },
+  { value: "sunny", label: "맑음", iconUrl: "/weather/sunny.webp" },
+  {
+    value: "partly-cloudy",
+    label: "구름 조금",
+    iconUrl: "/weather/partly-cloudy.webp",
+  },
+  { value: "cloudy", label: "흐림", iconUrl: "/weather/cloudy.webp" },
+  { value: "rainy", label: "비", iconUrl: "/weather/rainy.webp" },
+  {
+    value: "stormy",
+    label: "천둥번개",
+    iconUrl: "/weather/stormy.webp",
+  },
 ] as const;
 
 export type WeatherValue = (typeof WEATHER_OPTIONS)[number]["value"];
@@ -15,6 +23,13 @@ export function weatherLabel(value: WeatherValue): string {
   return (
     WEATHER_OPTIONS.find((option) => option.value === value)?.label ??
     WEATHER_OPTIONS[0].label
+  );
+}
+
+export function weatherIconUrl(value: WeatherValue): string {
+  return (
+    WEATHER_OPTIONS.find((option) => option.value === value)?.iconUrl ??
+    WEATHER_OPTIONS[0].iconUrl
   );
 }
 

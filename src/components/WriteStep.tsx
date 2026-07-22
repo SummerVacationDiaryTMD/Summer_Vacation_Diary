@@ -123,7 +123,15 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
             >
               {WEATHER_OPTIONS.map((option) => (
                 <SegmentedControl.Item key={option.value} value={option.value}>
-                  {option.label}
+                  <span className="weather-option">
+                    <img
+                      className="weather-option-icon"
+                      src={option.iconUrl}
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    <span>{option.label}</span>
+                  </span>
                 </SegmentedControl.Item>
               ))}
             </SegmentedControl>

@@ -1,4 +1,4 @@
-import { weatherLabel } from "../constants/diary";
+import { weatherIconUrl, weatherLabel } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import type { DiaryAnalysis } from "../services/diaryAnalysis";
 import {
@@ -475,9 +475,10 @@ function drawFrameTemplate(
 export async function composeDiaryImage(
   input: DiaryImageInput,
 ): Promise<string> {
-  const [image, template] = await Promise.all([
+  const [image, template, weatherIcon] = await Promise.all([
     loadImageFromDataUrl(input.imageDataUrl),
     loadImageFromDataUrl(TEMPLATE_URL),
+    loadImageFromDataUrl(weatherIconUrl(input.weather)),
   ]);
 
   try {
@@ -517,7 +518,6 @@ export async function composeDiaryImage(
     { text: String(Number(month)), left: 0.167, seed: 10 },
     { text: String(Number(day)), left: 0.271, seed: 20 },
     { text: weekday, left: 0.375, seed: 30 },
-    { text: weatherLabel(input.weather), left: 0.85, seed: 40 },
   ];
 
   context.font = HEADER_FONT;
@@ -533,6 +533,25 @@ export async function composeDiaryImage(
       item.seed,
     );
   }
+  // 4.6cqw in the DOM preview maps to about 49 source pixels at 1058px wide.
+  // Keeping the export at the same source ratio makes both versions match.
+  const weatherIconSize = WIDTH * 0.046;
+  context.drawImage(
+    weatherIcon,
+    headerX + headerWidth * 0.775,
+    headerY + (headerHeight - weatherIconSize) / 2,
+    weatherIconSize,
+    weatherIconSize,
+  );
+  const weatherText = weatherLabel(input.weather);
+  const weatherTextWidth = context.measureText(weatherText).width;
+  drawHandwrittenText(
+    context,
+    weatherText,
+    headerX + headerWidth * 0.895 - weatherTextWidth / 2,
+    headerBaseline,
+    40,
+  );
   context.textAlign = "start";
 
   const titleX = TITLE.x;

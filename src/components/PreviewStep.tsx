@@ -1,7 +1,7 @@
 import { Button, Loader, Paragraph } from "@toss/tds-mobile";
 import { useEffect, useState, type CSSProperties } from "react";
 
-import { weatherLabel } from "../constants/diary";
+import { weatherIconUrl, weatherLabel } from "../constants/diary";
 import { DiaryFrameBackground } from "./DiaryFrameBackground";
 import type { AnalysisState } from "../hooks/useDiaryAnalysis";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
@@ -318,6 +318,12 @@ export function PreviewStep({
               </strong>
             </span>
             <span className="diary-weather">
+              <img
+                className="diary-weather-icon"
+                src={weatherIconUrl(draft.weather)}
+                alt=""
+                aria-hidden="true"
+              />
               <strong>
                 <HandwrittenText
                   text={weatherLabel(draft.weather)}
