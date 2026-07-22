@@ -370,12 +370,12 @@ function App() {
       {step === "upload" && (
         <PhotoUploadStep
           photoDataUrl={draft.photoDataUrl}
-          onPhotoChange={(dataUrl) =>
+          onPhotoChange={(dataUrl) => {
             // A sketch belongs to exactly one photo — replacing the photo
             // must drop the old drawing in the same state update, or the
             // preview could pair the new photo with the previous sketch.
-            updateDraft({ photoDataUrl: dataUrl, sketchDataUrl: null })
-          }
+            updateDraft({ photoDataUrl: dataUrl, sketchDataUrl: null });
+          }}
         />
       )}
       {step === "write" && <WriteStep draft={draft} onChange={updateDraft} />}
