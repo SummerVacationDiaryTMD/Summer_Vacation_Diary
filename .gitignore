@@ -5,6 +5,9 @@ node_modules/
 dist/
 *.ait
 
+# SDK 2.x toolchain cache (created by `granite dev` / `ait build`)
+.granite/
+
 # Local environment secrets
 .env
 .env.local

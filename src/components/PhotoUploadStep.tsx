@@ -22,7 +22,7 @@ interface PhotoUploadStepProps {
  *
  * A plain <input type="file"> is used instead of the apps-in-toss album SDK:
  * it opens the native picker in both the local browser and the Toss WebView,
- * and it needs no permission entry in apps-in-toss.config.ts. The SDK album API can
+ * and it needs no permission entry in granite.config.ts. The SDK album API can
  * replace this later if multi-select or finer permission UX becomes necessary.
  */
 export function PhotoUploadStep({
