@@ -1,4 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { ANALYSIS_PROMPT } from "./prompts/analysis.ts";
+import { SKETCH_PROMPT } from "./prompts/sketch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,20 +26,6 @@ const USAGE_LIMITS = {
 // Cap the local-LLM attempt well below the Edge Function wall-clock limit so
 // a hung tunnel still leaves time for the OpenAI fallback to run.
 const LOCAL_LLM_TIMEOUT_MS = 60_000;
-
-const ANALYSIS_PROMPT = `당신은 여름방학 그림일기를 읽고 따뜻한 한줄평을 써 주는 선생님입니다.
-사진과 일기를 함께 분석해 다음 키를 가진 JSON 객체만 응답하세요.
-- "photo_keywords": 사진 장소·사물·분위기 키워드, 한국어 최대 3개
-- "diary_keywords": 일기 주요 키워드, 한국어 최대 4개
-- "emotions": 핵심 감정, 한국어 최대 3개
-- "highlight_words": 일기 본문에 그대로 등장하는 단어 2~4개
-- "highlight_sentence": 본문에 그대로 등장하는 인상적인 문장 1개, 없으면 null
-- "comment": 사진과 감정을 함께 담은 존댓말 한 문장, 공백 포함 50자 이내`;
-
-const SKETCH_PROMPT = `Redraw the input photo as an authentic colored-pencil drawing made by a 6–8-year-old child.
-Use shaky uneven pencil lines, awkward proportions, flattened perspective, rough dry scribbles, visible paper grain, white gaps, and colors crossing outlines.
-Keep the scene recognizable, warm, sincere, naive, asymmetrical, and visibly handmade.
-Avoid photorealism, professional illustration, anime, manga, chibi, kawaii, clean line art, smooth gradients, digital painting, perfect anatomy, text, logos, watermarks, borders, and UI elements.`;
 
 class FunctionError extends Error {
   constructor(
