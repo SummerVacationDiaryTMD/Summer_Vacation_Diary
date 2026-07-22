@@ -1,6 +1,11 @@
 import { weatherLabel } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import type { DiaryAnalysis } from "../services/diaryAnalysis";
+import {
+  DIARY_FRAME,
+  getDiaryFrameLayout,
+  type DiaryFrameLayout,
+} from "./diaryFrameLayout";
 import { handwritingVariation } from "./handwriting";
 import { buildHighlightSegments } from "./highlight";
 import { ImageProcessError, loadImageFromDataUrl } from "./image";
@@ -16,20 +21,17 @@ export interface DiaryImageInput {
   includesAiGeneratedContent: boolean;
 }
 
-// 저장 이미지는 미리보기의 picture-diary-frame.png 원본 크기와 좌표를
-// 그대로 사용합니다. App.css의 퍼센트 배치를 바꾸면 이 값도 맞춰야 합니다.
-const WIDTH = 1058;
-const HEIGHT = 1487;
+// The export and preview both use diaryFrameLayout's source-pixel coordinates,
+// so an added manuscript row moves the footer by the same amount in both.
+const WIDTH = DIARY_FRAME.width;
+const BASE_HEIGHT = DIARY_FRAME.baseHeight;
 const TEMPLATE_URL = "/picture-diary-frame.png";
 
-const HEADER = { x: 0.047, y: 0.119, width: 0.906, height: 0.0485 };
-const TITLE = { x: 0.122, y: 0.1675, right: 0.047, height: 0.038 };
-const PHOTO = { x: 0.047, y: 0.2125, width: 0.906, height: 0.366 };
-const CONTENT = { x: 0.047, y: 0.5918, width: 0.906, height: 0.2314 };
-const COMMENT = { x: 0.046, y: 0.8386, width: 0.908, height: 0.1197 };
+const HEADER = DIARY_FRAME.header;
+const TITLE = DIARY_FRAME.title;
+const PHOTO = DIARY_FRAME.photo;
 
 const COLUMN_COUNT = 11;
-const ROW_COUNT = 5;
 const DIARY_FONT_FAMILY = '"NanumCoDingHeuiMang"';
 const SYSTEM_FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
@@ -69,7 +71,7 @@ function pxX(value: number): number {
 }
 
 function pxY(value: number): number {
-  return value * HEIGHT;
+  return value * BASE_HEIGHT;
 }
 
 function fontWithWeight(font: string, weight: number): string {
@@ -147,6 +149,7 @@ function drawCoverImage(
 function buildDiaryCells(
   content: string,
   analysis: DiaryAnalysis | null,
+  rowCount: number,
 ): DiaryCell[] {
   const segments =
     analysis === null
@@ -170,7 +173,7 @@ function buildDiaryCells(
     }
   }
 
-  return cells.slice(0, COLUMN_COUNT * ROW_COUNT);
+  return cells.slice(0, COLUMN_COUNT * rowCount);
 }
 
 function buildCorrectionRuns(cells: DiaryCell[]): CorrectionRun[] {
@@ -227,13 +230,11 @@ function drawContent(
   content: string,
   analysis: DiaryAnalysis | null,
 ) {
-  const x = pxX(CONTENT.x);
-  const y = pxY(CONTENT.y);
-  const width = pxX(CONTENT.width);
-  const height = pxY(CONTENT.height);
+  const layout = getDiaryFrameLayout(content);
+  const { x, y, width, height } = layout.content;
   const cellWidth = width / COLUMN_COUNT;
-  const cellHeight = height / ROW_COUNT;
-  const cells = buildDiaryCells(content, analysis);
+  const cellHeight = height / layout.contentRows;
+  const cells = buildDiaryCells(content, analysis, layout.contentRows);
 
   context.font = CONTENT_FONT;
   context.fillStyle = TEXT_COLOR;
@@ -384,12 +385,10 @@ function wrapCanvasText(
 function drawComment(
   context: CanvasRenderingContext2D,
   analysis: DiaryAnalysis | null,
+  layout: DiaryFrameLayout,
 ) {
   if (analysis === null) return;
-  const x = pxX(COMMENT.x);
-  const y = pxY(COMMENT.y);
-  const width = pxX(COMMENT.width);
-  const height = pxY(COMMENT.height);
+  const { x, y, width, height } = layout.comment;
   const paddingX = 25;
 
   context.save();
@@ -437,6 +436,50 @@ function drawComment(
   context.restore();
 }
 
+function drawFrameTemplate(
+  context: CanvasRenderingContext2D,
+  template: HTMLImageElement,
+  layout: DiaryFrameLayout,
+) {
+  context.drawImage(
+    template,
+    0,
+    0,
+    WIDTH,
+    DIARY_FRAME.topHeight,
+    0,
+    0,
+    WIDTH,
+    DIARY_FRAME.topHeight,
+  );
+
+  for (let row = 0; row < layout.contentRows; row += 1) {
+    context.drawImage(
+      template,
+      0,
+      DIARY_FRAME.topHeight,
+      WIDTH,
+      DIARY_FRAME.rowHeight,
+      0,
+      DIARY_FRAME.topHeight + row * DIARY_FRAME.rowHeight,
+      WIDTH,
+      DIARY_FRAME.rowHeight,
+    );
+  }
+
+  context.drawImage(
+    template,
+    0,
+    DIARY_FRAME.bottomSourceY,
+    WIDTH,
+    layout.bottomHeight,
+    0,
+    layout.bottomTop,
+    WIDTH,
+    layout.bottomHeight,
+  );
+}
+
 export async function composeDiaryImage(
   input: DiaryImageInput,
 ): Promise<string> {
@@ -451,9 +494,11 @@ export async function composeDiaryImage(
     // 폰트를 못 읽어도 시스템 폰트 fallback으로 저장은 계속합니다.
   }
 
+  const frameLayout = getDiaryFrameLayout(input.content);
+
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH;
-  canvas.height = HEIGHT;
+  canvas.height = frameLayout.height;
   const context = canvas.getContext("2d");
   if (!context) throw new ImageProcessError("load-failed");
 
@@ -462,14 +507,14 @@ export async function composeDiaryImage(
   context.textBaseline = "alphabetic";
 
   // DOM 미리보기와 같은 순서: 템플릿 → 사진 → 글자/첨삭 → 한줄평/태그.
-  context.drawImage(template, 0, 0, WIDTH, HEIGHT);
+  drawFrameTemplate(context, template, frameLayout);
   drawCoverImage(
     context,
     image,
-    pxX(PHOTO.x),
-    pxY(PHOTO.y),
-    pxX(PHOTO.width),
-    pxY(PHOTO.height),
+    PHOTO.x,
+    PHOTO.y,
+    PHOTO.width,
+    PHOTO.height,
   );
 
   const [year = "", month = "", day = ""] = input.date.split("-");
@@ -477,10 +522,10 @@ export async function composeDiaryImage(
   const weekday = Number.isNaN(diaryDate.getTime())
     ? ""
     : new Intl.DateTimeFormat("ko-KR", { weekday: "short" }).format(diaryDate);
-  const headerX = pxX(HEADER.x);
-  const headerY = pxY(HEADER.y);
-  const headerWidth = pxX(HEADER.width);
-  const headerHeight = pxY(HEADER.height);
+  const headerX = HEADER.x;
+  const headerY = HEADER.y;
+  const headerWidth = HEADER.width;
+  const headerHeight = HEADER.height;
   const headerBaseline = headerY + headerHeight * 0.55 + 10;
   const headerItems = [
     { text: year, left: 0.062, seed: 0 },
@@ -505,10 +550,10 @@ export async function composeDiaryImage(
   }
   context.textAlign = "start";
 
-  const titleX = pxX(TITLE.x);
-  const titleY = pxY(TITLE.y);
-  const titleWidth = WIDTH - titleX - pxX(TITLE.right);
-  const titleHeight = pxY(TITLE.height);
+  const titleX = TITLE.x;
+  const titleY = TITLE.y;
+  const titleWidth = TITLE.width;
+  const titleHeight = TITLE.height;
   context.save();
   context.beginPath();
   context.rect(titleX, titleY, titleWidth, titleHeight);
@@ -525,7 +570,7 @@ export async function composeDiaryImage(
   context.restore();
 
   drawContent(context, input.content, input.analysis);
-  drawComment(context, input.analysis);
+  drawComment(context, input.analysis, frameLayout);
   if (input.includesAiGeneratedContent) {
     drawAiContentWatermark(context);
   }

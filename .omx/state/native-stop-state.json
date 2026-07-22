@@ -1,0 +1,14 @@
+{
+  "sessions": {
+    "019f892d-b96d-7c61-9859-77096ac4d529": {
+      "ordinary_no_progress_guard": {
+        "fingerprint": "ordinary|가변 프레임으로 변경했습니다. 일기 길이에 따라 5~9행으로 늘어나며 미리보기와 저장 이미지가 같은 높이·좌표를 사용합니다. - 입력 제한: 55자 → 99자 - 원본 png를 상단·원고지 행·하단으로 조립해 세로 왜곡 방지 - 코멘트 영역도 본문 행 수만큼 자동 이동 - canvas 저장 높이도 자동 확장 - 공통 좌표 모델: [diaryframelayout.ts](/c:/users/d/desktop/summer_vacation_diary/src/utils/diaryframelayout.ts:23) - 미리보기 프레임 모듈: [diaryframebackground.tsx](/c:/users/d/desktop/summer_vacation_diary/src/components/diaryframebackground.tsx:12) - 저장 이미지 조립: [diaryimage.ts](/c:/users/d/desktop/summer_vacation_diary/src/utils/diaryimage.ts:436) - 디자인 기준 문서: [design.md](/c:/users/d/desktop/summer_vacation_diary/design.md) 검증 결과: - typescript 통과 - eslint 통과 - vite + apps in toss 프로덕션 빌드 통과 - `git diff --check` 통과 - 자동 화면 캡처는 이 세션에 연결 가능한 브라우저가 없어 생략 기존 `.env.example`, `package-lock.json`, `.omx/` 변경은 건드리지 않았습니다.",
+        "first_seen_at": "2026-07-22T09:46:58.282Z",
+        "last_seen_at": "2026-07-22T09:46:58.282Z",
+        "repeat_count": 1,
+        "last_turn_id": "019f8930-161e-7091-a343-24e25da93c46",
+        "last_thread_id": null
+      }
+    }
+  }
+}

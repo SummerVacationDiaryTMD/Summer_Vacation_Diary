@@ -1,7 +1,8 @@
 import { Button, Loader, Paragraph } from "@toss/tds-mobile";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 import { weatherLabel } from "../constants/diary";
+import { DiaryFrameBackground } from "./DiaryFrameBackground";
 import type { AnalysisState } from "../hooks/useDiaryAnalysis";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
 import type { SketchState } from "../hooks/useSketch";
@@ -9,6 +10,12 @@ import { isAiConnected } from "../services/diaryAnalysis";
 import type { DiaryAnalysis } from "../services/diaryAnalysis";
 import { isSketchAiConnected } from "../services/styleTransfer";
 import { buildDiaryTags } from "../utils/diaryImage";
+import {
+  DIARY_FRAME,
+  getDiaryFrameLayout,
+  type DiaryFrameLayout,
+  type DiaryFrameRegion,
+} from "../utils/diaryFrameLayout";
 import { handwritingVariation } from "../utils/handwriting";
 import { buildHighlightSegments } from "../utils/highlight";
 
@@ -18,6 +25,18 @@ interface PreviewStepProps {
   onRetry: () => void;
   sketchState: SketchState;
   onSketchRetry: () => void;
+}
+
+function frameRegionStyle(
+  region: DiaryFrameRegion,
+  layout: DiaryFrameLayout,
+): CSSProperties {
+  return {
+    left: `${(region.x / layout.width) * 100}%`,
+    top: `${(region.y / layout.height) * 100}%`,
+    width: `${(region.width / layout.width) * 100}%`,
+    height: `${(region.height / layout.height) * 100}%`,
+  };
 }
 
 // 날짜/날씨/제목처럼 한 요소 안에 있는 문자열도 한 글자씩 나눠서
@@ -61,7 +80,8 @@ function HighlightedContent({
   analysis: DiaryAnalysis | null;
 }) {
   const columnCount = 11;
-  const rowCount = 5;
+  const layout = getDiaryFrameLayout(content);
+  const rowCount = layout.contentRows;
   const segments =
     analysis === null
       ? [{ text: content, mark: null }]
@@ -213,6 +233,7 @@ export function PreviewStep({
   const weekday = Number.isNaN(diaryDate.getTime())
     ? ""
     : new Intl.DateTimeFormat("ko-KR", { weekday: "short" }).format(diaryDate);
+  const frameLayout = getDiaryFrameLayout(draft.content);
 
   return (
     <div className="step-body preview-step">
@@ -221,19 +242,25 @@ export function PreviewStep({
       </p>
 
       <div className="diary-card">
-        <div className="diary-template">
-          <img
-            className="diary-template-frame"
-            src="/picture-diary-frame.png"
-            alt=""
-            aria-hidden
-          />
+        <div
+          className="diary-template"
+          style={{ aspectRatio: `${frameLayout.width} / ${frameLayout.height}` }}
+        >
+          <DiaryFrameBackground layout={frameLayout} />
 
           {includesAiGeneratedContent && (
-            <span className="ai-content-watermark">AI 생성 콘텐츠 포함</span>
+            <span
+              className="ai-content-watermark"
+              style={{ top: `${(106 / frameLayout.height) * 100}%` }}
+            >
+              AI 생성 콘텐츠 포함
+            </span>
           )}
 
-          <div className="diary-card-header">
+          <div
+            className="diary-card-header"
+            style={frameRegionStyle(DIARY_FRAME.header, frameLayout)}
+          >
             <span>
               <strong>
                 <HandwrittenText text={year} />
@@ -264,7 +291,10 @@ export function PreviewStep({
             </span>
           </div>
 
-          <div className="diary-title-row">
+          <div
+            className="diary-title-row"
+            style={frameRegionStyle(DIARY_FRAME.title, frameLayout)}
+          >
             <strong>
               <HandwrittenText
                 text={draft.title !== "" ? draft.title : "제목 없는 일기"}
@@ -273,7 +303,10 @@ export function PreviewStep({
             </strong>
           </div>
 
-          <div className="diary-card-photo">
+          <div
+            className="diary-card-photo"
+            style={frameRegionStyle(DIARY_FRAME.photo, frameLayout)}
+          >
             {draft.photoDataUrl !== null ? (
               <>
                 <img
@@ -306,13 +339,22 @@ export function PreviewStep({
             )}
           </div>
 
-          <div className="diary-card-content">
+          <div
+            className="diary-card-content"
+            style={{
+              ...frameRegionStyle(frameLayout.content, frameLayout),
+              gridTemplateRows: `repeat(${frameLayout.contentRows}, minmax(0, 1fr))`,
+            }}
+          >
             <HighlightedContent content={draft.content} analysis={analysis} />
           </div>
 
           {/* Fixed colors throughout the card: it sits on a fixed paper
             background (#fffdf5), and the AIT provider is light-only today. */}
-          <div className="diary-card-comment">
+          <div
+            className="diary-card-comment"
+            style={frameRegionStyle(frameLayout.comment, frameLayout)}
+          >
             <div className="diary-comment-label">선생님 한줄평</div>
             {analysisState.status === "loading" && (
               <div className="comment-loading">
