@@ -46,6 +46,12 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
   },
 };
 
+const STEP_PROGRESS: Record<Step, { current: number; label: string }> = {
+  upload: { current: 1, label: "여름 한 장" },
+  write: { current: 2, label: "오늘의 이야기" },
+  preview: { current: 3, label: "그림일기 완성" },
+};
+
 function AppBottomBar({
   children,
   double = false,
@@ -118,109 +124,8 @@ function App() {
     }
   }, []);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    const viewport = window.visualViewport;
-    let baselineHeight = Math.max(
-      window.innerHeight,
-      viewport?.height ?? window.innerHeight,
-    );
-    let settleTimer: number | undefined;
-    let lastTextEntry: HTMLElement | null = null;
-
-    const isTextEntry = (element: Element | null): element is HTMLElement => {
-      if (element instanceof HTMLTextAreaElement) {
-        return true;
-      }
-      if (element instanceof HTMLInputElement) {
-        return ["", "text", "search", "email", "tel", "url", "number"].includes(
-          element.type,
-        );
-      }
-      return element instanceof HTMLElement && element.isContentEditable;
-    };
-
-    const updateKeyboardArea = () => {
-      const visibleHeight = viewport?.height ?? window.innerHeight;
-      const viewportOffsetTop = viewport?.offsetTop ?? 0;
-      baselineHeight = Math.max(
-        baselineHeight,
-        window.innerHeight,
-        visibleHeight + viewportOffsetTop,
-      );
-
-      const coveredHeight = Math.max(
-        0,
-        baselineHeight - visibleHeight - viewportOffsetTop,
-      );
-      const focusedElement = isTextEntry(document.activeElement)
-        ? document.activeElement
-        : null;
-      if (focusedElement !== null) {
-        lastTextEntry = focusedElement;
-      }
-      const wasOpen = root.hasAttribute("data-keyboard-open");
-      const keyboardOpen =
-        coveredHeight > 80 && (focusedElement !== null || wasOpen);
-
-      root.toggleAttribute("data-keyboard-open", keyboardOpen);
-
-      // Let the browser do its normal keyboard resize, then move only the
-      // minimum distance needed once. Target the whole field section so its
-      // help text and character count stay visible above the keyboard.
-      if (keyboardOpen && !wasOpen && focusedElement !== null) {
-        window.requestAnimationFrame(() => {
-          const fieldSection = focusedElement.closest(".diary-form-section");
-          (fieldSection ?? focusedElement).scrollIntoView({
-            block: "nearest",
-            inline: "nearest",
-          });
-        });
-      } else if (!keyboardOpen && wasOpen && lastTextEntry !== null) {
-        window.requestAnimationFrame(() => {
-          const fieldSection = lastTextEntry?.closest(".diary-form-section");
-          (fieldSection ?? lastTextEntry)?.scrollIntoView({
-            block: "nearest",
-            inline: "nearest",
-          });
-        });
-      }
-    };
-
-    const settleBaseline = () => {
-      window.clearTimeout(settleTimer);
-      settleTimer = window.setTimeout(() => {
-        if (!isTextEntry(document.activeElement)) {
-          baselineHeight = Math.max(
-            window.innerHeight,
-            viewport?.height ?? window.innerHeight,
-          );
-          updateKeyboardArea();
-        }
-      }, 350);
-    };
-
-    updateKeyboardArea();
-    viewport?.addEventListener("resize", updateKeyboardArea);
-    viewport?.addEventListener("scroll", updateKeyboardArea);
-    window.addEventListener("resize", updateKeyboardArea);
-    window.addEventListener("orientationchange", settleBaseline);
-    document.addEventListener("focusin", updateKeyboardArea);
-    document.addEventListener("focusout", settleBaseline);
-
-    return () => {
-      window.clearTimeout(settleTimer);
-      viewport?.removeEventListener("resize", updateKeyboardArea);
-      viewport?.removeEventListener("scroll", updateKeyboardArea);
-      window.removeEventListener("resize", updateKeyboardArea);
-      window.removeEventListener("orientationchange", settleBaseline);
-      document.removeEventListener("focusin", updateKeyboardArea);
-      document.removeEventListener("focusout", settleBaseline);
-      root.removeAttribute("data-keyboard-open");
-    };
-  }, []);
-
   const header = STEP_HEADERS[step];
+  const progress = STEP_PROGRESS[step];
   const canWrite = draft.photoDataUrl !== null;
   // trim() on both fields so whitespace-only input can't pass validation
   // (the spec's exception handling blocks empty/too-short diaries).
@@ -355,8 +260,14 @@ function App() {
   };
 
   return (
-    <>
+    <main className={`app-shell app-shell-${step}`}>
+      <div className="summer-sky-accent" aria-hidden="true">
+        <span className="summer-sun" />
+        <span className="summer-cloud summer-cloud-one" />
+        <span className="summer-cloud summer-cloud-two" />
+      </div>
       <Top
+        className="app-top"
         title={
           <Top.TitleParagraph size={22}>{header.title}</Top.TitleParagraph>
         }
@@ -366,6 +277,30 @@ function App() {
           </Top.SubtitleParagraph>
         }
       />
+
+      <div
+        className="summer-step-progress"
+        aria-label={`그림일기 만들기 ${progress.current}단계, ${progress.label}`}
+      >
+        <div className="summer-step-dots" aria-hidden="true">
+          {[1, 2, 3].map((item) => (
+            <span
+              key={item}
+              className={
+                item === progress.current
+                  ? "is-current"
+                  : item < progress.current
+                    ? "is-complete"
+                    : ""
+              }
+            />
+          ))}
+        </div>
+        <span className="summer-step-label">
+          <strong>{progress.current}/3</strong>
+          {progress.label}
+        </span>
+      </div>
 
       {step === "upload" && (
         <PhotoUploadStep
@@ -457,7 +392,7 @@ function App() {
           </Button>
         </AppBottomBar>
       )}
-    </>
+    </main>
   );
 }
 

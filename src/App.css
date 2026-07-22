@@ -27,38 +27,47 @@
   --app-safe-left: max(env(safe-area-inset-left), var(--toss-safe-area-left));
 }
 
-/* When the software keyboard opens, the browser scrolls the focused field
-   into view; this padding keeps it clear of the fixed bottom CTA. */
+/* The bottom CTA is fixed only while no text field is active. Keyboard layout
+   is CSS-only: WebView performs its native focus scroll without JS viewport
+   measurements or programmatic scroll corrections. */
 html {
-  scroll-padding-bottom: 120px;
+  scroll-padding-top: var(--app-safe-top);
+  scroll-padding-bottom: calc(120px + var(--app-safe-bottom));
   -webkit-text-size-adjust: 100%;
 }
 
 #root {
   box-sizing: border-box;
-  scroll-padding-top: var(--app-safe-top);
-  scroll-padding-bottom: calc(120px + var(--app-safe-bottom));
 }
 
-/* `interactive-widget=resizes-content` already removes the keyboard from the
-   visible viewport on Android and iOS WebViews. Do not add the measured
-   keyboard height again: that double inset pushes the diary field too high. */
-html[data-keyboard-open] #root {
-  scroll-padding-bottom: calc(20px + var(--app-safe-bottom));
-}
-
-html[data-keyboard-open] .write-form {
-  padding-bottom: calc(20px + var(--app-safe-bottom));
-}
-
-html[data-keyboard-open] .app-bottom-bar {
+.app-shell-write:has(
+    .write-form textarea:focus,
+    .write-form input[type="text"]:focus,
+    .write-form input:not([type]):focus
+  )
+  .app-bottom-bar {
   display: none;
 }
 
-html[data-keyboard-open] input,
-html[data-keyboard-open] textarea,
-html[data-keyboard-open] [contenteditable="true"] {
-  scroll-margin-bottom: 16px;
+html:has(
+  .write-form textarea:focus,
+  .write-form input[type="text"]:focus,
+  .write-form input:not([type]):focus
+) {
+  scroll-padding-bottom: calc(8px + var(--app-safe-bottom));
+}
+
+.app-shell-write:has(
+    .write-form textarea:focus,
+    .write-form input[type="text"]:focus,
+    .write-form input:not([type]):focus
+  )
+  .write-form {
+  padding-bottom: calc(8px + var(--app-safe-bottom));
+}
+
+html:has(.diary-content-section textarea:focus) {
+  scroll-padding-bottom: calc(52px + var(--app-safe-bottom));
 }
 
 .photo-consent-title:focus {
@@ -197,13 +206,167 @@ html[data-keyboard-open] [contenteditable="true"] {
 
 @media (min-width: 481px) {
   #root {
-    /* TDS token via CSS variable. @toss/tds-mobile-ait currently pins the
-       theme to light, so this always resolves to #ffffff today — the var +
-       fallback just keeps us aligned with TDS if dark support arrives. */
-    background-color: var(--adaptiveBackground, #ffffff) !important;
+    background-color: #fff9ea !important;
     max-width: 480px;
     margin: 0 auto;
   }
+}
+
+/* --- Shared summer diary atmosphere --- */
+
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(
+      circle at 88% 42px,
+      rgba(255, 211, 92, 0.24),
+      transparent 92px
+    ),
+    linear-gradient(
+      180deg,
+      #eaf7ff 0,
+      #f6fbf3 230px,
+      #fffaf0 560px,
+      #fffdf8 100%
+    );
+}
+
+.app-shell::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 188px 0 0;
+  opacity: 0.24;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 31px,
+    rgba(83, 150, 194, 0.16) 32px,
+    transparent 33px
+  );
+  pointer-events: none;
+}
+
+.app-top,
+.step-body {
+  position: relative;
+  z-index: 1;
+}
+
+.app-top {
+  background: transparent !important;
+}
+
+.summer-sky-accent {
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 190px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.summer-sun {
+  position: absolute;
+  top: 22px;
+  right: 28px;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #ffd45e;
+  box-shadow:
+    0 0 0 12px rgba(255, 212, 94, 0.14),
+    0 8px 22px rgba(232, 168, 42, 0.18);
+}
+
+.summer-cloud {
+  position: absolute;
+  width: 68px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    20px -9px 0 -2px rgba(255, 255, 255, 0.78),
+    42px 1px 0 -5px rgba(255, 255, 255, 0.78);
+}
+
+.summer-cloud-one {
+  top: 82px;
+  left: -18px;
+  transform: scale(0.78);
+}
+
+.summer-cloud-two {
+  top: 132px;
+  right: 42px;
+  opacity: 0.62;
+  transform: scale(0.55);
+}
+
+.summer-step-progress {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: calc(100% - 40px);
+  min-height: 34px;
+  box-sizing: border-box;
+  margin: -2px 20px 5px;
+  padding: 6px 10px 6px 12px;
+  border: 1px solid rgba(80, 142, 181, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 5px 18px rgba(70, 125, 160, 0.08);
+  color: #397196;
+  font-size: 12px;
+  line-height: 1.4;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.summer-step-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.summer-step-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #d8e4e9;
+  transition:
+    width 180ms ease,
+    background-color 180ms ease;
+}
+
+.summer-step-dots .is-complete {
+  background: #87c5a4;
+}
+
+.summer-step-dots .is-current {
+  width: 20px;
+  background: #4a9df8;
+}
+
+.summer-step-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.summer-step-label strong {
+  color: #1b64da;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Shared vertical layout for each wizard step. */
@@ -230,9 +393,9 @@ html[data-keyboard-open] [contenteditable="true"] {
     max(20px, calc(16px + var(--app-safe-left)));
   background: linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0.96) 20px,
-    #ffffff 100%
+    rgba(255, 253, 247, 0),
+    rgba(255, 253, 247, 0.96) 20px,
+    #fffdf7 100%
   );
   pointer-events: none;
 }
@@ -269,6 +432,9 @@ html[data-keyboard-open] [contenteditable="true"] {
   border: 1px solid #d6d0c5;
   border-radius: 16px;
   background-color: #f7f3e9;
+  box-shadow:
+    0 2px 3px rgba(61, 105, 132, 0.04),
+    0 14px 30px rgba(61, 105, 132, 0.1);
   cursor: pointer;
 }
 
@@ -625,16 +791,35 @@ html[data-keyboard-open] [contenteditable="true"] {
 /* --- Write step --- */
 
 .write-form {
+  position: relative;
   gap: 0;
+  padding-top: 13px;
+}
+
+.write-form::before {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  top: 5px;
+  left: 50%;
+  width: 76px;
+  height: 19px;
+  border-right: 1px dashed rgba(173, 125, 37, 0.24);
+  border-left: 1px dashed rgba(173, 125, 37, 0.24);
+  background: rgba(255, 215, 119, 0.7);
+  box-shadow: 0 2px 5px rgba(126, 91, 23, 0.08);
+  transform: translateX(-50%) rotate(-1.5deg);
+  pointer-events: none;
 }
 
 .write-form-surface {
   overflow: hidden;
+  border: 1px solid rgba(101, 146, 174, 0.16);
   border-radius: 20px;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.94);
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.04),
-    0 8px 24px rgba(0, 0, 0, 0.05);
+    0 2px 3px rgba(61, 105, 132, 0.05),
+    0 14px 34px rgba(61, 105, 132, 0.1);
 }
 
 .diary-form-section {
@@ -675,6 +860,64 @@ html[data-keyboard-open] [contenteditable="true"] {
 
 .diary-form-section .form-section-label {
   margin-left: 24px !important;
+  color: #397196 !important;
+  font-weight: 700 !important;
+}
+
+.diary-content-section {
+  scroll-margin-block: 16px;
+}
+
+.diary-character-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 22px;
+  padding: 2px 24px 0;
+  color: #6b7684;
+  font-size: 13px;
+  line-height: 1.4;
+  scroll-margin-bottom: 4px;
+}
+
+.diary-character-status span {
+  min-width: 0;
+}
+
+.diary-character-status strong {
+  flex: 0 0 auto;
+  color: #397196;
+  font-variant-numeric: tabular-nums;
+}
+
+.diary-character-status-error,
+.diary-character-status-error strong {
+  color: #d22030;
+}
+
+.diary-character-status-complete,
+.diary-character-status-complete strong {
+  color: #16794e;
+}
+
+.app-shell-write:has(.diary-content-section textarea:focus)
+  .diary-character-status {
+  position: fixed;
+  z-index: 60;
+  bottom: calc(8px + var(--app-safe-bottom));
+  left: 50%;
+  width: min(calc(100% - 40px), 440px);
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid rgba(80, 142, 181, 0.16);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(43, 89, 119, 0.16);
+  transform: translateX(-50%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .date-input {
@@ -731,6 +974,7 @@ html[data-keyboard-open] [contenteditable="true"] {
 
 .preview-step .diary-card {
   width: min(100%, 44dvh);
+  filter: drop-shadow(0 14px 24px rgba(61, 105, 132, 0.12));
 }
 
 /* 아이가 직접 쓴 부분에만 손글씨 폰트를 적용합니다:

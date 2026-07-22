@@ -29,7 +29,7 @@ export function formatKoreanDate(date: string): string {
 
 export const TITLE_MAX_LENGTH = 30;
 export const CONTENT_MIN_LENGTH = 20;
-// The expandable frame supports up to nine 11-cell manuscript rows.
+// The expandable frame supports 100 characters across ten 11-cell rows.
 export { CONTENT_MAX_LENGTH } from "../utils/diaryFrameLayout";
 
 // Upload rules from the spec: JPG/JPEG/PNG/WEBP, max 10MB, reject tiny images.

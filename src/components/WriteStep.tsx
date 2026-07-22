@@ -40,6 +40,11 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
     contentLength > 0 &&
     Array.from(draft.content.trim()).length < CONTENT_MIN_LENGTH;
   const contentAtLimit = contentLength >= CONTENT_MAX_LENGTH;
+  const contentStatus = contentTooShort
+    ? `${CONTENT_MIN_LENGTH}자 이상 적어주세요`
+    : contentAtLimit
+      ? `멋진 여름 이야기가 가득 찼어요`
+      : `${CONTENT_MAX_LENGTH - contentLength}자 더 적을 수 있어요`;
   // A whitespace-only title also blocks the preview button (App.tsx trims it),
   // so surface the reason here instead of leaving the button silently disabled.
   const titleBlank = draft.title.length > 0 && draft.title.trim() === "";
@@ -125,7 +130,7 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
           </div>
         </section>
 
-        <section className="diary-form-section field-row field-row-column">
+        <section className="diary-form-section diary-content-section field-row field-row-column">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -136,25 +141,37 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
           <TextArea
             variant="line"
             aria-label="일기"
+            aria-describedby="diary-character-status"
             placeholder={`오늘의 이야기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요`}
-            minHeight={140}
+            height={200}
             maxLength={CONTENT_MAX_LENGTH}
             value={draft.content}
-            hasError={contentTooShort || contentAtLimit}
-            help={
-              contentTooShort
-                ? `${CONTENT_MIN_LENGTH}자 이상 적어주세요 (${contentLength}/${CONTENT_MAX_LENGTH})`
-                : contentAtLimit
-                  ? `최대 ${CONTENT_MAX_LENGTH}자까지 적을 수 있어요 (${contentLength}/${CONTENT_MAX_LENGTH})`
-                  : `${contentLength}/${CONTENT_MAX_LENGTH}`
-            }
+            hasError={contentTooShort}
+            enterKeyHint="done"
             onKeyDown={(event) => {
               if (event.key === "Enter") {
                 event.preventDefault();
+                event.currentTarget.blur();
               }
             }}
             onChange={(event) => handleContentChange(event.target.value)}
           />
+          <div
+            id="diary-character-status"
+            className={`diary-character-status${
+              contentTooShort
+                ? " diary-character-status-error"
+                : contentAtLimit
+                  ? " diary-character-status-complete"
+                  : ""
+            }`}
+            aria-live="polite"
+          >
+            <span>{contentStatus}</span>
+            <strong>
+              {contentLength}/{CONTENT_MAX_LENGTH}
+            </strong>
+          </div>
         </section>
       </div>
     </div>
