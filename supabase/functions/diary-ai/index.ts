@@ -1,4 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { ANALYSIS_PROMPT } from "./prompts/analysis.ts";
+import { SKETCH_PROMPT } from "./prompts/sketch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,19 +23,9 @@ const USAGE_LIMITS = {
   ipDaily: 60,
 } as const;
 
-const ANALYSIS_PROMPT = `당신은 여름방학 그림일기를 읽고 따뜻한 한줄평을 써 주는 선생님입니다.
-사진과 일기를 함께 분석해 다음 키를 가진 JSON 객체만 응답하세요.
-- "photo_keywords": 사진 장소·사물·분위기 키워드, 한국어 최대 3개
-- "diary_keywords": 일기 주요 키워드, 한국어 최대 4개
-- "emotions": 핵심 감정, 한국어 최대 3개
-- "highlight_words": 일기 본문에 그대로 등장하는 단어 2~4개
-- "highlight_sentence": 본문에 그대로 등장하는 인상적인 문장 1개, 없으면 null
-- "comment": 사진과 감정을 함께 담은 존댓말 한 문장, 공백 포함 50자 이내`;
-
-const SKETCH_PROMPT = `Redraw the input photo as an authentic colored-pencil drawing made by a 6–8-year-old child.
-Use shaky uneven pencil lines, awkward proportions, flattened perspective, rough dry scribbles, visible paper grain, white gaps, and colors crossing outlines.
-Keep the scene recognizable, warm, sincere, naive, asymmetrical, and visibly handmade.
-Avoid photorealism, professional illustration, anime, manga, chibi, kawaii, clean line art, smooth gradients, digital painting, perfect anatomy, text, logos, watermarks, borders, and UI elements.`;
+// Cap the local-LLM attempt well below the Edge Function wall-clock limit so
+// a hung tunnel still leaves time for the OpenAI fallback to run.
+const LOCAL_LLM_TIMEOUT_MS = 60_000;
 
 class FunctionError extends Error {
   constructor(
@@ -182,6 +174,62 @@ async function openAiError(response: Response): Promise<FunctionError> {
   return new FunctionError("api-error", 502);
 }
 
+interface ChatTarget {
+  url: string;
+  apiKey: string;
+  model: string;
+  // OpenAI reasoning-family models reject max_tokens, while Ollama's
+  // OpenAI-compatible layer only understands max_tokens — so the field
+  // name is per-target instead of hardcoded.
+  maxTokensField: "max_completion_tokens" | "max_tokens";
+  // Ollama-only: "none" disables thinking-model reasoning traces, which
+  // otherwise multiply latency (~85s vs ~11s measured) and can corrupt the
+  // JSON output. Must be OMITTED for OpenAI — gpt-4o-mini rejects it.
+  reasoningEffort?: "none";
+  timeoutMs?: number;
+}
+
+async function requestAnalysis(
+  target: ChatTarget,
+  userContent: Array<Record<string, unknown>>,
+): Promise<unknown> {
+  const response = await fetch(target.url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${target.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: target.model,
+      [target.maxTokensField]: 1200,
+      ...(target.reasoningEffort
+        ? { reasoning_effort: target.reasoningEffort }
+        : {}),
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: ANALYSIS_PROMPT },
+        { role: "user", content: userContent },
+      ],
+    }),
+    signal:
+      target.timeoutMs === undefined
+        ? undefined
+        : AbortSignal.timeout(target.timeoutMs),
+  });
+
+  if (!response.ok) throw await openAiError(response);
+  const body = await response.json();
+  const raw = body?.choices?.[0]?.message?.content;
+  if (typeof raw !== "string") {
+    throw new FunctionError("invalid-response", 502);
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new FunctionError("invalid-response", 502);
+  }
+}
+
 async function analyze(input: unknown, apiKey: string): Promise<unknown> {
   if (typeof input !== "object" || input === null) {
     throw new FunctionError("invalid-input", 400);
@@ -204,34 +252,42 @@ async function analyze(input: unknown, apiKey: string): Promise<unknown> {
     });
   }
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: Deno.env.get("OPENAI_MODEL") || "gpt-4o-mini",
-      max_completion_tokens: 1200,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: ANALYSIS_PROMPT },
-        { role: "user", content: userContent },
-      ],
-    }),
-  });
+  // Local-first: when LOCAL_LLM_BASE_URL is configured, try the self-hosted
+  // Ollama proxy and fall back to OpenAI on ANY failure, so the mini being
+  // offline degrades to the paid path instead of breaking analysis.
+  const localBaseUrl = Deno.env
+    .get("LOCAL_LLM_BASE_URL")
+    ?.replace(/\/+$/, "");
+  if (localBaseUrl) {
+    try {
+      return await requestAnalysis(
+        {
+          url: `${localBaseUrl}/v1/chat/completions`,
+          apiKey: Deno.env.get("LOCAL_LLM_API_KEY") ?? "",
+          model: Deno.env.get("LOCAL_LLM_MODEL") || "gemma4:12b-64k",
+          maxTokensField: "max_tokens",
+          reasoningEffort: "none",
+          timeoutMs: LOCAL_LLM_TIMEOUT_MS,
+        },
+        userContent,
+      );
+    } catch (error) {
+      console.error(
+        "Local LLM analysis failed, falling back to OpenAI",
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
 
-  if (!response.ok) throw await openAiError(response);
-  const body = await response.json();
-  const raw = body?.choices?.[0]?.message?.content;
-  if (typeof raw !== "string") {
-    throw new FunctionError("invalid-response", 502);
-  }
-  try {
-    return JSON.parse(raw);
-  } catch {
-    throw new FunctionError("invalid-response", 502);
-  }
+  return requestAnalysis(
+    {
+      url: "https://api.openai.com/v1/chat/completions",
+      apiKey,
+      model: Deno.env.get("OPENAI_MODEL") || "gpt-4o-mini",
+      maxTokensField: "max_completion_tokens",
+    },
+    userContent,
+  );
 }
 
 function dataUrlToBlob(dataUrl: string): Blob {
