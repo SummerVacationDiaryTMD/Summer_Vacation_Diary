@@ -144,9 +144,10 @@ iOS 시뮬레이터는 localhost로 바로 연결되고, Android는
 
 ## 온보딩 애니메이션 교체하기
 
-iOS Toss WebView에서는 MP4 자동 재생이 제한될 수 있어 온보딩을 애니메이션
-WebP 이미지로 표시합니다. 저장소에는 변환 결과인 `public/onboarding.webp` 한
-개만 보관하며, 변환 과정에서 만들어지는 PNG 프레임은 임시 폴더에서 삭제합니다.
+iOS Toss WebView에서는 MP4 자동 재생이 제한될 수 있어 애니메이션 WebP를
+표시하고, Android에서는 화질과 용량 효율이 좋은 MP4를 재생합니다. 저장소에는
+`public/onboarding.mp4`와 `public/onboarding.webp`를 함께 보관하며, 변환
+과정에서 만들어지는 PNG 프레임은 임시 폴더에서 삭제합니다.
 
 Mac에서 변환 도구를 처음 한 번 설치합니다.
 
@@ -163,15 +164,28 @@ FRAME_DIR=$(mktemp -d /private/tmp/onboarding-frames.XXXXXX)
 ffmpeg \
   -i onboarding-source.mp4 \
   -an \
-  -vf "fps=10,scale=303:540:force_original_aspect_ratio=increase,crop=303:540" \
+  -vf "fps=30,scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280" \
+  -c:v libx264 \
+  -preset slow \
+  -crf 21 \
+  -profile:v main \
+  -level 3.1 \
+  -pix_fmt yuv420p \
+  -movflags +faststart \
+  public/onboarding.mp4
+
+ffmpeg \
+  -i onboarding-source.mp4 \
+  -an \
+  -vf "fps=10,scale=450:800:force_original_aspect_ratio=increase,crop=450:800" \
   "$FRAME_DIR/frame-%03d.png"
 
 img2webp \
   -loop 0 \
   -d 100 \
   -lossy \
-  -q 65 \
-  -m 6 \
+  -q 72 \
+  -m 4 \
   "$FRAME_DIR"/frame-*.png \
   -o public/onboarding.webp
 
@@ -179,9 +193,10 @@ rm -rf "$FRAME_DIR"
 ```
 
 - `fps=10`과 `-d 100`은 초당 10프레임으로 재생합니다.
-- `303 × 540`으로 화면을 채우며 다른 비율의 영상은 중앙 기준으로 잘립니다.
-- `-loop 0`은 무한 반복, `-q 65`는 화질과 용량의 균형 설정입니다.
-- 원본은 세로형·20초 이내, 결과물은 8MB 이하를 권장합니다.
+- `450 × 800`으로 화면을 채우며 다른 비율의 영상은 중앙 기준으로 잘립니다.
+- `-loop 0`은 무한 반복, `-q 72`는 선명도를 우선한 품질 설정입니다.
+- Android MP4는 `720 × 1280`, 30fps, 음성 없는 H.264로 생성됩니다.
+- 원본은 세로형·20초 이내로 준비하고 각 결과물은 18MB 이하를 권장합니다.
 
 변환 결과는 다음 명령으로 확인합니다. `Loop Count : 0`과 두 개 이상의 프레임이
 표시되어야 애니메이션 WebP가 정상 생성된 것입니다.
