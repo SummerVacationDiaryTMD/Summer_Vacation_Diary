@@ -20,6 +20,17 @@ import { composeDiaryImage } from "./utils/diaryImage";
 // If stage 2+ needs shareable URLs, this maps 1:1 onto routes later.
 type Step = "upload" | "write" | "preview";
 
+function isIosDevice(): boolean {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
 // HHMMSS from the local clock, appended to the saved file name so two saves
 // on the same date don't produce an identical name.
 function clockSuffix(): string {
@@ -72,6 +83,7 @@ function AppBottomBar({
 
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [useOnboardingAnimation] = useState(isIosDevice);
   const [step, setStep] = useState<Step>("upload");
   // Always open on a fresh diary. Draft persistence remains available in the
   // hook, but this flow must not restore a previous visit's photo or text.
@@ -148,13 +160,28 @@ function App() {
   if (showOnboarding) {
     return (
       <main className="onboarding" aria-label="나의 여름방학일기 시작 화면">
-        <img
-          className="onboarding-animation"
-          src="/onboarding.webp"
-          alt=""
-          draggable={false}
-          aria-hidden="true"
-        />
+        {useOnboardingAnimation ? (
+          <img
+            className="onboarding-media"
+            src="/onboarding.webp"
+            alt=""
+            draggable={false}
+            aria-hidden="true"
+          />
+        ) : (
+          <video
+            className="onboarding-media"
+            src="/onboarding.mp4"
+            poster="/onboarding-poster.jpg"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            disablePictureInPicture
+            aria-hidden="true"
+          />
+        )}
         <div className="onboarding-action-area">
           <button
             className="onboarding-start-button"

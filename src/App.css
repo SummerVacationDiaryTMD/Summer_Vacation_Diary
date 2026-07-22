@@ -86,7 +86,7 @@ html:has(.diary-content-section textarea:focus) {
   isolation: isolate;
 }
 
-.onboarding-animation {
+.onboarding-media {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -94,10 +94,11 @@ html:has(.diary-content-section textarea:focus) {
   object-fit: cover;
   object-position: center;
   filter: brightness(1.12);
+  pointer-events: none;
 }
 
 @media (orientation: landscape) {
-  .onboarding-animation {
+  .onboarding-media {
     object-fit: contain;
   }
 }
