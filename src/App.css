@@ -85,35 +85,198 @@ html:has(.diary-content-section textarea:focus) {
 /* --- Onboarding --- */
 
 .onboarding {
+  --onboarding-content-bottom: calc(112px + var(--app-safe-bottom));
   position: relative;
   width: 100%;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  background: #f5ead5;
+  background: #8bd8ff;
   isolation: isolate;
 }
 
-.onboarding-media {
+.onboarding-scene {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center;
-  filter: brightness(1.12);
+  overflow: hidden;
+  background-color: #8bd8ff;
+  background-image:
+    url("/onboarding_images/background.png?v=2"),
+    linear-gradient(
+      to bottom,
+      #88d9ff 0%,
+      #a7e6ff 45%,
+      #1f91dc 46%,
+      #66c9ed 58%,
+      #ffe0a0 59%,
+      #ffd282 100%
+    );
+  background-position: center;
+  background-size: cover;
+}
+
+.onboarding-decoration {
+  position: absolute;
+  z-index: 1;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform;
+}
+
+/* Sky */
+.onboarding-decoration-sun {
+  top: 1%;
+  right: 2%;
+  width: 29%;
+  animation: onboarding-sun 7s ease-in-out -2s infinite alternate;
+}
+
+.onboarding-decoration-cloud-big {
+  top: 0;
+  left: 4%;
+  width: 40%;
+  animation: onboarding-cloud-right 13s ease-in-out -4s infinite alternate;
+}
+
+.onboarding-decoration-cloud-small {
+  top: 27%;
+  right: 4%;
+  width: 25%;
+  animation: onboarding-cloud-left 11s ease-in-out -7s infinite alternate;
+}
+
+.onboarding-decoration-seagull {
+  top: 28%;
+  left: 6%;
+  width: 15%;
+  animation: onboarding-flight 7s ease-in-out -3s infinite alternate;
+}
+
+.onboarding-decoration-seagull-two {
+  top: 18%;
+  right: 8%;
+  width: 12%;
+  animation: onboarding-flight-reverse 8s ease-in-out -5s infinite alternate;
+}
+
+/* Three softly moving rows: 나의 / 여름방학 / 일기 */
+.onboarding-title {
+  position: absolute;
+  z-index: 8;
+  top: 10%;
+  left: 50%;
+  display: flex;
+  width: min(76%, 350px);
+  margin: 0;
+  transform: translateX(-50%);
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1px, 0.35vh, 4px);
   pointer-events: none;
 }
 
-@media (orientation: landscape) {
-  .onboarding-media {
-    object-fit: contain;
-  }
+.onboarding-title-line {
+  display: flex;
+  height: clamp(52px, 8vh, 72px);
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0px, 0.3vw, 2px);
+}
+
+.onboarding-title-line-2 {
+  height: clamp(49px, 7.7vh, 69px);
+}
+
+.onboarding-title-line-1 {
+  position: relative;
+  left: -6%;
+}
+
+.onboarding-title-letter {
+  width: auto;
+  height: 100%;
+  object-fit: contain;
+  animation: onboarding-letter 4.2s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.onboarding-title-letter:nth-child(2n) {
+  animation-delay: -1.4s;
+  animation-direction: alternate-reverse;
+}
+
+.onboarding-title-line-2 .onboarding-title-letter:nth-child(3n) {
+  animation-delay: -2.7s;
+}
+
+/* Sea */
+.onboarding-decoration-sailboat {
+  z-index: 2;
+  top: 35%;
+  left: 6%;
+  width: 22%;
+  animation: onboarding-sail 4.8s ease-in-out -1s infinite alternate;
+}
+
+.onboarding-decoration-dolphin {
+  z-index: 2;
+  top: 40%;
+  right: 6%;
+  width: 25%;
+  transform-origin: 50% 75%;
+  animation: onboarding-dolphin 4.6s ease-in-out -2.4s infinite alternate;
+}
+
+/* Sand */
+.onboarding-decoration-palm-tree {
+  z-index: 3;
+  top: 46%;
+  left: 1%;
+  width: 25%;
+  transform-origin: 48% 100%;
+  animation: onboarding-palm-sway 6.5s ease-in-out -2s infinite alternate;
+}
+
+.onboarding-decoration-girl {
+  z-index: 6;
+  bottom: var(--onboarding-content-bottom);
+  left: 50%;
+  width: min(59%, 270px);
+  margin-left: calc(-1 * min(29.5%, 135px));
+  transform-origin: 50% 100%;
+  animation: onboarding-girl 4.8s ease-in-out -1.5s infinite alternate;
+}
+
+.onboarding-decoration-sandcastle {
+  z-index: 4;
+  bottom: calc(var(--onboarding-content-bottom) + 5px);
+  left: 0.5%;
+  width: 19.5%;
+  animation: onboarding-sandcastle 6s ease-in-out -3s infinite alternate;
+}
+
+.onboarding-decoration-beach-ball {
+  z-index: 5;
+  right: 2%;
+  bottom: calc(var(--onboarding-content-bottom) + 135px);
+  width: 16%;
+  animation: onboarding-ball 4.4s ease-in-out -2s infinite alternate;
+}
+
+.onboarding-decoration-crab {
+  z-index: 5;
+  right: 2%;
+  bottom: calc(var(--onboarding-content-bottom) + 12px);
+  width: 16%;
+  animation: onboarding-crab 5.2s steps(4, end) -2s infinite alternate;
 }
 
 .onboarding-action-area {
   position: absolute;
-  z-index: 1;
+  z-index: 20;
   right: 0;
   bottom: 0;
   left: 0;
@@ -122,9 +285,9 @@ html:has(.diary-content-section textarea:focus) {
   padding: 72px clamp(16px, 5vw, 24px) calc(20px + var(--app-safe-bottom));
   background: linear-gradient(
     to bottom,
-    rgba(245, 234, 213, 0),
-    rgba(245, 234, 213, 0.18) 42%,
-    rgba(245, 234, 213, 0.52) 100%
+    rgba(255, 225, 164, 0),
+    rgba(255, 225, 164, 0.2) 42%,
+    rgba(255, 225, 164, 0.62) 100%
   );
   pointer-events: none;
 }
@@ -157,6 +320,131 @@ html:has(.diary-content-section textarea:focus) {
 .onboarding-start-button:focus-visible {
   outline: 3px solid rgba(49, 130, 246, 0.35);
   outline-offset: 3px;
+}
+
+@keyframes onboarding-sun {
+  from {
+    transform: rotate(-2deg) scale(0.98);
+  }
+  to {
+    transform: rotate(3deg) scale(1.025);
+  }
+}
+
+@keyframes onboarding-cloud-right {
+  from {
+    transform: translate3d(-10px, 0, 0);
+  }
+  to {
+    transform: translate3d(16px, 4px, 0);
+  }
+}
+
+@keyframes onboarding-cloud-left {
+  from {
+    transform: translate3d(14px, 0, 0);
+  }
+  to {
+    transform: translate3d(-14px, 3px, 0);
+  }
+}
+
+@keyframes onboarding-flight {
+  from {
+    transform: translate3d(-12px, 4px, 0) rotate(-2deg);
+  }
+  to {
+    transform: translate3d(15px, -4px, 0) rotate(2deg);
+  }
+}
+
+@keyframes onboarding-flight-reverse {
+  from {
+    transform: translate3d(10px, -3px, 0) rotate(2deg) scaleX(-1);
+  }
+  to {
+    transform: translate3d(-12px, 4px, 0) rotate(-2deg) scaleX(-1);
+  }
+}
+
+@keyframes onboarding-letter {
+  from {
+    transform: translate3d(0, 1px, 0) rotate(-0.8deg);
+  }
+  to {
+    transform: translate3d(0, -2px, 0) rotate(0.8deg);
+  }
+}
+
+@keyframes onboarding-sail {
+  from {
+    transform: translate3d(-6px, 2px, 0) rotate(-2.5deg);
+  }
+  to {
+    transform: translate3d(8px, -3px, 0) rotate(2.5deg);
+  }
+}
+
+@keyframes onboarding-dolphin {
+  from {
+    transform: translate3d(-5px, 7px, 0) rotate(-5deg);
+  }
+  to {
+    transform: translate3d(7px, -8px, 0) rotate(6deg);
+  }
+}
+
+@keyframes onboarding-palm-sway {
+  from {
+    transform: rotate(-1.2deg);
+  }
+  to {
+    transform: rotate(1.2deg);
+  }
+}
+
+@keyframes onboarding-girl {
+  from {
+    transform: translate3d(0, 1px, 0) scale(0.995);
+  }
+  to {
+    transform: translate3d(0, -3px, 0) scale(1.008);
+  }
+}
+
+@keyframes onboarding-sandcastle {
+  from {
+    transform: translate3d(0, 1px, 0) rotate(-0.5deg);
+  }
+  to {
+    transform: translate3d(0, -1px, 0) rotate(0.5deg);
+  }
+}
+
+@keyframes onboarding-ball {
+  from {
+    transform: translate3d(-6px, 4px, 0) rotate(-8deg);
+  }
+  to {
+    transform: translate3d(7px, -7px, 0) rotate(10deg);
+  }
+}
+
+@keyframes onboarding-crab {
+  from {
+    transform: translate3d(-8px, 0, 0) rotate(-1deg);
+  }
+  to {
+    transform: translate3d(9px, -1px, 0) rotate(1deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-decoration,
+  .onboarding-title-letter {
+    animation: none;
+    will-change: auto;
+  }
 }
 
 @media (min-width: 481px) {

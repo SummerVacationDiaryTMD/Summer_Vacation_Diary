@@ -75,8 +75,7 @@ html[data-onboarding-open] #root {
   overscroll-behavior: none;
 }
 
-img,
-video {
+img {
   -webkit-user-drag: none;
   user-select: none;
 }
