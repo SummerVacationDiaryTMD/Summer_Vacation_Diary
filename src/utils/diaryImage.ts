@@ -36,6 +36,8 @@ const DIARY_FONT_FAMILY = '"NanumCoDingHeuiMang"';
 const SYSTEM_FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
 const DIARY_FONT_STACK = `${DIARY_FONT_FAMILY}, ${SYSTEM_FONT_STACK}`;
+const TEACHER_COMMENT_FONT_FAMILY = '"NanumDdarEGeEomMaGa"';
+const TEACHER_COMMENT_FONT_STACK = `${TEACHER_COMMENT_FONT_FAMILY}, ${SYSTEM_FONT_STACK}`;
 
 // 미리보기의 12/14/10px 등을 1058px 템플릿 원본 비율로 환산한 값입니다.
 const HEADER_FONT_SIZE = 54;
@@ -45,7 +47,7 @@ const TITLE_FONT = `400 ${TITLE_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const CONTENT_FONT_SIZE = 54;
 const CONTENT_FONT = `400 ${CONTENT_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const COMMENT_LABEL_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
-const COMMENT_FONT = `500 30px ${SYSTEM_FONT_STACK}`;
+const COMMENT_FONT = `700 34px ${TEACHER_COMMENT_FONT_STACK}`;
 const TAG_FONT = `400 22px ${SYSTEM_FONT_STACK}`;
 const AI_WATERMARK_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
 
@@ -517,7 +519,10 @@ export async function composeDiaryImage(
   ]);
 
   try {
-    await document.fonts.load(`34px ${DIARY_FONT_FAMILY}`);
+    await Promise.all([
+      document.fonts.load(`34px ${DIARY_FONT_FAMILY}`),
+      document.fonts.load(`30px ${TEACHER_COMMENT_FONT_FAMILY}`),
+    ]);
   } catch {
     // 폰트를 못 읽어도 시스템 폰트 fallback으로 저장은 계속합니다.
   }
