@@ -2,6 +2,10 @@ import { weatherIconUrl, weatherLabel } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import type { DiaryAnalysis } from "../services/diaryAnalysis";
 import {
+  CORRECTION_MARK_URLS,
+  pickCorrectionMarkAsset,
+} from "./correctionMarks";
+import {
   DIARY_FRAME,
   getDiaryFrameLayout,
   type DiaryFrameLayout,
@@ -55,7 +59,6 @@ const TEXT_COLOR = "#333333";
 const COMMENT_COLOR = "#6b5e3f";
 const LABEL_COLOR = "#806d3d";
 const TAG_BACKGROUND = "#f3ecd2";
-const MARK_COLOR = "rgba(224, 62, 46, 0.78)";
 const AI_WATERMARK_COLOR = "#376baf";
 const AI_WATERMARK_TEXT = "AI 생성 콘텐츠 포함";
 
@@ -234,38 +237,11 @@ function buildCorrectionRuns(cells: DiaryCell[]): CorrectionRun[] {
   return runs;
 }
 
-function drawWavyUnderline(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-) {
-  context.save();
-  context.strokeStyle = MARK_COLOR;
-  context.lineWidth = 3.5;
-  context.beginPath();
-  context.moveTo(x, y);
-  let cursor = x;
-  let direction = 1;
-  while (cursor < x + width) {
-    const next = Math.min(cursor + 15, x + width);
-    context.quadraticCurveTo(
-      cursor + (next - cursor) / 2,
-      y + direction * 6,
-      next,
-      y,
-    );
-    direction *= -1;
-    cursor = next;
-  }
-  context.stroke();
-  context.restore();
-}
-
 function drawContent(
   context: CanvasRenderingContext2D,
   content: string,
   analysis: DiaryAnalysis | null,
+  markImages: Map<string, HTMLImageElement>,
 ) {
   const layout = getDiaryFrameLayout(content);
   const { x, y, width, height } = layout.content;
@@ -299,22 +275,33 @@ function drawContent(
   context.textAlign = "start";
 
   // 미리보기와 동일하게 연속된 첨삭 구간을 한 개의 표시로 묶습니다.
+  // 크기/위치 비율(88%, 16%, 5%)은 App.css의 .diary-correction-* 값과
+  // 맞춰져 있습니다 — 한쪽만 바꾸면 미리보기와 저장본이 어긋납니다.
   for (const run of buildCorrectionRuns(cells)) {
     const runX = x + run.startColumn * cellWidth;
     const runY = y + run.row * cellHeight;
     const runWidth = run.length * cellWidth;
+    const markImage = markImages.get(
+      pickCorrectionMarkAsset(run.mark, run.row, run.startColumn, run.length),
+    );
+    if (markImage === undefined) continue;
     if (run.mark === "circle") {
-      context.save();
-      context.strokeStyle = MARK_COLOR;
-      context.lineWidth = 4;
-      context.translate(runX + runWidth / 2, runY + cellHeight / 2);
-      context.rotate(-0.025);
-      context.beginPath();
-      context.ellipse(0, 0, runWidth / 2, cellHeight * 0.39, 0, 0, Math.PI * 2);
-      context.stroke();
-      context.restore();
+      context.drawImage(
+        markImage,
+        runX,
+        runY + cellHeight * 0.06,
+        runWidth,
+        cellHeight * 0.88,
+      );
     } else {
-      drawWavyUnderline(context, runX, runY + cellHeight - 12, runWidth);
+      const lineHeight = cellHeight * 0.16;
+      context.drawImage(
+        markImage,
+        runX,
+        runY + cellHeight - lineHeight - cellHeight * 0.05,
+        runWidth,
+        lineHeight,
+      );
     }
   }
 }
@@ -518,6 +505,18 @@ export async function composeDiaryImage(
     loadImageFromDataUrl(weatherIconUrl(input.weather)),
   ]);
 
+  // 손그림 첨삭 에셋은 분석 결과가 있을 때만 필요합니다. 8장 전부를
+  // 미리 받아두는 이유: drawContent는 동기 함수라 그리는 도중에는
+  // 로드를 기다릴 수 없기 때문입니다 (번들 내 로컬 파일이라 비용은 미미).
+  const markImages = new Map<string, HTMLImageElement>();
+  if (input.analysis !== null) {
+    await Promise.all(
+      CORRECTION_MARK_URLS.map(async (url) => {
+        markImages.set(url, await loadImageFromDataUrl(url));
+      }),
+    );
+  }
+
   try {
     await Promise.all([
       document.fonts.load(`34px ${DIARY_FONT_FAMILY}`),
@@ -616,7 +615,7 @@ export async function composeDiaryImage(
   );
   context.restore();
 
-  drawContent(context, input.content, input.analysis);
+  drawContent(context, input.content, input.analysis, markImages);
   drawComment(context, input.analysis, frameLayout);
   if (input.includesAiGeneratedContent) {
     drawAiContentWatermark(context);
