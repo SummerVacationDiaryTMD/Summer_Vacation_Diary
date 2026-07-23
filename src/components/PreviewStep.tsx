@@ -473,7 +473,7 @@ export function PreviewStep({
               {analysisState.message}
             </Paragraph>
             <Button
-              className="app-stable-button-state"
+              className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
               size="small"
               variant="weak"
               color="dark"
@@ -507,7 +507,7 @@ export function PreviewStep({
               </Paragraph>
               {sketchState.retryable && (
                 <Button
-                  className="app-stable-button-state"
+                  className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
                   size="small"
                   variant="weak"
                   color="dark"

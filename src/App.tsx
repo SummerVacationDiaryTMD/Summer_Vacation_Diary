@@ -212,7 +212,7 @@ function App() {
         </div>
         <div className="onboarding-action-area">
           <button
-            className="onboarding-start-button"
+            className="onboarding-start-button summer-diary-button summer-diary-button-primary"
             type="button"
             onClick={() => setShowOnboarding(false)}
           >
@@ -258,8 +258,16 @@ function App() {
         title: "선생님 한줄평을 불러오지 못했어요",
         description:
           "다시 시도해서 한줄평과 첨삭까지 담거나, 지금 이대로 저장할 수 있어요.",
-        confirmButton: "다시 시도",
-        cancelButton: "이대로 저장",
+        confirmButton: (
+          <Button className="summer-diary-button summer-diary-button-primary">
+            다시 시도
+          </Button>
+        ),
+        cancelButton: (
+          <Button className="summer-diary-button summer-diary-button-secondary">
+            이대로 저장
+          </Button>
+        ),
       });
       if (retry) {
         retryAnalysis();
@@ -275,8 +283,16 @@ function App() {
       const proceed = await openConfirm({
         title: "아직 그림일기가 만들어지고 있어요",
         description: `조금 기다리면 ${pending.join("과 ")}까지 담아 저장할 수 있어요. 지금 이대로 저장할까요?`,
-        confirmButton: "이대로 저장",
-        cancelButton: "기다릴게요",
+        confirmButton: (
+          <Button className="summer-diary-button summer-diary-button-primary">
+            이대로 저장
+          </Button>
+        ),
+        cancelButton: (
+          <Button className="summer-diary-button summer-diary-button-secondary">
+            기다릴게요
+          </Button>
+        ),
       });
       if (!proceed) {
         return;
@@ -398,7 +414,7 @@ function App() {
       {step === "upload" && (
         <AppBottomBar>
           <Button
-            className="app-stable-button-state"
+            className="app-stable-button-state summer-diary-button summer-diary-button-primary"
             display="block"
             disabled={!canWrite}
             onClick={handleStartWriting}
@@ -410,7 +426,7 @@ function App() {
       {step === "write" && (
         <AppBottomBar double>
           <Button
-            className="app-stable-button-state"
+            className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
             display="block"
             color="dark"
             variant="weak"
@@ -419,7 +435,7 @@ function App() {
             이전
           </Button>
           <Button
-            className="app-stable-button-state"
+            className="app-stable-button-state summer-diary-button summer-diary-button-primary"
             display="block"
             disabled={!canPreview}
             onClick={() => setStep("preview")}
@@ -431,7 +447,7 @@ function App() {
       {step === "preview" && (
         <AppBottomBar double>
           <Button
-            className="app-stable-button-state"
+            className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
             display="block"
             color="dark"
             variant="weak"
@@ -440,7 +456,7 @@ function App() {
             수정하기
           </Button>
           <Button
-            className="app-stable-button-state"
+            className="app-stable-button-state summer-diary-button summer-diary-button-primary"
             display="block"
             loading={saving}
             onClick={handleFinish}
