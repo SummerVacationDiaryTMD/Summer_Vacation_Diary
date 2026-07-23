@@ -20,17 +20,6 @@ import { composeDiaryImage } from "./utils/diaryImage";
 // If stage 2+ needs shareable URLs, this maps 1:1 onto routes later.
 type Step = "upload" | "write" | "preview";
 
-function isIosDevice(): boolean {
-  if (typeof navigator === "undefined") {
-    return false;
-  }
-
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
-  );
-}
-
 // HHMMSS from the local clock, appended to the saved file name so two saves
 // on the same date don't produce an identical name.
 function clockSuffix(): string {
@@ -63,6 +52,38 @@ const STEP_PROGRESS: Record<Step, { current: number; label: string }> = {
   preview: { current: 3, label: "그림일기 완성" },
 };
 
+const ONBOARDING_DECORATIONS = [
+  { name: "sun", file: "sun.png" },
+  { name: "cloud-big", file: "big_cloud.png" },
+  { name: "cloud-small", file: "small_cloud2.png" },
+  { name: "seagull", file: "seagull.png" },
+  { name: "seagull-two", file: "seagull.png" },
+  { name: "sailboat", file: "sailboat.png" },
+  { name: "dolphin", file: "dolphin.png" },
+  { name: "palm-tree", file: "palm_tree.png" },
+  { name: "girl", file: "LittleGirlAndCat.png" },
+  { name: "sandcastle", file: "sancastle.png" },
+  { name: "beach-ball", file: "beach_ball.png" },
+  { name: "crab", file: "crab.png" },
+] as const;
+
+const ONBOARDING_TITLE_LINES = [
+  [
+    { name: "na", file: "나.png" },
+    { name: "ui", file: "의.png" },
+  ],
+  [
+    { name: "yeo", file: "여.png" },
+    { name: "reum", file: "름.png" },
+    { name: "bang", file: "방.png" },
+    { name: "hak", file: "학.png" },
+  ],
+  [
+    { name: "il", file: "일.png" },
+    { name: "gi", file: "기.png" },
+  ],
+] as const;
+
 function AppBottomBar({
   children,
   double = false,
@@ -83,7 +104,6 @@ function AppBottomBar({
 
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(true);
-  const [useOnboardingAnimation] = useState(isIosDevice);
   const [step, setStep] = useState<Step>("upload");
   // Always open on a fresh diary. Draft persistence remains available in the
   // hook, but this flow must not restore a previous visit's photo or text.
@@ -160,28 +180,36 @@ function App() {
   if (showOnboarding) {
     return (
       <main className="onboarding" aria-label="나의 여름방학일기 시작 화면">
-        {useOnboardingAnimation ? (
-          <img
-            className="onboarding-media"
-            src="/onboarding.webp"
-            alt=""
-            draggable={false}
-            aria-hidden="true"
-          />
-        ) : (
-          <video
-            className="onboarding-media"
-            src="/onboarding.mp4"
-            poster="/onboarding-poster.jpg"
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            disablePictureInPicture
-            aria-hidden="true"
-          />
-        )}
+        <div className="onboarding-scene">
+          {ONBOARDING_DECORATIONS.map(({ name, file }) => (
+            <img
+              key={name}
+              className={`onboarding-decoration onboarding-decoration-${name}`}
+              src={`/onboarding_images/${file}`}
+              alt=""
+              draggable={false}
+            />
+          ))}
+          <h1 className="onboarding-title" aria-label="나의 여름방학 일기">
+            {ONBOARDING_TITLE_LINES.map((line, lineIndex) => (
+              <span
+                key={lineIndex}
+                className={`onboarding-title-line onboarding-title-line-${lineIndex + 1}`}
+                aria-hidden="true"
+              >
+                {line.map(({ name, file }) => (
+                  <img
+                    key={file}
+                    className={`onboarding-title-letter onboarding-title-letter-${name}`}
+                    src={`/onboarding_images/${file}`}
+                    alt=""
+                    draggable={false}
+                  />
+                ))}
+              </span>
+            ))}
+          </h1>
+        </div>
         <div className="onboarding-action-area">
           <button
             className="onboarding-start-button"
