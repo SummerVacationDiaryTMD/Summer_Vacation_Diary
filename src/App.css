@@ -990,7 +990,7 @@ html:has(.diary-content-section textarea:focus) {
 
 .diary-frame-grid-row {
   min-height: 0;
-  background: url("/picture-diary-frame.png") center 66.74% / 100% auto
+  background: url("/picture-diary-frame.png") center 69.72% / 100% auto
     no-repeat;
 }
 
