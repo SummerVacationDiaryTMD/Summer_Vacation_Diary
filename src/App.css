@@ -10,6 +10,14 @@
   font-weight: 400;
 }
 
+@font-face {
+  font-family: "NanumDdarEGeEomMaGa";
+  src: url("/fonts/NanumDdarEGeEomMaGa.ttf") format("truetype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 400;
+}
+
 :root {
   --toss-safe-area-top: 0px;
   --toss-safe-area-right: 0px;
@@ -1296,7 +1304,9 @@ html:has(.diary-content-section textarea:focus) {
   margin: 0;
   overflow: hidden !important;
   /* 저장 이미지와 동일하게 최대 두 줄만 쓰고 태그 행의 공간을 지킵니다. */
-  font-size: 2.84cqw !important;
+  font-size: 3.21cqw !important;
+  font-family: "NanumDdarEGeEomMaGa", sans-serif !important;
+  font-weight: 700 !important;
   line-height: 1.18 !important;
   word-break: break-all;
   -webkit-box-orient: vertical !important;
