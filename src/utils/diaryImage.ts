@@ -38,9 +38,12 @@ const SYSTEM_FONT_STACK =
 const DIARY_FONT_STACK = `${DIARY_FONT_FAMILY}, ${SYSTEM_FONT_STACK}`;
 
 // 미리보기의 12/14/10px 등을 1058px 템플릿 원본 비율로 환산한 값입니다.
-const HEADER_FONT = `400 29px ${DIARY_FONT_STACK}`;
-const TITLE_FONT = `400 34px ${DIARY_FONT_STACK}`;
-const CONTENT_FONT = `400 34px ${DIARY_FONT_STACK}`;
+const HEADER_FONT_SIZE = 54;
+const TITLE_FONT_SIZE = 58;
+const HEADER_FONT = `400 ${HEADER_FONT_SIZE}px ${DIARY_FONT_STACK}`;
+const TITLE_FONT = `400 ${TITLE_FONT_SIZE}px ${DIARY_FONT_STACK}`;
+const CONTENT_FONT_SIZE = 54;
+const CONTENT_FONT = `400 ${CONTENT_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const COMMENT_LABEL_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
 const COMMENT_FONT = `500 30px ${SYSTEM_FONT_STACK}`;
 const TAG_FONT = `400 22px ${SYSTEM_FONT_STACK}`;
@@ -114,6 +117,30 @@ function drawHandwrittenText(
   }
 
   return characterIndex;
+}
+
+function drawFittedHandwrittenText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  centerX: number,
+  baseline: number,
+  maxWidth: number,
+  startIndex: number,
+): void {
+  const textWidth = context.measureText(text).width;
+  const scaleX = textWidth > 0 ? Math.min(1, maxWidth / textWidth) : 1;
+
+  context.save();
+  context.translate(centerX, 0);
+  context.scale(scaleX, 1);
+  drawHandwrittenText(
+    context,
+    text,
+    -textWidth / 2,
+    baseline,
+    startIndex,
+  );
+  context.restore();
 }
 
 function drawCoverImage(
@@ -244,15 +271,15 @@ function drawContent(
     const row = Math.floor(index / COLUMN_COUNT);
     const column = index % COLUMN_COUNT;
     const centerX = x + (column + 0.5) * cellWidth;
-    const baseline = y + (row + 0.5) * cellHeight + 12;
+    const baseline = y + (row + 0.5) * cellHeight + 18;
     const variation = handwritingVariation(cell.text, index, 1);
 
     context.save();
     context.font = fontWithWeight(context.font, variation.fontWeight);
     context.globalAlpha *= variation.opacity;
     context.translate(
-      centerX + variation.offsetXEm * 34,
-      baseline + variation.offsetYEm * 34,
+      centerX + variation.offsetXEm * CONTENT_FONT_SIZE,
+      baseline + variation.offsetYEm * CONTENT_FONT_SIZE,
     );
     context.rotate((variation.rotationDeg * Math.PI) / 180);
     context.scale(variation.scale, variation.scale);
@@ -512,44 +539,47 @@ export async function composeDiaryImage(
   const headerY = HEADER.y;
   const headerWidth = HEADER.width;
   const headerHeight = HEADER.height;
-  const headerBaseline = headerY + headerHeight * 0.55 + 10;
+  const headerBaseline = headerY + headerHeight * 0.5 + 18;
   const headerItems = [
-    { text: year, left: 0.062, seed: 0 },
-    { text: String(Number(month)), left: 0.167, seed: 10 },
-    { text: String(Number(day)), left: 0.271, seed: 20 },
-    { text: weekday, left: 0.375, seed: 30 },
+    { text: year, left: 0.062, maxWidth: 86, seed: 0 },
+    { text: String(Number(month)), left: 0.167, maxWidth: 70, seed: 10 },
+    { text: String(Number(day)), left: 0.271, maxWidth: 70, seed: 20 },
+    { text: weekday, left: 0.375, maxWidth: 78, seed: 30 },
   ];
 
   context.font = HEADER_FONT;
   context.fillStyle = "#222222";
   context.textAlign = "center";
   for (const item of headerItems) {
-    const itemWidth = context.measureText(item.text).width;
-    drawHandwrittenText(
+    drawFittedHandwrittenText(
       context,
       item.text,
-      headerX + headerWidth * item.left - itemWidth / 2,
+      headerX + headerWidth * item.left,
       headerBaseline,
+      item.maxWidth,
       item.seed,
     );
   }
   // 4.6cqw in the DOM preview maps to about 49 source pixels at 1058px wide.
   // Keeping the export at the same source ratio makes both versions match.
-  const weatherIconSize = WIDTH * 0.046;
+  const weatherIconSize = 56;
+  const weatherIconX = headerX + headerWidth * 0.755;
   context.drawImage(
     weatherIcon,
-    headerX + headerWidth * 0.775,
+    weatherIconX,
     headerY + (headerHeight - weatherIconSize) / 2,
     weatherIconSize,
     weatherIconSize,
   );
   const weatherText = weatherLabel(input.weather);
-  const weatherTextWidth = context.measureText(weatherText).width;
-  drawHandwrittenText(
+  const weatherTextLeft = weatherIconX + weatherIconSize + 10;
+  const weatherTextRight = headerX + headerWidth - 8;
+  drawFittedHandwrittenText(
     context,
     weatherText,
-    headerX + headerWidth * 0.895 - weatherTextWidth / 2,
+    (weatherTextLeft + weatherTextRight) / 2,
     headerBaseline,
+    weatherTextRight - weatherTextLeft,
     40,
   );
   context.textAlign = "start";
@@ -568,7 +598,7 @@ export async function composeDiaryImage(
     context,
     input.title || "제목 없는 일기",
     titleX,
-    titleY + titleHeight / 2 + 12,
+    titleY + titleHeight / 2 + 20,
     50,
   );
   context.restore();

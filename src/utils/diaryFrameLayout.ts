@@ -26,14 +26,14 @@ export const DIARY_FRAME = {
   columns: 11,
   baseRows: 5,
   maxRows: 10,
-  rowHeight: 69,
-  topHeight: 880,
-  bottomSourceY: 1225,
-  header: { x: 50, y: 177, width: 959, height: 72 },
-  title: { x: 129, y: 249, width: 879, height: 57 },
-  photo: { x: 50, y: 316, width: 959, height: 544 },
-  content: { x: 50, y: 880, width: 959 },
-  comment: { x: 49, y: 1247, width: 961, height: 178 },
+  rowHeight: 68,
+  topHeight: 947,
+  bottomSourceY: 1287,
+  header: { x: 50, y: 205, width: 959, height: 81 },
+  title: { x: 129, y: 286, width: 879, height: 73 },
+  photo: { x: 45, y: 361, width: 968, height: 561 },
+  content: { x: 45, y: 947, width: 968 },
+  comment: { x: 44, y: 1312, width: 970, height: 140 },
 } as const;
 
 // The product limit is exactly 100 characters. The 11-column manuscript grid
