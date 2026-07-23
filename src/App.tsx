@@ -69,18 +69,18 @@ const ONBOARDING_DECORATIONS = [
 
 const ONBOARDING_TITLE_LINES = [
   [
-    { name: "na", file: "나.png" },
-    { name: "ui", file: "의.png" },
+    { name: "na", file: "title-na.png" },
+    { name: "ui", file: "title-ui.png" },
   ],
   [
-    { name: "yeo", file: "여.png" },
-    { name: "reum", file: "름.png" },
-    { name: "bang", file: "방.png" },
-    { name: "hak", file: "학.png" },
+    { name: "yeo", file: "title-yeo.png" },
+    { name: "reum", file: "title-reum.png" },
+    { name: "bang", file: "title-bang.png" },
+    { name: "hak", file: "title-hak.png" },
   ],
   [
-    { name: "il", file: "일.png" },
-    { name: "gi", file: "기.png" },
+    { name: "il", file: "title-il.png" },
+    { name: "gi", file: "title-gi.png" },
   ],
 ] as const;
 
