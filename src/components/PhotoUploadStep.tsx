@@ -98,7 +98,7 @@ export function PhotoUploadStep({
             alt="선택한 사진 미리보기"
           />
           <Button
-            className="app-stable-button-state"
+            className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
             variant="weak"
             color="dark"
             display="block"
@@ -134,9 +134,6 @@ export function PhotoUploadStep({
             aria-hidden
           />
           <span className="photo-placeholder-copy">
-            <span className="photo-placeholder-emoji" aria-hidden>
-              📷
-            </span>
             {/* Fixed colors pair with the fixed light placeholder background.
               Note: @toss/tds-mobile-ait currently pins colorPreference to
               "light", so adaptive.* tokens never change today — if a future
@@ -284,7 +281,7 @@ export function PhotoUploadStep({
 
             <div className="photo-consent-actions">
               <Button
-                className="app-stable-button-state"
+                className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
                 variant="weak"
                 color="dark"
                 display="block"
@@ -293,7 +290,7 @@ export function PhotoUploadStep({
                 닫기
               </Button>
               <Button
-                className="app-stable-button-state"
+                className="app-stable-button-state summer-diary-button summer-diary-button-primary"
                 display="block"
                 disabled={!agreed}
                 onClick={openPickerAfterConsent}

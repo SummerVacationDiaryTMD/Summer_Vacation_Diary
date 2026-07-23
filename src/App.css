@@ -696,7 +696,7 @@ html:has(.diary-content-section textarea:focus) {
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  padding: 34px 16px 16px;
+  padding: 28px 16px 16px;
   background: linear-gradient(
     transparent,
     rgba(255, 255, 255, 0.9) 42%,
@@ -706,11 +706,6 @@ html:has(.diary-content-section textarea:focus) {
 
 .photo-placeholder:disabled {
   opacity: 0.5;
-}
-
-.photo-placeholder-emoji {
-  font-size: 28px;
-  margin-bottom: 2px;
 }
 
 .photo-selected {
@@ -881,7 +876,110 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .app-stable-button-state:disabled:not([aria-busy="true"]) {
-  opacity: 0.3 !important;
+  opacity: 1 !important;
+}
+
+/* Shared picture-diary CTA treatment. TDS still owns semantics, loading and
+   focus management; these rules only replace its visual skin. */
+.summer-diary-button {
+  --button-background-color: transparent !important;
+  --button-dimmer-pressed-background-color: transparent !important;
+  --button-gradient-color: transparent !important;
+  min-height: 60px !important;
+  box-sizing: border-box !important;
+  padding: 12px !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+  border-radius: 18px 22px 17px 21px !important;
+  font-family: "NanumCoDingHeuiMang", sans-serif !important;
+  font-size: 26px !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.015em !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0.55px currentcolor;
+  transition:
+    transform 100ms ease,
+    box-shadow 100ms ease,
+    filter 100ms ease !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+.summer-diary-button > div:first-child {
+  background-color: transparent !important;
+}
+
+.summer-diary-button * {
+  color: inherit !important;
+  font-family: "NanumCoDingHeuiMang", sans-serif !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+}
+
+.summer-diary-button .tds-mobile-button__content {
+  opacity: 1 !important;
+  -webkit-text-stroke: 0.55px currentcolor;
+  paint-order: stroke fill;
+}
+
+.summer-diary-button-primary {
+  border-color: #2476bc !important;
+  background: linear-gradient(180deg, #62b9f7 0%, #3d91df 100%) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.26),
+    0 5px 0 #236aa8,
+    0 10px 18px rgba(43, 120, 181, 0.2) !important;
+  color: #ffffff !important;
+}
+
+.summer-diary-button-secondary {
+  border-color: #75acd0 !important;
+  background:
+    repeating-linear-gradient(
+      -8deg,
+      transparent 0 7px,
+      rgba(240, 192, 79, 0.08) 8px 9px
+    ),
+    linear-gradient(rgba(255, 252, 229, 0.96), rgba(255, 245, 199, 0.98)) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.55),
+    0 4px 0 #8ebbd3,
+    0 8px 14px rgba(73, 133, 165, 0.14) !important;
+  color: #326d95 !important;
+}
+
+.summer-diary-button:active:not(:disabled) {
+  transform: translateY(3px) rotate(-0.25deg) !important;
+}
+
+.summer-diary-button-primary:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.22),
+    0 2px 0 #236aa8,
+    0 5px 10px rgba(43, 120, 181, 0.16) !important;
+  filter: saturate(0.95);
+}
+
+.summer-diary-button-secondary:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.5),
+    0 1px 0 #8ebbd3,
+    0 4px 8px rgba(73, 133, 165, 0.12) !important;
+}
+
+.summer-diary-button:focus-visible {
+  outline: 3px solid rgba(55, 148, 222, 0.3) !important;
+  outline-offset: 3px !important;
+}
+
+.summer-diary-button:disabled:not([aria-busy="true"]) {
+  border-color: #9fb9c7 !important;
+  background: #eaf0f3 !important;
+  box-shadow: 0 3px 0 #b8cbd4 !important;
+  color: #4f6875 !important;
+  opacity: 1 !important;
+  filter: none !important;
 }
 
 /* --- Finished diary save/share sheet --- */
@@ -1013,9 +1111,9 @@ html:has(.diary-content-section textarea:focus) {
   border: 0;
   background: transparent;
   color: #4e5968;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-family: "NanumCoDingHeuiMang", sans-serif;
+  font-size: 16px;
+  font-weight: 400;
   line-height: 1.4;
   white-space: nowrap;
   cursor: pointer;
@@ -1169,10 +1267,12 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .weather-scroll-region {
+  display: flex;
+  align-items: center;
   width: calc(100% + 32px);
   box-sizing: border-box;
   margin: 0 -16px;
-  padding: 0 16px 5px;
+  padding: 4px 16px 5px;
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -1182,14 +1282,26 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .weather-scroll-region [role="radiogroup"] {
+  display: flex;
+  align-items: stretch;
   width: max-content;
   min-width: 100%;
 }
 
+.weather-scroll-region [role="radio"] {
+  display: flex !important;
+  min-height: 56px;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 .weather-option {
   display: inline-flex;
+  min-height: 44px;
   align-items: center;
+  justify-content: center;
   gap: 4px;
+  line-height: 1;
   white-space: nowrap;
 }
 
