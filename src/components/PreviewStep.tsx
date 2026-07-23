@@ -17,6 +17,7 @@ import {
   type DiaryFrameLayout,
   type DiaryFrameRegion,
 } from "../utils/diaryFrameLayout";
+import { pickCorrectionMarkAsset } from "../utils/correctionMarks";
 import { handwritingVariation } from "../utils/handwriting";
 import { buildHighlightSegments } from "../utils/highlight";
 
@@ -185,6 +186,12 @@ function HighlightedContent({
               top: `${(run.row / rowCount) * 100}%`,
               width: `${(run.length / columnCount) * 100}%`,
               height: `${100 / rowCount}%`,
+              backgroundImage: `url("${pickCorrectionMarkAsset(
+                run.mark,
+                run.row,
+                run.startColumn,
+                run.length,
+              )}")`,
             }}
           />
         ))}

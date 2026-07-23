@@ -1653,23 +1653,28 @@ html:has(.diary-content-section textarea:focus) {
   pointer-events: none;
 }
 
+/* Hand-drawn crayon scans (backgroundImage is set per run in PreviewStep,
+   picked deterministically so the canvas export renders the same drawing).
+   The size/position fractions below must stay in sync with the export
+   numbers in utils/diaryImage.ts drawContent(). */
 .diary-correction {
   position: absolute;
   box-sizing: border-box;
+  background-repeat: no-repeat;
 }
 
 .diary-correction-circle {
-  border: max(1px, 0.46cqw) solid rgba(224, 62, 46, 0.78);
-  border-radius: 48% 52% 46% 54% / 58% 44% 56% 42%;
-  transform: rotate(-1.5deg) scaleY(0.78);
-  filter: drop-shadow(0 0 0.4px rgba(180, 38, 28, 0.5));
+  /* Stretch the drawing to the run box, inset 6% top/bottom so the ellipse
+     strikes through the glyphs instead of hugging the cell borders. */
+  background-size: 100% 88%;
+  background-position: center;
 }
 
 .diary-correction-underline {
-  height: 100% !important;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='5' viewBox='0 0 12 5'%3E%3Cpath d='M0 3 Q3 0 6 3 T12 3' fill='none' stroke='%23dc3e2e' stroke-width='1.5'/%3E%3C/svg%3E");
-  background-position: left bottom 5px;
-  background-repeat: repeat-x;
+  /* Thin stroke pinned near the cell bottom; horizontal stretch is
+     invisible on a scribbled line, so no tiling is needed. */
+  background-size: 100% 16%;
+  background-position: left bottom 5%;
 }
 
 .diary-card-comment {
