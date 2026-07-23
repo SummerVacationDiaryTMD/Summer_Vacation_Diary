@@ -45,12 +45,18 @@ function frameRegionStyle(
 function HandwrittenText({
   text,
   seedOffset = 0,
+  strength = 1,
 }: {
   text: string;
   seedOffset?: number;
+  strength?: number;
 }) {
   return Array.from(text).map((character, index) => {
-    const variation = handwritingVariation(character, index + seedOffset);
+    const variation = handwritingVariation(
+      character,
+      index + seedOffset,
+      strength,
+    );
     return (
       <span
         key={`${index}-${character}`}
@@ -299,22 +305,34 @@ export function PreviewStep({
           >
             <span>
               <strong>
-                <HandwrittenText text={year} />
+                <HandwrittenText text={year} strength={0.45} />
               </strong>
             </span>
             <span>
               <strong>
-                <HandwrittenText text={String(Number(month))} seedOffset={10} />
+                <HandwrittenText
+                  text={String(Number(month))}
+                  seedOffset={10}
+                  strength={0.45}
+                />
               </strong>
             </span>
             <span>
               <strong>
-                <HandwrittenText text={String(Number(day))} seedOffset={20} />
+                <HandwrittenText
+                  text={String(Number(day))}
+                  seedOffset={20}
+                  strength={0.45}
+                />
               </strong>
             </span>
             <span>
               <strong>
-                <HandwrittenText text={weekday} seedOffset={30} />
+                <HandwrittenText
+                  text={weekday}
+                  seedOffset={30}
+                  strength={0.45}
+                />
               </strong>
             </span>
             <span className="diary-weather">
@@ -328,6 +346,7 @@ export function PreviewStep({
                 <HandwrittenText
                   text={weatherLabel(draft.weather)}
                   seedOffset={40}
+                  strength={0.45}
                 />
               </strong>
             </span>

@@ -127,19 +127,27 @@ function drawFittedHandwrittenText(
   maxWidth: number,
   startIndex: number,
 ): void {
-  const textWidth = context.measureText(text).width;
+  const tracking = 3;
+  const characterCount = Array.from(text).length;
+  const textWidth =
+    context.measureText(text).width + Math.max(0, characterCount - 1) * tracking;
   const scaleX = textWidth > 0 ? Math.min(1, maxWidth / textWidth) : 1;
 
   context.save();
   context.translate(centerX, 0);
   context.scale(scaleX, 1);
-  drawHandwrittenText(
-    context,
-    text,
-    -textWidth / 2,
-    baseline,
-    startIndex,
-  );
+  let cursorX = -textWidth / 2;
+  Array.from(text).forEach((character, index) => {
+    drawHandwrittenText(
+      context,
+      character,
+      cursorX,
+      baseline,
+      startIndex + index,
+      0.45,
+    );
+    cursorX += context.measureText(character).width + tracking;
+  });
   context.restore();
 }
 
@@ -541,10 +549,10 @@ export async function composeDiaryImage(
   const headerHeight = HEADER.height;
   const headerBaseline = headerY + headerHeight * 0.5 + 18;
   const headerItems = [
-    { text: year, left: 0.062, maxWidth: 86, seed: 0 },
+    { text: year, left: 0.045, maxWidth: 70, seed: 0 },
     { text: String(Number(month)), left: 0.167, maxWidth: 70, seed: 10 },
     { text: String(Number(day)), left: 0.271, maxWidth: 70, seed: 20 },
-    { text: weekday, left: 0.375, maxWidth: 78, seed: 30 },
+    { text: weekday, left: 0.42, maxWidth: 78, seed: 30 },
   ];
 
   context.font = HEADER_FONT;

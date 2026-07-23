@@ -1091,11 +1091,11 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .diary-card-header > span:nth-child(1) {
-  left: 6.2%;
+  left: 4.5%;
 }
 .diary-card-header > span:nth-child(1) strong {
   display: inline-block;
-  transform: scaleX(0.66);
+  transform: scaleX(0.55);
 }
 .diary-card-header > span:nth-child(2) {
   left: 16.7%;
@@ -1109,7 +1109,7 @@ html:has(.diary-content-section textarea:focus) {
   left: 27.1%;
 }
 .diary-card-header > span:nth-child(4) {
-  left: 37.5%;
+  left: 42%;
 }
 .diary-card-header > span:nth-child(4) strong {
   display: inline-block;
@@ -1123,6 +1123,7 @@ html:has(.diary-content-section textarea:focus) {
 .diary-card-header strong {
   color: #493b33;
   font-size: inherit;
+  letter-spacing: 0.04em;
 }
 
 .diary-weather {
@@ -1135,7 +1136,7 @@ html:has(.diary-content-section textarea:focus) {
 
 .diary-weather strong {
   min-width: 0;
-  letter-spacing: -0.08em;
+  letter-spacing: 0.035em;
   transform: scaleX(0.78);
   transform-origin: left center;
 }
