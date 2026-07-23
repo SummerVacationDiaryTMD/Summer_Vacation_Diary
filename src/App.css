@@ -990,7 +990,7 @@ html:has(.diary-content-section textarea:focus) {
 
 .diary-frame-grid-row {
   min-height: 0;
-  background: url("/picture-diary-frame.png") center 62.05% / 100% auto
+  background: url("/picture-diary-frame.png") center 66.74% / 100% auto
     no-repeat;
 }
 
@@ -1078,8 +1078,8 @@ html:has(.diary-content-section textarea:focus) {
 .diary-card-header {
   position: absolute;
   z-index: 1;
-  font-size: clamp(7px, 2.55cqw, 11px);
-  color: #555;
+  font-size: clamp(15px, 5.1cqw, 23px);
+  color: #4d4038;
 }
 
 /* 직계 자식만 날짜/날씨 칸으로 배치합니다. 내부의 글자별 span까지
@@ -1093,8 +1093,17 @@ html:has(.diary-content-section textarea:focus) {
 .diary-card-header > span:nth-child(1) {
   left: 6.2%;
 }
+.diary-card-header > span:nth-child(1) strong {
+  display: inline-block;
+  transform: scaleX(0.66);
+}
 .diary-card-header > span:nth-child(2) {
   left: 16.7%;
+}
+.diary-card-header > span:nth-child(2) strong,
+.diary-card-header > span:nth-child(3) strong {
+  display: inline-block;
+  transform: scaleX(0.9);
 }
 .diary-card-header > span:nth-child(3) {
   left: 27.1%;
@@ -1102,26 +1111,38 @@ html:has(.diary-content-section textarea:focus) {
 .diary-card-header > span:nth-child(4) {
   left: 37.5%;
 }
+.diary-card-header > span:nth-child(4) strong {
+  display: inline-block;
+  transform: scaleX(0.72);
+}
 .diary-card-header > span:nth-child(5) {
-  left: 85%;
+  left: 87%;
+  width: 26%;
 }
 
 .diary-card-header strong {
-  color: #222;
-  font-size: clamp(8px, 2.78cqw, 12px);
+  color: #493b33;
+  font-size: inherit;
 }
 
 .diary-weather {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: max(3px, 0.9cqw);
   white-space: nowrap;
 }
 
+.diary-weather strong {
+  min-width: 0;
+  letter-spacing: -0.08em;
+  transform: scaleX(0.78);
+  transform-origin: left center;
+}
+
 .diary-weather-icon {
-  width: clamp(14px, 4.6cqw, 24px);
-  height: clamp(14px, 4.6cqw, 24px);
+  width: clamp(17px, 5.3cqw, 26px);
+  height: clamp(17px, 5.3cqw, 26px);
   object-fit: contain;
   flex: 0 0 auto;
 }
@@ -1132,11 +1153,11 @@ html:has(.diary-content-section textarea:focus) {
   display: flex;
   align-items: center;
   padding: 0;
-  font-size: clamp(8px, 3.01cqw, 13px);
+  font-size: clamp(16px, 5.5cqw, 25px);
 }
 
 .diary-title-row strong {
-  font-size: clamp(9px, 3.24cqw, 14px);
+  font-size: inherit;
   word-break: break-word;
 }
 
@@ -1188,8 +1209,8 @@ html:has(.diary-content-section textarea:focus) {
   padding: 0;
   overflow: visible;
   border: 0;
-  font-size: clamp(9px, 3.24cqw, 14px);
-  color: #333;
+  font-size: clamp(15px, 5.1cqw, 23px);
+  color: #493b33;
 }
 
 .diary-grid-cell {
@@ -1262,7 +1283,7 @@ html:has(.diary-content-section textarea:focus) {
   font-size: clamp(6px, 2.08cqw, 9px);
   line-height: 1.15;
   font-weight: 700;
-  color: #806d3d;
+  color: #745b4b;
 }
 
 .diary-card-comment .diary-comment-text {
