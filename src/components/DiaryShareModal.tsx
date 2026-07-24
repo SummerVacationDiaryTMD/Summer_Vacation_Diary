@@ -13,7 +13,10 @@ interface DiaryShareModalProps {
 }
 
 type ShareAction = "save" | "share";
-type ActionFeedback = { tone: "success" | "error"; message: string };
+
+type ActionFeedback = {
+  message: string;
+};
 
 export function DiaryShareModal({
   open,
@@ -29,37 +32,23 @@ export function DiaryShareModal({
     if (busyAction !== null) {
       return;
     }
+
     setFeedback(null);
     setBusyAction(action);
+
     try {
       if (action === "save") {
-        const outcome = await exportDiaryImage(imageDataUrl, fileName);
-        setFeedback({
-          tone: "success",
-          message:
-            outcome === "saved"
-              ? "저장을 완료했어요. 사진 앱 또는 다운로드 폴더를 확인해 주세요."
-              : "그림일기 이미지 다운로드를 시작했어요.",
-        });
+        await exportDiaryImage(imageDataUrl, fileName);
       } else {
-        const outcome = await shareDiaryAppLink();
-        if (outcome === "copied") {
-          setFeedback({
-            tone: "success",
-            message: "공유 기능이 없어 앱 링크를 복사했어요.",
-          });
-        } else if (outcome === "shared") {
-          setFeedback({ tone: "success", message: "공유를 완료했어요." });
-        } else if (outcome === "cancelled") {
-          setFeedback({ tone: "success", message: "공유를 취소했어요." });
-        }
+        await shareDiaryAppLink();
       }
     } catch (error) {
       const message =
         error instanceof DiaryShareError || error instanceof DiaryExportError
           ? error.userMessage
           : "요청을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.";
-      setFeedback({ tone: "error", message });
+
+      setFeedback({ message });
     } finally {
       setBusyAction(null);
     }
@@ -68,11 +57,13 @@ export function DiaryShareModal({
   return (
     <Modal open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <Modal.Overlay />
+
       <Modal.Content className="diary-share-modal">
         <div className="diary-share-content">
           <div className="diary-share-body">
             <div>
               <h2 className="diary-share-title">그림일기가 완성됐어요</h2>
+
               <p className="diary-share-description">
                 완성 이미지를 저장하거나 친구에게 앱을 알려주세요.
               </p>
@@ -102,6 +93,7 @@ export function DiaryShareModal({
               >
                 이미지 저장하기
               </Button>
+
               <Button
                 className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
                 display="block"
@@ -117,8 +109,8 @@ export function DiaryShareModal({
 
             {feedback !== null && (
               <p
-                className={`diary-share-feedback diary-share-feedback-${feedback.tone}`}
-                role="status"
+                className="diary-share-feedback diary-share-feedback-error"
+                role="alert"
               >
                 {feedback.message}
               </p>
@@ -133,7 +125,9 @@ export function DiaryShareModal({
               >
                 계속 보기
               </button>
+
               <span className="diary-share-action-divider" aria-hidden />
+
               <button
                 type="button"
                 className="diary-share-text-action"
