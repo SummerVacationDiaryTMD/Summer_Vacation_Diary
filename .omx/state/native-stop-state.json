@@ -12,11 +12,11 @@
     },
     "019f933f-e397-7122-bd6f-9f8ed2e79d08": {
       "ordinary_no_progress_guard": {
-        "fingerprint": "ordinary|변경 완료했습니다. - 미리보기 제목: [app.css](c:\\users\\d\\desktop\\summer_vacation_diary\\src\\app.css:1729) → `letter-spacing: 0.05em` - 저장 이미지 제목: [diaryimage.ts](c:\\users\\d\\desktop\\summer_vacation_diary\\src\\utils\\diaryimage.ts:675) → 자간 `3px` - 날짜·날씨 등 다른 손글씨에는 영향 없음 타입 검사와 eslint 모두 통과했습니다.",
-        "first_seen_at": "2026-07-24T08:39:40.989Z",
-        "last_seen_at": "2026-07-24T08:39:40.989Z",
+        "fingerprint": "ordinary|밑줄 문장 안의 핵심 단어에도 동그라미가 동시에 표시되도록 변경했습니다. - 중첩 강조 구간 지원: [highlight.ts](c:\\users\\d\\desktop\\summer_vacation_diary\\src\\utils\\highlight.ts:56) - 미리보기에서 두 표시 렌더링: [previewstep.tsx](c:\\users\\d\\desktop\\summer_vacation_diary\\src\\components\\previewstep.tsx:146) - 저장 이미지에서도 두 표시 렌더링: [diaryimage.ts](c:\\users\\d\\desktop\\summer_vacation_diary\\src\\utils\\diaryimage.ts:235) 중첩 예제 확인, 타입 검사, eslint, 프로덕션 빌드 모두 통과했습니다.",
+        "first_seen_at": "2026-07-24T08:54:34.105Z",
+        "last_seen_at": "2026-07-24T08:54:34.105Z",
         "repeat_count": 1,
-        "last_turn_id": "019f9346-f0c3-7d13-9b15-a14663744696",
+        "last_turn_id": "019f9351-b930-7ac1-ae8a-4bedc01a094f",
         "last_thread_id": null
       }
     }

@@ -1,6 +1,6 @@
 export interface HighlightSegment {
   text: string;
-  mark: "circle" | "underline" | null;
+  mark: "circle" | "underline" | "both" | null;
 }
 
 interface Range {
@@ -10,14 +10,9 @@ interface Range {
 }
 
 /**
- * Splits the diary content into plain / marked segments so the preview can
- * render 첨삭 marks without dangerouslySetInnerHTML (user text stays text —
- * no HTML injection surface).
- *
- * The sentence is claimed first, then words; anything overlapping an already
- * claimed range is dropped. Nested marks (a circled word inside the
- * underlined sentence) would need a tree instead of a flat list — not worth
- * it for the MVP's 2-4 marks.
+ * Splits diary content into plain and marked segments without injecting HTML.
+ * Underline and circle ranges may overlap, so a word inside an underlined
+ * sentence can render both correction marks.
  */
 export function buildHighlightSegments(
   content: string,
@@ -25,8 +20,11 @@ export function buildHighlightSegments(
   sentence: string | null,
 ): HighlightSegment[] {
   const ranges: Range[] = [];
-  const overlaps = (start: number, end: number) =>
-    ranges.some((range) => start < range.end && end > range.start);
+  const overlapsCircle = (start: number, end: number) =>
+    ranges.some(
+      (range) =>
+        range.mark === "circle" && start < range.end && end > range.start,
+    );
 
   if (sentence !== null && sentence !== "") {
     const index = content.indexOf(sentence);
@@ -43,12 +41,10 @@ export function buildHighlightSegments(
     if (word === "") {
       continue;
     }
-    // One mark per word (the spec wants a light touch — 핵심 단어 2~4개),
-    // but if the first occurrence is already claimed (e.g. it sits inside
-    // the underlined sentence), fall through to the next free one instead
-    // of dropping the word entirely.
+
+    // Each circle target is used once, but it may overlap the underline.
     let index = content.indexOf(word);
-    while (index >= 0 && overlaps(index, index + word.length)) {
+    while (index >= 0 && overlapsCircle(index, index + word.length)) {
       index = content.indexOf(word, index + 1);
     }
     if (index < 0) {
@@ -57,22 +53,44 @@ export function buildHighlightSegments(
     ranges.push({ start: index, end: index + word.length, mark: "circle" });
   }
 
-  ranges.sort((a, b) => a.start - b.start);
+  const boundaries = [
+    ...new Set([
+      0,
+      content.length,
+      ...ranges.flatMap(({ start, end }) => [start, end]),
+    ]),
+  ].sort((a, b) => a - b);
 
   const segments: HighlightSegment[] = [];
-  let cursor = 0;
-  for (const range of ranges) {
-    if (range.start > cursor) {
-      segments.push({ text: content.slice(cursor, range.start), mark: null });
+  for (let index = 0; index < boundaries.length - 1; index += 1) {
+    const start = boundaries[index];
+    const end = boundaries[index + 1];
+    if (start === end) continue;
+
+    const activeRanges = ranges.filter(
+      (range) => start < range.end && end > range.start,
+    );
+    const hasCircle = activeRanges.some((range) => range.mark === "circle");
+    const hasUnderline = activeRanges.some(
+      (range) => range.mark === "underline",
+    );
+    const mark =
+      hasCircle && hasUnderline
+        ? "both"
+        : hasCircle
+          ? "circle"
+          : hasUnderline
+            ? "underline"
+            : null;
+
+    const text = content.slice(start, end);
+    const previous = segments[segments.length - 1];
+    if (previous?.mark === mark) {
+      previous.text += text;
+    } else {
+      segments.push({ text, mark });
     }
-    segments.push({
-      text: content.slice(range.start, range.end),
-      mark: range.mark,
-    });
-    cursor = range.end;
   }
-  if (cursor < content.length) {
-    segments.push({ text: content.slice(cursor), mark: null });
-  }
+
   return segments;
 }
