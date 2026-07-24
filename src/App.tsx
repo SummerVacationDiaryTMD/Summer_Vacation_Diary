@@ -472,6 +472,7 @@ function App() {
           >
             이전
           </Button>
+
           <Button
             className="app-stable-button-state feedback-disabled-button summer-diary-button summer-diary-button-primary"
             display="block"
@@ -493,10 +494,11 @@ function App() {
           >
             수정하기
           </Button>
+
           <Button
             className="app-stable-button-state summer-diary-button summer-diary-button-primary"
             display="block"
-            loading={saving}
+            disabled={saving}
             onClick={handleFinish}
           >
             완성하기
