@@ -1505,11 +1505,17 @@ html:has(.diary-content-section textarea:focus) {
   align-self: center;
   width: 95%;
   box-sizing: border-box;
-  padding: 8px 12px;
+  padding: 4px 12px;
   border: 1px solid #e7dcbd;
   border-radius: 15px;
   background: #fffdf5;
   box-shadow: 0 4px 12px rgba(61, 105, 132, 0.08);
+}
+
+.analysis-loading-text {
+  font-family: "NanumDdarEGeEomMaGa", sans-serif !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
 }
 
 .loading-blink {
@@ -1912,11 +1918,13 @@ html:has(.diary-content-section textarea:focus) {
   max-height: none;
   margin: 0;
   overflow: visible !important;
+
   font-size: 5.46cqw !important;
   font-family: "NanumDdarEGeEomMaGa", sans-serif !important;
   font-weight: 700 !important;
-  line-height: 1.18 !important;
   word-break: break-all;
+
+  transform: translateY(-6px);
 }
 
 /* --- Stage 2: analysis marks, tags and comment states --- */
