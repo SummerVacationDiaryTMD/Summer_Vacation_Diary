@@ -450,7 +450,9 @@ export function PreviewStep({
                   fontWeight="medium"
                   color="#6b5e3f"
                 >
-                  ✏️ {analysis.comment}
+                  {"“"}
+                  {analysis.comment}
+                  {"”"}
                 </Paragraph>
                 {tags.length > 0 && (
                   <div className="diary-tags">
