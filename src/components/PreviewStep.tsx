@@ -299,7 +299,7 @@ export function PreviewStep({
   const fallbackCommentLines =
     analysis === null
       ? 1
-      : Math.max(1, Math.ceil(Array.from(analysis.comment).length / 28));
+      : Math.max(1, Math.ceil(Array.from(analysis.comment).length / 16));
   const frameLayout =
     renderedPreview?.frameLayout ??
     getDiaryFrameLayout(draft.content, fallbackCommentLines, tags.length > 0);
