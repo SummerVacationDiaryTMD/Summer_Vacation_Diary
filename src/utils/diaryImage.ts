@@ -42,13 +42,13 @@ export interface ComposedDiaryImage {
 // so an added manuscript row moves the footer by the same amount in both.
 const WIDTH = DIARY_FRAME.width;
 const BASE_HEIGHT = DIARY_FRAME.baseHeight;
-const TEMPLATE_URL = "/picture-diary-frame.png";
+const TEMPLATE_URL = "/picture-diary-frame-instagram.png";
 
 const HEADER = DIARY_FRAME.header;
 const TITLE = DIARY_FRAME.title;
 const PHOTO = DIARY_FRAME.photo;
 
-const COLUMN_COUNT = 11;
+const COLUMN_COUNT = DIARY_FRAME.columns;
 const DIARY_FONT_FAMILY = '"NanumCoDingHeuiMang"';
 const SYSTEM_FONT_STACK =
   '-apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
@@ -63,8 +63,8 @@ const HEADER_FONT = `400 ${HEADER_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const TITLE_FONT = `400 ${TITLE_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const CONTENT_FONT_SIZE = 54;
 const CONTENT_FONT = `400 ${CONTENT_FONT_SIZE}px ${DIARY_FONT_STACK}`;
-const COMMENT_LABEL_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
-const COMMENT_FONT = `700 58px ${TEACHER_COMMENT_FONT_STACK}`;
+const COMMENT_LABEL_FONT = `700 18px ${SYSTEM_FONT_STACK}`;
+const COMMENT_FONT = `700 34px ${TEACHER_COMMENT_FONT_STACK}`;
 const AI_WATERMARK_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
 
 const TEXT_COLOR = "#333333";
@@ -404,7 +404,7 @@ function drawComment(
 
   const commentLineHeight = DIARY_COMMENT.lineHeight;
   commentLines.forEach((line, index) => {
-    context.fillText(line, x + paddingX, y + 90 + index * commentLineHeight);
+    context.fillText(line, x + paddingX, y + 59 + index * commentLineHeight);
   });
 
   context.restore();
@@ -437,81 +437,7 @@ function drawFrameTemplate(
   template: HTMLImageElement,
   layout: DiaryFrameLayout,
 ) {
-  context.drawImage(
-    template,
-    0,
-    0,
-    WIDTH,
-    DIARY_FRAME.topHeight,
-    0,
-    0,
-    WIDTH,
-    DIARY_FRAME.topHeight,
-  );
-
-  for (let row = 0; row < layout.contentRows; row += 1) {
-    context.drawImage(
-      template,
-      0,
-      DIARY_FRAME.topHeight,
-      WIDTH,
-      DIARY_FRAME.rowHeight,
-      0,
-      DIARY_FRAME.topHeight + row * DIARY_FRAME.rowHeight,
-      WIDTH,
-      DIARY_FRAME.rowHeight,
-    );
-  }
-
-  const bottomTopHeight =
-    DIARY_COMMENT.bottomSplitSourceY - DIARY_FRAME.bottomSourceY;
-  context.drawImage(
-    template,
-    0,
-    DIARY_FRAME.bottomSourceY,
-    WIDTH,
-    bottomTopHeight,
-    0,
-    layout.bottomTop,
-    WIDTH,
-    bottomTopHeight,
-  );
-
-  let extensionY = layout.bottomTop + bottomTopHeight;
-  let remainingExtension = layout.commentExtraHeight;
-  while (remainingExtension > 0) {
-    const sliceHeight = Math.min(
-      DIARY_COMMENT.extensionSliceHeight,
-      remainingExtension,
-    );
-    context.drawImage(
-      template,
-      0,
-      DIARY_COMMENT.extensionSourceY,
-      WIDTH,
-      sliceHeight,
-      0,
-      extensionY,
-      WIDTH,
-      sliceHeight,
-    );
-    extensionY += sliceHeight;
-    remainingExtension -= sliceHeight;
-  }
-
-  const bottomTailHeight =
-    DIARY_FRAME.baseHeight - DIARY_COMMENT.bottomSplitSourceY;
-  context.drawImage(
-    template,
-    0,
-    DIARY_COMMENT.bottomSplitSourceY,
-    WIDTH,
-    bottomTailHeight,
-    0,
-    extensionY,
-    WIDTH,
-    bottomTailHeight,
-  );
+  context.drawImage(template, 0, 0, WIDTH, layout.height);
 }
 
 export async function composeDiaryImage(

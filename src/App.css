@@ -1544,7 +1544,7 @@ html:has(.diary-content-section textarea:focus) {
 .diary-template {
   position: relative;
   width: 100%;
-  aspect-ratio: 1058 / 1487;
+  aspect-ratio: 4 / 5;
   overflow: hidden;
 }
 
@@ -1564,6 +1564,8 @@ html:has(.diary-content-section textarea:focus) {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  background: url("/picture-diary-frame-instagram.png") top center / 100% 100%
+    no-repeat;
 }
 
 .diary-frame-top,
@@ -1821,7 +1823,7 @@ html:has(.diary-content-section textarea:focus) {
   position: absolute;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(11, minmax(0, 1fr));
+  grid-template-columns: repeat(13, minmax(0, 1fr));
   margin: 0;
   padding: 0;
   overflow: visible;
@@ -1892,7 +1894,7 @@ html:has(.diary-content-section textarea:focus) {
   display: grid;
   grid-template-rows: auto auto auto;
   align-content: start;
-  row-gap: max(1px, 0.46cqw);
+  row-gap: max(1px, 0.2cqw);
   margin: 0;
   /* 원본 프레임의 한마디 칸(x=48~1008)에서 좌우 25px씩 안쪽.
      Canvas 저장 이미지와 같은 25 / 1058 비율을 그대로 사용합니다. */
@@ -1904,7 +1906,7 @@ html:has(.diary-content-section textarea:focus) {
 
 .diary-comment-label {
   margin: 0;
-  font-size: clamp(6px, 2.08cqw, 9px);
+  font-size: clamp(6px, 1.7cqw, 8px);
   line-height: 1.15;
   font-weight: 700;
   color: #745b4b;
