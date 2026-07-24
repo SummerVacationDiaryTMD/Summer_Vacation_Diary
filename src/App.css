@@ -678,6 +678,10 @@ html:has(.diary-content-section textarea:focus) {
   white-space: nowrap;
 }
 
+.app-shell-android.app-shell-write .app-bottom-bar {
+  padding-bottom: 0;
+}
+
 /* --- Photo upload step --- */
 
 .photo-placeholder {

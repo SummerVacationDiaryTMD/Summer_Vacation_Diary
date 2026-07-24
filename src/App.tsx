@@ -103,6 +103,7 @@ function AppBottomBar({
 }
 
 function App() {
+  const isAndroid = /Android/i.test(navigator.userAgent);
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [step, setStep] = useState<Step>("upload");
   // Always open on a fresh diary. Draft persistence remains available in the
@@ -333,7 +334,9 @@ function App() {
   };
 
   return (
-    <main className={`app-shell app-shell-${step}`}>
+    <main
+      className={`app-shell app-shell-${step}${isAndroid ? " app-shell-android" : ""}`}
+    >
       <div className="summer-sky-accent" aria-hidden="true">
         <span className="summer-sun" />
         <span className="summer-cloud summer-cloud-one" />
