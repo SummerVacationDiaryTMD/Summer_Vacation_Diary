@@ -1532,18 +1532,37 @@ html:has(.diary-content-section textarea:focus) {
 .ai-content-watermark {
   position: absolute;
   z-index: 3;
-  top: 7.1%;
+
+  top: 8%;
   right: 4.7%;
-  padding: max(2px, 0.69cqw) max(4px, 1.62cqw);
-  border: max(1px, 0.23cqw) solid rgba(74, 125, 190, 0.5);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  padding: max(3px, 0.72cqw) max(7px, 1.8cqw);
+
+  border: max(1px, 0.22cqw) solid rgba(176, 148, 108, 0.35);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #376baf;
-  font-size: clamp(6px, 2.08cqw, 9px);
+
+  background: rgba(255, 252, 245, 0.92);
+  backdrop-filter: blur(6px);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 2px 8px rgba(70, 60, 45, 0.08);
+
+  color: #8b6a3e;
+
+  font-family: "Pretendard", sans-serif;
+  font-size: clamp(6px, 2.05cqw, 9px);
   font-weight: 700;
   line-height: 1.2;
-  letter-spacing: -0.2px;
+  letter-spacing: 0.01em;
+
   white-space: nowrap;
+  user-select: none;
 }
 
 .diary-spiral {

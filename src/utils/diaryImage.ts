@@ -59,8 +59,8 @@ const TEXT_COLOR = "#333333";
 const COMMENT_COLOR = "#6b5e3f";
 const LABEL_COLOR = "#806d3d";
 const TAG_BACKGROUND = "#f3ecd2";
-const AI_WATERMARK_COLOR = "#376baf";
 const AI_WATERMARK_TEXT = "AI 생성 콘텐츠 포함";
+const AI_WATERMARK_COLOR = "#8B6A3E";
 
 interface DiaryCell {
   text: string;
@@ -135,7 +135,8 @@ function drawFittedHandwrittenText(
   const tracking = 3;
   const characterCount = Array.from(text).length;
   const textWidth =
-    context.measureText(text).width + Math.max(0, characterCount - 1) * tracking;
+    context.measureText(text).width +
+    Math.max(0, characterCount - 1) * tracking;
   const scaleX = textWidth > 0 ? Math.min(1, maxWidth / textWidth) : 1;
 
   context.save();
@@ -324,24 +325,44 @@ function roundRectPath(
 
 function drawAiContentWatermark(context: CanvasRenderingContext2D) {
   context.save();
+
   context.font = AI_WATERMARK_FONT;
   context.textBaseline = "middle";
 
-  const paddingX = 18;
+  const paddingX = 20;
   const height = 42;
   const width = context.measureText(AI_WATERMARK_TEXT).width + paddingX * 2;
-  const x = WIDTH - pxX(0.047) - width;
-  const y = pxY(0.071);
 
-  context.fillStyle = "rgba(255, 255, 255, 0.9)";
-  context.strokeStyle = "rgba(74, 125, 190, 0.5)";
+  const x = WIDTH - pxX(0.047) - width;
+  const y = pxY(0.1);
+
+  // 부드러운 그림자
+  context.shadowColor = "rgba(70, 60, 45, 0.08)";
+  context.shadowBlur = 8;
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 2;
+
+  // 배경
+  context.fillStyle = "rgba(255, 252, 245, 0.94)";
+
+  // 테두리
+  context.strokeStyle = "rgba(176, 148, 108, 0.38)";
   context.lineWidth = 2;
+
   roundRectPath(context, x, y, width, height, height / 2);
   context.fill();
   context.stroke();
 
+  // 텍스트에는 그림자 제거
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 0;
+
+  // 상수 유지
   context.fillStyle = AI_WATERMARK_COLOR;
   context.fillText(AI_WATERMARK_TEXT, x + paddingX, y + height / 2 + 1);
+
   context.restore();
 }
 
@@ -422,7 +443,7 @@ function drawComment(
 
   const commentLines = wrapCanvasText(
     context,
-    `✏️ ${analysis.comment}`,
+    `"${analysis.comment}"`,
     width - paddingX * 2,
     2,
   );
