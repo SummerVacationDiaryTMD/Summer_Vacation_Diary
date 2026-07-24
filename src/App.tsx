@@ -212,7 +212,7 @@ function App() {
         </div>
         <div className="onboarding-action-area">
           <button
-            className="onboarding-start-button"
+            className="summer-diary-button summer-diary-button-primary summer-diary-button-onboarding"
             type="button"
             onClick={() => setShowOnboarding(false)}
           >
