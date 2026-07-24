@@ -2050,13 +2050,32 @@ mark.highlight-underline {
 }
 
 .comment-loading {
+  position: absolute;
+  top: 26%;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  padding: 0 2.36cqw;
+  box-sizing: border-box;
+  text-align: center;
 }
 
 .comment-error {
   display: block;
+}
+
+.comment-loading .diary-comment-text {
+  position: static;
+  inset: auto;
+  width: 100%;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .preview-mode-note {

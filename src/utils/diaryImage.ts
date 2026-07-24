@@ -401,7 +401,6 @@ function drawComment(
   // 미리보기의 12px 한 줄 문장을 원본 템플릿 비율로 환산한 30px입니다.
   context.font = COMMENT_FONT;
   context.fillStyle = COMMENT_COLOR;
-
   const commentLineHeight = DIARY_COMMENT.lineHeight;
   commentLines.forEach((line, index) => {
     context.fillText(line, x + paddingX, y + 59 + index * commentLineHeight);
