@@ -34,7 +34,7 @@ export const DIARY_FRAME = {
   title: { x: 149, y: 320, width: 859, height: 72 },
   photo: { x: 48, y: 393, width: 960, height: 358 },
   content: { x: 48, y: 785, width: 959 },
-  comment: { x: 48, y: 1179, width: 960, height: 108 },
+  comment: { x: 48, y: 1180, width: 960, height: 108 },
 } as const;
 
 export const DIARY_COMMENT = {
