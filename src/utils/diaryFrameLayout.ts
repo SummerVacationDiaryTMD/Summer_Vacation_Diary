@@ -31,7 +31,7 @@ export const DIARY_FRAME = {
   topHeight: 991,
   bottomSourceY: 1319,
   header: { x: 50, y: 238, width: 959, height: 82 },
-  title: { x: 124, y: 320, width: 884, height: 72 },
+  title: { x: 149, y: 320, width: 859, height: 72 },
   photo: { x: 48, y: 393, width: 960, height: 564 },
   content: { x: 48, y: 991, width: 959 },
   comment: { x: 48, y: 1344, width: 960, height: 108 },
