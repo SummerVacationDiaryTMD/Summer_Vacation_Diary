@@ -1,7 +1,11 @@
 import { Button, Loader, Paragraph } from "@toss/tds-mobile";
 import { useEffect, useState, type CSSProperties } from "react";
 
-import { weatherIconUrl, weatherLabel } from "../constants/diary";
+import {
+  AI_CONTENT_WATERMARK,
+  weatherIconUrl,
+  weatherLabel,
+} from "../constants/diary";
 import { DiaryFrameBackground } from "./DiaryFrameBackground";
 import type { AnalysisState } from "../hooks/useDiaryAnalysis";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
@@ -320,7 +324,7 @@ export function PreviewStep({
               className="ai-content-watermark"
               style={{ top: `${(106 / frameLayout.height) * 100}%` }}
             >
-              AI 생성 콘텐츠 포함
+              {AI_CONTENT_WATERMARK}
             </span>
           )}
 
