@@ -314,8 +314,8 @@ export function PreviewStep({
         >
           <Paragraph
             as="span"
-            className="loading-blink"
-            typography="t7"
+            className="analysis-loading-text loading-blink"
+            typography="t3"
             fontWeight="medium"
             color="#6b5e3f"
           >
@@ -457,7 +457,7 @@ export function PreviewStep({
                 <Paragraph
                   as="span"
                   className="diary-comment-text loading-blink"
-                  typography="t7"
+                  typography="t5"
                   color="#8a7d55"
                 >
                   {ANALYSIS_LOADING_MESSAGE}
@@ -470,7 +470,7 @@ export function PreviewStep({
                 <Paragraph
                   as="span"
                   className="diary-comment-text"
-                  typography="t7"
+                  typography="t5"
                   color="#8a7d55"
                 >
                   한마디를 불러오지 못했어요
@@ -481,7 +481,7 @@ export function PreviewStep({
             {analysis !== null && (
               <Paragraph
                 className="diary-comment-text"
-                typography="t6"
+                typography="t5"
                 fontWeight="medium"
                 color="#6b5e3f"
               >
