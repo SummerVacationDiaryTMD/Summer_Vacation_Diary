@@ -40,7 +40,7 @@ interface PreviewStepProps {
   onSketchRetry: () => void;
 }
 
-const ANALYSIS_LOADING_MESSAGE = "선생님이 일기를 검사하고 있어요";
+const ANALYSIS_LOADING_MESSAGE = "“선생님이 일기를 검사하고 있어요”";
 
 function frameRegionStyle(
   region: DiaryFrameRegion,
@@ -316,9 +316,9 @@ export function PreviewStep({
           role="status"
           aria-live="polite"
         >
-          <Loader size="small" />
           <Paragraph
             as="span"
+            className="loading-blink"
             typography="t7"
             fontWeight="medium"
             color="#6b5e3f"
@@ -458,10 +458,9 @@ export function PreviewStep({
             <div className="diary-comment-label">선생님 한마디</div>
             {analysisState.status === "loading" && (
               <div className="comment-loading" aria-hidden="true">
-                <Loader size="small" />
                 <Paragraph
                   as="span"
-                  className="diary-comment-text"
+                  className="diary-comment-text loading-blink"
                   typography="t7"
                   color="#8a7d55"
                 >
