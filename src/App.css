@@ -33,6 +33,15 @@
     var(--toss-safe-area-bottom)
   );
   --app-safe-left: max(env(safe-area-inset-left), var(--toss-safe-area-left));
+
+  --summer-sky: #9cddf7;
+  --summer-sky-light: #d9f4fb;
+  --summer-paper: #fffaf0;
+  --summer-paper-line: rgba(67, 137, 169, 0.28);
+  --summer-coral: #e97861;
+  --summer-coral-dark: #bd5e4c;
+  --summer-sea: #4d9db7;
+  --summer-sun: #ffd766;
 }
 
 /* The bottom CTA is fixed only while no text field is active. Keyboard layout
@@ -292,82 +301,6 @@ html:has(.diary-content-section textarea:focus) {
   pointer-events: none;
 }
 
-.onboarding-start-button {
-  width: 100%;
-  min-height: 58px;
-  padding: 15px 24px;
-
-  border: 2px solid #e7b59b;
-  border-radius: 24px 18px 22px 20px;
-
-  background:
-    radial-gradient(
-      circle at 12% 28%,
-      rgba(255, 255, 255, 0.38) 0 2px,
-      transparent 3px
-    ),
-    radial-gradient(
-      circle at 88% 68%,
-      rgba(185, 108, 85, 0.06) 0 2px,
-      transparent 3px
-    ),
-    repeating-linear-gradient(
-      -7deg,
-      transparent 0 9px,
-      rgba(185, 108, 85, 0.025) 9px 10px
-    ),
-    #ffe9dc;
-
-  box-shadow:
-    inset 0 0 0 3px rgba(255, 255, 255, 0.7),
-    1px 2px 0 rgba(190, 140, 115, 0.18),
-    0 5px 10px rgba(90, 70, 60, 0.06);
-
-  color: #b96c55;
-
-  font: inherit;
-  font-size: 18px;
-  font-weight: 700;
-  line-height: 1.4;
-
-  cursor: pointer;
-  pointer-events: auto;
-
-  transition:
-    transform 140ms ease,
-    box-shadow 140ms ease,
-    filter 140ms ease;
-}
-
-.onboarding-start-button:active {
-  transform: translateY(1px) rotate(0.2deg) scale(0.975);
-
-  background:
-    radial-gradient(
-      circle at 12% 28%,
-      rgba(255, 255, 255, 0.3) 0 2px,
-      transparent 3px
-    ),
-    repeating-linear-gradient(
-      -7deg,
-      transparent 0 9px,
-      rgba(185, 108, 85, 0.035) 9px 10px
-    ),
-    #ffe1d2;
-
-  box-shadow:
-    inset 0 0 0 3px rgba(255, 255, 255, 0.62),
-    0 1px 0 rgba(190, 140, 115, 0.17),
-    0 3px 7px rgba(90, 70, 60, 0.05);
-
-  filter: brightness(0.99) saturate(0.96);
-}
-
-.onboarding-start-button:focus-visible {
-  outline: 3px dashed rgba(204, 145, 119, 0.38);
-  outline-offset: 4px;
-}
-
 @keyframes onboarding-sun {
   from {
     transform: rotate(-2deg) scale(0.98);
@@ -510,33 +443,67 @@ html:has(.diary-content-section textarea:focus) {
   overflow: hidden;
   isolation: isolate;
   background:
-    radial-gradient(
-      circle at 88% 42px,
-      rgba(255, 211, 92, 0.24),
-      transparent 92px
-    ),
     linear-gradient(
       180deg,
-      #eaf7ff 0,
-      #f6fbf3 230px,
-      #fffaf0 560px,
-      #fffdf8 100%
+      #e8faff 0,
+      var(--summer-sky-light) 60px,
+      var(--summer-sky) 174px,
+      #bce9ec 205px,
+      var(--summer-paper) 285px,
+      #fffdf7 100%
     );
+}
+
+.app-shell::before {
+  content: "";
+  position: absolute;
+  z-index: -2;
+  top: 150px;
+  right: -12%;
+  left: -12%;
+  height: 120px;
+  opacity: 0.78;
+  background:
+    radial-gradient(
+      ellipse at 12% 100%,
+      transparent 0 42%,
+      rgba(255, 255, 255, 0.5) 43% 44%,
+      transparent 45%
+    ),
+    radial-gradient(
+      ellipse at 64% 0%,
+      transparent 0 42%,
+      rgba(255, 255, 255, 0.34) 43% 44%,
+      transparent 45%
+    );
+  background-size: 270px 80px, 330px 82px;
+  background-position: 0 34px, 120px 0;
+  pointer-events: none;
+  transform: rotate(-2deg);
 }
 
 .app-shell::after {
   content: "";
   position: absolute;
   z-index: -1;
-  inset: 188px 0 0;
-  opacity: 0.24;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0,
-    transparent 31px,
-    rgba(83, 150, 194, 0.16) 32px,
-    transparent 33px
-  );
+  inset: 228px 0 0;
+  opacity: 0.82;
+  border-top: 1px solid rgba(209, 118, 111, 0.26);
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 0,
+      transparent 28px,
+      rgba(222, 124, 118, 0.12) 29px,
+      transparent 30px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 31px,
+      var(--summer-paper-line) 32px,
+      transparent 33px
+    );
   pointer-events: none;
 }
 
@@ -556,22 +523,25 @@ html:has(.diary-content-section textarea:focus) {
   top: 0;
   right: 0;
   left: 0;
-  height: 190px;
+  height: 220px;
   overflow: hidden;
   pointer-events: none;
 }
 
 .summer-sun {
   position: absolute;
-  top: 22px;
-  right: 28px;
-  width: 54px;
-  height: 54px;
+  top: 28px;
+  right: 30px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
-  background: #ffd45e;
+  background:
+    radial-gradient(circle at 35% 30%, #fff4ae 0 8%, transparent 9%),
+    var(--summer-sun);
   box-shadow:
-    0 0 0 12px rgba(255, 212, 94, 0.14),
-    0 8px 22px rgba(232, 168, 42, 0.18);
+    0 0 0 10px rgba(255, 215, 102, 0.18),
+    0 0 0 18px rgba(255, 215, 102, 0.08),
+    0 8px 22px rgba(232, 168, 42, 0.2);
 }
 
 .summer-cloud {
@@ -579,23 +549,24 @@ html:has(.diary-content-section textarea:focus) {
   width: 68px;
   height: 20px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow:
-    20px -9px 0 -2px rgba(255, 255, 255, 0.78),
-    42px 1px 0 -5px rgba(255, 255, 255, 0.78);
+    20px -10px 0 -2px rgba(255, 255, 255, 0.9),
+    42px 1px 0 -5px rgba(255, 255, 255, 0.9),
+    18px 5px 18px rgba(80, 150, 174, 0.08);
 }
 
 .summer-cloud-one {
-  top: 82px;
+  top: 92px;
   left: -18px;
-  transform: scale(0.78);
+  transform: scale(0.86) rotate(-3deg);
 }
 
 .summer-cloud-two {
-  top: 132px;
-  right: 42px;
+  top: 150px;
+  right: 38px;
   opacity: 0.62;
-  transform: scale(0.55);
+  transform: scale(0.58) rotate(3deg);
 }
 
 .summer-step-progress {
@@ -614,7 +585,7 @@ html:has(.diary-content-section textarea:focus) {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.68);
   box-shadow: 0 5px 18px rgba(70, 125, 160, 0.08);
-  color: #397196;
+  color: var(--summer-sea);
   font-size: 12px;
   line-height: 1.4;
   backdrop-filter: blur(8px);
@@ -638,12 +609,12 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .summer-step-dots .is-complete {
-  background: #87c5a4;
+  background: #78bda1;
 }
 
 .summer-step-dots .is-current {
   width: 20px;
-  background: #4a9df8;
+  background: var(--summer-coral);
 }
 
 .summer-step-label {
@@ -654,7 +625,7 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .summer-step-label strong {
-  color: #1b64da;
+  color: var(--summer-coral-dark);
   font-variant-numeric: tabular-nums;
 }
 
@@ -949,6 +920,8 @@ html:has(.diary-content-section textarea:focus) {
   text-shadow: none !important;
   -webkit-text-stroke: 0.25px currentcolor;
   -webkit-font-smoothing: antialiased;
+  appearance: none;
+  cursor: pointer;
 
   transform: rotate(-0.25deg);
   transform-origin: center;
@@ -957,6 +930,15 @@ html:has(.diary-content-section textarea:focus) {
     transform 140ms ease,
     box-shadow 140ms ease,
     filter 140ms ease !important;
+}
+
+/* The onboarding CTA uses the same button skin; this modifier only controls
+   its full-width placement inside the illustrated scene. */
+.summer-diary-button-onboarding {
+  width: 100%;
+  min-height: 58px !important;
+  padding: 15px 24px !important;
+  pointer-events: auto;
 }
 
 .summer-diary-button > div:first-child {
@@ -983,32 +965,31 @@ html:has(.diary-content-section textarea:focus) {
 
 /* 메인 버튼: 부드러운 살구색 스티커 */
 .summer-diary-button-primary {
-  border-color: #e7b59b !important;
+  border-color: #c85d51 !important;
 
   background:
     radial-gradient(
       circle at 12% 28%,
-      rgba(255, 255, 255, 0.38) 0 2px,
+      rgba(255, 238, 205, 0.3) 0 2px,
       transparent 3px
     ),
     radial-gradient(
       circle at 88% 68%,
-      rgba(185, 108, 85, 0.06) 0 2px,
+      rgba(157, 63, 54, 0.12) 0 2px,
       transparent 3px
     ),
     repeating-linear-gradient(
       -7deg,
       transparent 0 9px,
-      rgba(185, 108, 85, 0.025) 9px 10px
+      rgba(157, 63, 54, 0.06) 9px 10px
     ),
-    #ffe9dc !important;
+    linear-gradient(135deg, #f58d73 0%, #e97861 100%) !important;
 
   box-shadow:
-    inset 0 0 0 3px rgba(255, 255, 255, 0.7),
-    1px 2px 0 rgba(190, 140, 115, 0.18),
-    0 5px 10px rgba(90, 70, 60, 0.06) !important;
+    1px 3px 0 rgba(164, 73, 63, 0.28),
+    0 7px 14px rgba(190, 90, 75, 0.16) !important;
 
-  color: #b96c55 !important;
+  color: #fffaf0 !important;
 }
 
 /* 보조 버튼: 크림색 그림일기장 종이 */
@@ -1045,22 +1026,21 @@ html:has(.diary-content-section textarea:focus) {
   background:
     radial-gradient(
       circle at 12% 28%,
-      rgba(255, 255, 255, 0.3) 0 2px,
+      rgba(255, 238, 205, 0.24) 0 2px,
       transparent 3px
     ),
     repeating-linear-gradient(
       -7deg,
       transparent 0 9px,
-      rgba(185, 108, 85, 0.035) 9px 10px
+      rgba(157, 63, 54, 0.07) 9px 10px
     ),
-    #ffe1d2 !important;
+    linear-gradient(135deg, #e97861 0%, #d96757 100%) !important;
 
   box-shadow:
-    inset 0 0 0 3px rgba(255, 255, 255, 0.62),
-    0 1px 0 rgba(190, 140, 115, 0.17),
-    0 3px 7px rgba(90, 70, 60, 0.05) !important;
+    0 2px 0 rgba(164, 73, 63, 0.22),
+    0 4px 8px rgba(190, 90, 75, 0.12) !important;
 
-  filter: brightness(0.99) saturate(0.96) !important;
+  filter: saturate(0.96) !important;
 }
 
 .summer-diary-button-secondary:active:not(:disabled) {
@@ -1102,6 +1082,10 @@ html:has(.diary-content-section textarea:focus) {
   color: #a59a89 !important;
   opacity: 0.82 !important;
   filter: none !important;
+}
+
+.summer-diary-button-primary:disabled:not([aria-busy="true"]) {
+  box-shadow: 1px 2px 0 rgba(159, 88, 78, 0.16) !important;
 }
 
 /* --- Finished diary save/share sheet --- */
@@ -2041,10 +2025,9 @@ mark.highlight-underline {
     padding-bottom: calc(12px + var(--app-safe-bottom));
   }
 
-  .onboarding-start-button {
+  .summer-diary-button-onboarding {
     min-height: 50px;
     padding-block: 11px;
-    font-size: 25px;
   }
 
   .photo-consent-scroll-body,
