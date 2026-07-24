@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { DRAFT_STORAGE_KEY, WEATHER_OPTIONS } from "../constants/diary";
+import {
+  DRAFT_STORAGE_KEY,
+  TITLE_MAX_LENGTH,
+  WEATHER_OPTIONS,
+} from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 
 export interface DiaryDraft {
@@ -66,7 +70,10 @@ function loadDraft(): DiaryDraft {
         photoDataUrl !== null && typeof candidate.sketchDataUrl === "string"
           ? candidate.sketchDataUrl
           : null,
-      title: typeof candidate.title === "string" ? candidate.title : "",
+      title:
+        typeof candidate.title === "string"
+          ? Array.from(candidate.title).slice(0, TITLE_MAX_LENGTH).join("")
+          : "",
       content: typeof candidate.content === "string" ? candidate.content : "",
       date:
         typeof candidate.date === "string" &&

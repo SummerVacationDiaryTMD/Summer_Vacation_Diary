@@ -18,23 +18,23 @@ export interface DiaryFrameLayout {
 }
 
 /**
- * Pixel measurements from picture-diary-frame.png. Keeping one coordinate
+ * Pixel measurements from picture-diary-frame-instagram.png. Keeping one coordinate
  * system lets the DOM preview and the exported canvas share the same layout.
  */
 export const DIARY_FRAME = {
-  width: 1058,
-  baseHeight: 1323,
+  width: 1080,
+  baseHeight: 1350,
   columns: 13,
   baseRows: 5,
   maxRows: 5,
-  rowHeight: 959 / 13,
-  topHeight: 785,
-  bottomSourceY: 1154,
-  header: { x: 50, y: 238, width: 959, height: 82 },
-  title: { x: 149, y: 320, width: 859, height: 72 },
-  photo: { x: 48, y: 393, width: 960, height: 358 },
-  content: { x: 48, y: 785, width: 959 },
-  comment: { x: 48, y: 1180, width: 960, height: 108 },
+  rowHeight: 76,
+  topHeight: 835,
+  bottomSourceY: 1215,
+  header: { x: 45, y: 20, width: 990, height: 70 },
+  title: { x: 150, y: 90, width: 650, height: 55 },
+  photo: { x: 45, y: 155, width: 990, height: 660 },
+  content: { x: 45, y: 835, width: 990 },
+  comment: { x: 45, y: 1215, width: 990, height: 110 },
 } as const;
 
 export const DIARY_COMMENT = {

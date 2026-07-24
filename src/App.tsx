@@ -11,9 +11,9 @@ import { CONTENT_MIN_LENGTH } from "./constants/diary";
 import { useDiaryAnalysis } from "./hooks/useDiaryAnalysis";
 import { useDiaryDraft } from "./hooks/useDiaryDraft";
 import { useSketch } from "./hooks/useSketch";
+import { composeDiaryImage } from "./utils/diaryImage";
 import { isAiConnected } from "./services/diaryAnalysis";
 import { isSketchAiConnected } from "./services/styleTransfer";
-import { composeDiaryImage } from "./utils/diaryImage";
 
 // Plain state instead of a router: the flow is a strict 3-step wizard with no
 // deep links yet, so a router would add dependency weight without benefit.
@@ -226,7 +226,9 @@ function App() {
 
   const handleStartWriting = () => {
     if (!canWrite) {
-      toast.openToast("먼저 사진을 올려주세요.");
+      toast.openToast("먼저 사진을 올려주세요.", {
+        gap: 15,
+      });
       return;
     }
 
