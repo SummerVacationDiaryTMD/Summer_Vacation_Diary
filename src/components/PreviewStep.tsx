@@ -88,7 +88,7 @@ function HandwrittenText({
   });
 }
 
-// Renders the diary text onto an 11x5 manuscript grid, one character per cell.
+// Renders the diary text onto a 13x5 manuscript grid, one character per cell.
 // Correction marks (circle/underline) are drawn as an absolutely-positioned
 // visual overlay. The overlay is aria-hidden, so these marks are NOT exposed
 // to screen readers (visual-only for now).
@@ -99,7 +99,7 @@ function HighlightedContent({
   content: string;
   analysis: DiaryAnalysis | null;
 }) {
-  const columnCount = 11;
+  const columnCount = DIARY_FRAME.columns;
   const layout = getDiaryFrameLayout(content);
   const rowCount = layout.contentRows;
   const segments =
