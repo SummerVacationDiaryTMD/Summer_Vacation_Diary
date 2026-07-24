@@ -44,6 +44,7 @@ export function formatKoreanDate(date: string): string {
 
 export const TITLE_MAX_LENGTH = 30;
 export const CONTENT_MIN_LENGTH = 20;
+export const AI_CONTENT_WATERMARK = "AI 생성 콘텐츠 포함";
 // The expandable frame supports 100 characters across ten 11-cell rows.
 export { CONTENT_MAX_LENGTH } from "../utils/diaryFrameLayout";
 

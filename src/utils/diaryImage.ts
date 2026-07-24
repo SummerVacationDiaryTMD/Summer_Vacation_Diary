@@ -1,4 +1,8 @@
-import { weatherIconUrl, weatherLabel } from "../constants/diary";
+import {
+  AI_CONTENT_WATERMARK,
+  weatherIconUrl,
+  weatherLabel,
+} from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import type { DiaryAnalysis } from "../services/diaryAnalysis";
 import {
@@ -68,7 +72,6 @@ const TEXT_COLOR = "#333333";
 const COMMENT_COLOR = "#6b5e3f";
 const LABEL_COLOR = "#806d3d";
 const TAG_BACKGROUND = "#f3ecd2";
-const AI_WATERMARK_TEXT = "AI 생성 콘텐츠 포함";
 const AI_WATERMARK_COLOR = "#8B6A3E";
 
 interface DiaryCell {
@@ -340,7 +343,7 @@ function drawAiContentWatermark(context: CanvasRenderingContext2D) {
 
   const paddingX = 20;
   const height = 42;
-  const width = context.measureText(AI_WATERMARK_TEXT).width + paddingX * 2;
+  const width = context.measureText(AI_CONTENT_WATERMARK).width + paddingX * 2;
 
   const x = WIDTH - pxX(0.047) - width;
   const y = pxY(0.1);
@@ -370,7 +373,7 @@ function drawAiContentWatermark(context: CanvasRenderingContext2D) {
 
   // 상수 유지
   context.fillStyle = AI_WATERMARK_COLOR;
-  context.fillText(AI_WATERMARK_TEXT, x + paddingX, y + height / 2 + 1);
+  context.fillText(AI_CONTENT_WATERMARK, x + paddingX, y + height / 2 + 1);
 
   context.restore();
 }
