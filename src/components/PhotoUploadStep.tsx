@@ -127,7 +127,7 @@ export function PhotoUploadStep({
             color="dark"
             display="block"
             size="medium"
-            loading={processing}
+            disabled={processing}
             onClick={requestPhotoSelection}
           >
             다른 사진 선택하기
@@ -327,7 +327,7 @@ export function PhotoUploadStep({
                 className="app-stable-button-state summer-diary-button summer-diary-button-primary summer-diary-button-guide"
                 display="block"
                 aria-disabled={!agreed || processing}
-                loading={processing}
+                disabled={processing}
                 onClick={openPickerAfterConsent}
               >
                 동의하고 사진 선택

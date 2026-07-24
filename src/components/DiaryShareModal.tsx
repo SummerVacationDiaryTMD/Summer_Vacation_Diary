@@ -88,7 +88,7 @@ export function DiaryShareModal({
                 className="app-stable-button-state summer-diary-button summer-diary-button-primary"
                 display="block"
                 disabled={busyAction !== null && busyAction !== "save"}
-                loading={busyAction === "save"}
+                aria-busy={busyAction === "save"}
                 onClick={() => void run("save")}
               >
                 이미지 저장하기
@@ -100,7 +100,7 @@ export function DiaryShareModal({
                 disabled={busyAction !== null && busyAction !== "share"}
                 variant="weak"
                 color="dark"
-                loading={busyAction === "share"}
+                aria-busy={busyAction === "share"}
                 onClick={() => void run("share")}
               >
                 앱 공유하기
