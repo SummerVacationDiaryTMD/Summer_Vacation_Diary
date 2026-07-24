@@ -11,8 +11,8 @@ import type { AnalysisState } from "../hooks/useDiaryAnalysis";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
 import type { SketchState } from "../hooks/useSketch";
 import { isAiConnected } from "../services/diaryAnalysis";
-import type { DiaryAnalysis } from "../services/diaryAnalysis";
 import { isSketchAiConnected } from "../services/styleTransfer";
+import type { DiaryAnalysis } from "../services/diaryAnalysis";
 import { isAiTestMode } from "../services/supabaseEdge";
 import {
   composeDiaryImage,
@@ -59,10 +59,12 @@ function HandwrittenText({
   text,
   seedOffset = 0,
   strength = 1,
+  varyScale = true,
 }: {
   text: string;
   seedOffset?: number;
   strength?: number;
+  varyScale?: boolean;
 }) {
   return Array.from(text).map((character, index) => {
     const variation = handwritingVariation(
@@ -75,7 +77,7 @@ function HandwrittenText({
         key={`${index}-${character}`}
         className="handwritten-character"
         style={{
-          fontSize: `${variation.scale}em`,
+          fontSize: `${varyScale ? variation.scale : 1}em`,
           // 날짜/날씨/제목에도 글자별 굵기와 농도 차이를 적용합니다.
           fontWeight: variation.fontWeight,
           opacity: variation.opacity,
@@ -334,12 +336,7 @@ export function PreviewStep({
           <DiaryFrameBackground layout={frameLayout} />
 
           {includesAiGeneratedContent && (
-            <span
-              className="ai-content-watermark"
-              style={{ top: `${(106 / frameLayout.height) * 100}%` }}
-            >
-              {AI_CONTENT_WATERMARK}
-            </span>
+            <span className="ai-content-watermark">{AI_CONTENT_WATERMARK}</span>
           )}
 
           <div
@@ -354,7 +351,7 @@ export function PreviewStep({
             <span>
               <strong>
                 <HandwrittenText
-                  text={String(Number(month))}
+                  text={String(Number(month)).padStart(2, "0")}
                   seedOffset={10}
                   strength={0.45}
                 />
@@ -363,7 +360,7 @@ export function PreviewStep({
             <span>
               <strong>
                 <HandwrittenText
-                  text={String(Number(day))}
+                  text={String(Number(day)).padStart(2, "0")}
                   seedOffset={20}
                   strength={0.45}
                 />

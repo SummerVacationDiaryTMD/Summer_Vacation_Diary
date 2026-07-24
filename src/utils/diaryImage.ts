@@ -41,7 +41,6 @@ export interface ComposedDiaryImage {
 // The export and preview both use diaryFrameLayout's source-pixel coordinates,
 // so an added manuscript row moves the footer by the same amount in both.
 const WIDTH = DIARY_FRAME.width;
-const BASE_HEIGHT = DIARY_FRAME.baseHeight;
 const TEMPLATE_URL = "/picture-diary-frame-instagram.png";
 
 const HEADER = DIARY_FRAME.header;
@@ -58,13 +57,13 @@ const TEACHER_COMMENT_FONT_STACK = `${TEACHER_COMMENT_FONT_FAMILY}, ${SYSTEM_FON
 
 // 미리보기의 12/14/10px 등을 1058px 템플릿 원본 비율로 환산한 값입니다.
 const HEADER_FONT_SIZE = 54;
-const TITLE_FONT_SIZE = 58;
+const TITLE_FONT_SIZE = 45;
 const HEADER_FONT = `400 ${HEADER_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const TITLE_FONT = `400 ${TITLE_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const CONTENT_FONT_SIZE = 54;
 const CONTENT_FONT = `400 ${CONTENT_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const COMMENT_LABEL_FONT = `700 18px ${SYSTEM_FONT_STACK}`;
-const COMMENT_FONT = `700 34px ${TEACHER_COMMENT_FONT_STACK}`;
+const COMMENT_FONT = `700 48.96px ${TEACHER_COMMENT_FONT_STACK}`;
 const AI_WATERMARK_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
 
 const TEXT_COLOR = "#333333";
@@ -84,14 +83,6 @@ interface CorrectionRun {
   length: number;
 }
 
-function pxX(value: number): number {
-  return value * WIDTH;
-}
-
-function pxY(value: number): number {
-  return value * BASE_HEIGHT;
-}
-
 function fontWithWeight(font: string, weight: number): string {
   return /^(?:normal|bold|[1-9]00)\s/.test(font)
     ? font.replace(/^(?:normal|bold|[1-9]00)/, String(weight))
@@ -107,6 +98,7 @@ function drawHandwrittenText(
   startIndex: number,
   strength = 1,
   letterSpacing = 0,
+  varyScale = true,
 ): number {
   let cursorX = x;
   let characterIndex = startIndex;
@@ -124,7 +116,8 @@ function drawHandwrittenText(
       baseline + variation.offsetYEm * fontSize,
     );
     context.rotate((variation.rotationDeg * Math.PI) / 180);
-    context.scale(variation.scale, variation.scale);
+    const characterScale = varyScale ? variation.scale : 1;
+    context.scale(characterScale, characterScale);
     context.fillText(character, -width / 2, 0);
     context.restore();
 
@@ -346,8 +339,8 @@ function drawAiContentWatermark(context: CanvasRenderingContext2D) {
   const height = 42;
   const width = context.measureText(AI_CONTENT_WATERMARK).width + paddingX * 2;
 
-  const x = WIDTH - pxX(0.047) - width;
-  const y = pxY(0.1);
+  const x = WIDTH - 25 - width;
+  const y = TITLE.y + (TITLE.height - height) / 2;
 
   // 부드러운 그림자
   context.shadowColor = "rgba(70, 60, 45, 0.08)";
@@ -403,7 +396,7 @@ function drawComment(
   context.fillStyle = COMMENT_COLOR;
   const commentLineHeight = DIARY_COMMENT.lineHeight;
   commentLines.forEach((line, index) => {
-    context.fillText(line, x + paddingX, y + 59 + index * commentLineHeight);
+    context.fillText(line, x + paddingX, y + 82 + index * commentLineHeight);
   });
 
   context.restore();
@@ -414,21 +407,24 @@ function wrapCommentToFrame(
   comment: string,
 ): string[] {
   const maxWidth = DIARY_FRAME.comment.width - DIARY_COMMENT.paddingX * 2;
-  const lines: string[] = [];
-  let currentLine = "";
+  const ellipsis = "…";
+  let fitted = "";
 
   for (const character of Array.from(comment.trim())) {
-    const candidate = currentLine + character;
-    if (currentLine !== "" && context.measureText(candidate).width > maxWidth) {
-      lines.push(currentLine);
-      currentLine = character;
-    } else {
-      currentLine = candidate;
+    const candidate = fitted + character;
+    if (fitted !== "" && context.measureText(candidate).width > maxWidth) {
+      while (
+        fitted !== "" &&
+        context.measureText(fitted + ellipsis).width > maxWidth
+      ) {
+        fitted = Array.from(fitted).slice(0, -1).join("");
+      }
+      return [`${fitted}${ellipsis}`];
     }
+    fitted = candidate;
   }
 
-  if (currentLine !== "") lines.push(currentLine);
-  return lines.length > 0 ? lines : [""];
+  return [fitted];
 }
 
 function drawFrameTemplate(
@@ -482,10 +478,7 @@ export async function composeDiaryImage(
     input.analysis === null
       ? [""]
       : wrapCommentToFrame(context, input.analysis.comment);
-  const frameLayout = getDiaryFrameLayout(
-    input.content,
-    commentLines.length,
-  );
+  const frameLayout = getDiaryFrameLayout(input.content, commentLines.length);
 
   canvas.height = frameLayout.height;
 
@@ -508,10 +501,20 @@ export async function composeDiaryImage(
   const headerHeight = HEADER.height;
   const headerBaseline = headerY + headerHeight * 0.5 + 18;
   const headerItems = [
-    { text: year, left: 0.045, maxWidth: 70, seed: 0 },
-    { text: String(Number(month)), left: 0.167, maxWidth: 70, seed: 10 },
-    { text: String(Number(day)), left: 0.271, maxWidth: 70, seed: 20 },
-    { text: weekday, left: 0.42, maxWidth: 78, seed: 30 },
+    { text: year, left: 0.065, maxWidth: 125, seed: 0 },
+    {
+      text: String(Number(month)).padStart(2, "0"),
+      left: 0.247,
+      maxWidth: 72,
+      seed: 10,
+    },
+    {
+      text: String(Number(day)).padStart(2, "0"),
+      left: 0.374,
+      maxWidth: 72,
+      seed: 20,
+    },
+    { text: weekday, left: 0.525, maxWidth: 76, seed: 30 },
   ];
 
   context.font = HEADER_FONT;
@@ -561,14 +564,16 @@ export async function composeDiaryImage(
   context.clip();
   context.font = TITLE_FONT;
   context.fillStyle = "#222222";
+  const titleText = input.title || "제목 없는 일기";
+  const titleTracking = 4;
   drawHandwrittenText(
     context,
-    input.title || "제목 없는 일기",
+    titleText,
     titleX,
-    titleY + titleHeight / 2 + 20,
+    titleY + titleHeight / 2 + 12,
     50,
     TITLE_HANDWRITING_STRENGTH,
-    3,
+    titleTracking,
   );
   context.restore();
 

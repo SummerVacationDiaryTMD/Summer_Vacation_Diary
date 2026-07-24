@@ -1568,41 +1568,12 @@ html:has(.diary-content-section textarea:focus) {
     no-repeat;
 }
 
-.diary-frame-top,
-.diary-frame-grid,
-.diary-frame-bottom-piece {
-  position: absolute;
-  left: 0;
-  width: 100%;
-}
-
-.diary-frame-top {
-  top: 0;
-  background: url("/picture-diary-frame.png") top center / 100% auto no-repeat;
-}
-
-.diary-frame-grid {
-  display: grid;
-}
-
-.diary-frame-grid-row {
-  min-height: 0;
-  background: url("/picture-diary-frame.png") center 69.72% / 100% auto
-    no-repeat;
-}
-
-.diary-frame-bottom-piece {
-  background-image: url("/picture-diary-frame.png");
-  background-size: 100% auto;
-  background-repeat: no-repeat;
-}
-
 .ai-content-watermark {
   position: absolute;
   z-index: 3;
 
-  top: 8%;
-  right: 4.7%;
+  top: 7.05%;
+  right: 2.31%;
 
   display: inline-flex;
   align-items: center;
@@ -1703,19 +1674,19 @@ html:has(.diary-content-section textarea:focus) {
    absolute가 되면 모든 글자가 같은 자리에 겹치므로 > 선택자가 필요합니다. */
 .diary-card-header > span {
   position: absolute;
-  top: 55%;
+  top: 50%;
   transform: translate(-50%, -50%);
 }
 
 .diary-card-header > span:nth-child(1) {
-  left: 4.5%;
+  left: 6.5%;
 }
 .diary-card-header > span:nth-child(1) strong {
   display: inline-block;
-  transform: scaleX(0.55);
+  transform: scaleX(0.82);
 }
 .diary-card-header > span:nth-child(2) {
-  left: 16.7%;
+  left: 24.7%;
 }
 .diary-card-header > span:nth-child(2) strong,
 .diary-card-header > span:nth-child(3) strong {
@@ -1723,10 +1694,10 @@ html:has(.diary-content-section textarea:focus) {
   transform: scaleX(0.9);
 }
 .diary-card-header > span:nth-child(3) {
-  left: 27.1%;
+  left: 37.4%;
 }
 .diary-card-header > span:nth-child(4) {
-  left: 42%;
+  left: 52.5%;
 }
 .diary-card-header > span:nth-child(4) strong {
   display: inline-block;
@@ -1734,7 +1705,7 @@ html:has(.diary-content-section textarea:focus) {
 }
 .diary-card-header > span:nth-child(5) {
   left: 87%;
-  width: 26%;
+  width: 25%;
 }
 
 .diary-card-header strong {
@@ -1771,13 +1742,16 @@ html:has(.diary-content-section textarea:focus) {
   display: flex;
   align-items: center;
   padding: 0;
-  font-size: clamp(16px, 5.5cqw, 25px);
+  font-size: 4.17cqw;
 }
 
 .diary-title-row strong {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
   font-size: inherit;
-  letter-spacing: 0.05em;
-  word-break: break-word;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
 }
 
 /* position: relative anchors the stage-3 conversion overlay and the
@@ -1919,14 +1893,15 @@ html:has(.diary-content-section textarea:focus) {
   min-height: 0;
   max-height: none;
   margin: 0;
-  overflow: visible !important;
+  overflow: hidden !important;
 
-  font-size: 5.46cqw !important;
+  font-size: 7.8624cqw !important;
   font-family: "NanumDdarEGeEomMaGa", sans-serif !important;
   font-weight: 700 !important;
-  word-break: break-all;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
-  transform: translateY(-6px);
+  transform: translateY(2px);
 }
 
 /* --- Stage 2: analysis marks, tags and comment states --- */
@@ -2051,15 +2026,14 @@ mark.highlight-underline {
 
 .comment-loading {
   position: absolute;
-  top: 26%;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0 2.36cqw;
   box-sizing: border-box;
+  background: #f6eee4;
   text-align: center;
 }
 
@@ -2075,7 +2049,13 @@ mark.highlight-underline {
   display: flex !important;
   align-items: center;
   justify-content: center;
+  margin: 0;
+  overflow: visible !important;
+  font-size: clamp(10px, 3.2cqw, 15px) !important;
+  line-height: 1.25;
   text-align: center;
+  white-space: normal;
+  transform: none;
 }
 
 .preview-mode-note {

@@ -42,7 +42,9 @@ export function formatKoreanDate(date: string): string {
   return `${year}년 ${month}월 ${day}일`;
 }
 
-export const TITLE_MAX_LENGTH = 30;
+// The actual handwritten font is narrower than its nominal 40px em box.
+// The title region clips at the AI badge boundary as a final safety net.
+export const TITLE_MAX_LENGTH = 20;
 export const CONTENT_MIN_LENGTH = 20;
 export const AI_CONTENT_WATERMARK = "AI 생성 콘텐츠 포함";
 // The expandable frame supports 100 characters across ten 11-cell rows.
