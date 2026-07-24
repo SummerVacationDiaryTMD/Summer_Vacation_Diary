@@ -1108,6 +1108,15 @@ html:has(.diary-content-section textarea:focus) {
   pointer-events: auto !important;
 }
 
+/* Feedback-enabled CTAs use aria-disabled so taps still reach their handlers.
+   Preserve the primary button's former disabled shadow without changing other
+   aria-disabled buttons such as the photo-consent action. */
+.feedback-disabled-button.summer-diary-button-primary[aria-disabled="true"]:not(
+    [aria-busy="true"]
+  ) {
+  box-shadow: 1px 2px 0 rgba(159, 88, 78, 0.16) !important;
+}
+
 /* 회색 상태에서도 누르는 효과 */
 .summer-diary-button[aria-disabled="true"]:not([aria-busy="true"]):active {
   transform: translateY(1px) rotate(0.2deg) scale(0.975) !important;
