@@ -108,6 +108,7 @@ function drawHandwrittenText(
   baseline: number,
   startIndex: number,
   strength = 1,
+  letterSpacing = 0,
 ): number {
   let cursorX = x;
   let characterIndex = startIndex;
@@ -129,7 +130,7 @@ function drawHandwrittenText(
     context.fillText(character, -width / 2, 0);
     context.restore();
 
-    cursorX += width;
+    cursorX += width + letterSpacing;
     characterIndex += 1;
   }
 
@@ -672,6 +673,7 @@ export async function composeDiaryImage(
     titleY + titleHeight / 2 + 20,
     50,
     TITLE_HANDWRITING_STRENGTH,
+    3,
   );
   context.restore();
 

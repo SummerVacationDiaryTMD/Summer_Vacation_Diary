@@ -1740,6 +1740,7 @@ html:has(.diary-content-section textarea:focus) {
 
 .diary-title-row strong {
   font-size: inherit;
+  letter-spacing: 0.05em;
   word-break: break-word;
 }
 
