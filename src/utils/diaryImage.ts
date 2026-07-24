@@ -76,7 +76,7 @@ const AI_WATERMARK_COLOR = "#8B6A3E";
 
 interface DiaryCell {
   text: string;
-  mark: "circle" | "underline" | null;
+  mark: "circle" | "underline" | "both" | null;
 }
 
 interface CorrectionRun {
@@ -232,21 +232,23 @@ function buildDiaryCells(
 
 function buildCorrectionRuns(cells: DiaryCell[]): CorrectionRun[] {
   const runs: CorrectionRun[] = [];
-  cells.forEach((cell, index) => {
-    if (cell.mark === null) return;
-    const row = Math.floor(index / COLUMN_COUNT);
-    const column = index % COLUMN_COUNT;
-    const previous = runs[runs.length - 1];
-    if (
-      previous !== undefined &&
-      previous.mark === cell.mark &&
-      previous.row === row &&
-      previous.startColumn + previous.length === column
-    ) {
-      previous.length += 1;
-    } else {
-      runs.push({ mark: cell.mark, row, startColumn: column, length: 1 });
-    }
+  (["circle", "underline"] as const).forEach((mark) => {
+    cells.forEach((cell, index) => {
+      if (cell.mark !== mark && cell.mark !== "both") return;
+      const row = Math.floor(index / COLUMN_COUNT);
+      const column = index % COLUMN_COUNT;
+      const previous = runs[runs.length - 1];
+      if (
+        previous !== undefined &&
+        previous.mark === mark &&
+        previous.row === row &&
+        previous.startColumn + previous.length === column
+      ) {
+        previous.length += 1;
+      } else {
+        runs.push({ mark, row, startColumn: column, length: 1 });
+      }
+    });
   });
   return runs;
 }

@@ -113,7 +113,7 @@ function HighlightedContent({
         );
   const cells: Array<{
     text: string;
-    mark: "circle" | "underline" | null;
+    mark: "circle" | "underline" | "both" | null;
   }> = [];
 
   for (const segment of segments) {
@@ -143,28 +143,30 @@ function HighlightedContent({
     startColumn: number;
     length: number;
   }> = [];
-  cells.slice(0, columnCount * rowCount).forEach((cell, index) => {
-    if (cell.mark === null) {
-      return;
-    }
-    const row = Math.floor(index / columnCount);
-    const column = index % columnCount;
-    const previous = correctionRuns[correctionRuns.length - 1];
-    if (
-      previous !== undefined &&
-      previous.mark === cell.mark &&
-      previous.row === row &&
-      previous.startColumn + previous.length === column
-    ) {
-      previous.length += 1;
-    } else {
-      correctionRuns.push({
-        mark: cell.mark,
-        row,
-        startColumn: column,
-        length: 1,
-      });
-    }
+  (["circle", "underline"] as const).forEach((mark) => {
+    cells.slice(0, columnCount * rowCount).forEach((cell, index) => {
+      if (cell.mark !== mark && cell.mark !== "both") {
+        return;
+      }
+      const row = Math.floor(index / columnCount);
+      const column = index % columnCount;
+      const previous = correctionRuns[correctionRuns.length - 1];
+      if (
+        previous !== undefined &&
+        previous.mark === mark &&
+        previous.row === row &&
+        previous.startColumn + previous.length === column
+      ) {
+        previous.length += 1;
+      } else {
+        correctionRuns.push({
+          mark,
+          row,
+          startColumn: column,
+          length: 1,
+        });
+      }
+    });
   });
 
   return (
