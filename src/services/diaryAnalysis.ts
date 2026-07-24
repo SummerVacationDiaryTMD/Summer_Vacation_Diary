@@ -103,6 +103,28 @@ function toStringArray(value: unknown, max: number): string[] {
     .slice(0, max);
 }
 
+// The model is instructed not to repeat or highlight profanity, but its JSON
+// is still untrusted. Normalize spacing/symbol obfuscations and enforce that
+// rule again before any keyword, tag or correction mark reaches the UI.
+function containsProfanity(value: string): boolean {
+  const normalized = value
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, "");
+
+  return /(씨발|시발(?!점)|ㅅㅂ|개새끼|개새|병신|ㅂㅅ|좆|존나|ㅈㄴ|지랄|꺼져|fuck|shit|욕설)/u.test(
+    normalized,
+  );
+}
+
+function capComment(comment: string): string {
+  const characters = Array.from(comment);
+  if (characters.length <= 50) {
+    return comment;
+  }
+  return `${characters.slice(0, 49).join("").trimEnd()}…`;
+}
+
 // The model's JSON is untrusted input: every field is validated, and highlight
 // targets that are not verbatim substrings of the diary are dropped so the
 // preview never marks text that isn't there.
@@ -123,7 +145,7 @@ function parseAnalysis(parsed: unknown, content: string): DiaryAnalysis {
   // Verbatim-filter BEFORE capping at 4: if the model pads the list with
   // paraphrased words, slicing first could throw away the valid ones.
   const highlightWords = toStringArray(record.highlight_words, 8)
-    .filter((word) => content.includes(word))
+    .filter((word) => content.includes(word) && !containsProfanity(word))
     .slice(0, 4);
   const sentence =
     typeof record.highlight_sentence === "string"
@@ -132,15 +154,20 @@ function parseAnalysis(parsed: unknown, content: string): DiaryAnalysis {
   // Length cap: underlining a huge "sentence" would decorate most of the
   // diary, against the spec's 첨삭 원칙 (지나치게 많이 사용하지 않음).
   const sentenceIsUsable =
-    sentence !== "" && sentence.length <= 100 && content.includes(sentence);
+    sentence !== "" &&
+    sentence.length <= 100 &&
+    content.includes(sentence) &&
+    !containsProfanity(sentence);
 
   return {
     photoKeywords: toStringArray(record.photo_keywords, 3),
-    diaryKeywords: toStringArray(record.diary_keywords, 4),
+    diaryKeywords: toStringArray(record.diary_keywords, 4).filter(
+      (keyword) => !containsProfanity(keyword),
+    ),
     emotions: toStringArray(record.emotions, 3),
     highlightWords,
     highlightSentence: sentenceIsUsable ? sentence : null,
-    comment,
+    comment: capComment(comment),
   };
 }
 
