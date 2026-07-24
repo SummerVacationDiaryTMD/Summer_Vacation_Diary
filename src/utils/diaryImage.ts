@@ -406,7 +406,7 @@ function drawComment(
 
   context.font = COMMENT_LABEL_FONT;
   context.fillStyle = LABEL_COLOR;
-  context.fillText("선생님 한줄평", x + paddingX, y + 27);
+  context.fillText("선생님 한마디", x + paddingX, y + 27);
 
   // 미리보기의 12px 한 줄 문장을 원본 템플릿 비율로 환산한 30px입니다.
   context.font = COMMENT_FONT;
@@ -441,17 +441,13 @@ function wrapCommentToFrame(
   context: CanvasRenderingContext2D,
   comment: string,
 ): string[] {
-  const maxWidth =
-    DIARY_FRAME.comment.width - DIARY_COMMENT.paddingX * 2;
+  const maxWidth = DIARY_FRAME.comment.width - DIARY_COMMENT.paddingX * 2;
   const lines: string[] = [];
   let currentLine = "";
 
   for (const character of Array.from(`“${comment.trim()}”`)) {
     const candidate = currentLine + character;
-    if (
-      currentLine !== "" &&
-      context.measureText(candidate).width > maxWidth
-    ) {
+    if (currentLine !== "" && context.measureText(candidate).width > maxWidth) {
       lines.push(currentLine);
       currentLine = character;
     } else {
@@ -575,8 +571,7 @@ export async function composeDiaryImage(
     // 폰트를 못 읽어도 시스템 폰트 fallback으로 저장은 계속합니다.
   }
 
-  const tags =
-    input.analysis === null ? [] : buildDiaryTags(input.analysis);
+  const tags = input.analysis === null ? [] : buildDiaryTags(input.analysis);
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH;
   const context = canvas.getContext("2d");

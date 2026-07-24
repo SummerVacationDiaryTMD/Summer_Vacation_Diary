@@ -31,30 +31,49 @@ export function PhotoUploadStep({
   onPhotoChange,
 }: PhotoUploadStepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const consentScrollRef = useRef<HTMLDivElement>(null);
   const consentTitleRef = useRef<HTMLHeadingElement>(null);
+  const consentCheckRef = useRef<HTMLDivElement>(null);
+
   const [processing, setProcessing] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
   const [agreed, setAgreed] = useState(false);
+
   const toast = useToast();
 
   const requestPhotoSelection = () => {
-    // Ignore clicks while a previous pick is still processing: two concurrent
-    // picks could resolve out of order and leave the older photo on screen.
+    // 이전 사진 처리가 진행 중이면 중복 선택을 막습니다.
     if (processing) {
       return;
     }
+
     setAgreed(false);
     setConsentOpen(true);
   };
 
+  const scrollToConsentCheck = () => {
+    consentCheckRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  };
+
   const openPickerAfterConsent = () => {
-    if (!agreed || processing) {
+    if (processing) {
       return;
     }
+
+    // 아직 동의하지 않았다면 체크박스 영역으로 이동합니다.
+    if (!agreed) {
+      scrollToConsentCheck();
+      return;
+    }
+
     setConsentOpen(false);
-    // Keep the click in this user gesture. Delaying it can make mobile
-    // browsers treat the file picker as an unsolicited popup and block it.
+
+    // 모바일 브라우저에서 파일 선택기가 차단되지 않도록
+    // 사용자 클릭 이벤트 안에서 바로 실행합니다.
     fileInputRef.current?.click();
   };
 
@@ -62,26 +81,30 @@ export function PhotoUploadStep({
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
-    // Reset the input so picking the same file again still fires onChange
-    // (browsers skip the event when the value is unchanged).
+
+    // 같은 파일을 다시 선택해도 onChange가 발생하도록 초기화합니다.
     event.target.value = "";
+
     if (file === undefined) {
       return;
     }
 
     const validationError = validateImageFile(file);
+
     if (validationError !== null) {
       toast.openToast(IMAGE_ERROR_MESSAGES[validationError]);
       return;
     }
 
     setProcessing(true);
+
     try {
       const processed = await processImageFile(file);
       onPhotoChange(processed.dataUrl);
     } catch (error) {
       const code =
         error instanceof ImageProcessError ? error.code : "load-failed";
+
       toast.openToast(IMAGE_ERROR_MESSAGES[code]);
     } finally {
       setProcessing(false);
@@ -97,6 +120,7 @@ export function PhotoUploadStep({
             src={photoDataUrl}
             alt="선택한 사진 미리보기"
           />
+
           <Button
             className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
             variant="weak"
@@ -108,8 +132,7 @@ export function PhotoUploadStep({
           >
             다른 사진 선택하기
           </Button>
-          {/* The conversion itself starts on the next step (see useSketch),
-              so tell the user here what will happen to their photo. */}
+
           <Paragraph
             typography="t7"
             color={colors.grey600}
@@ -133,13 +156,8 @@ export function PhotoUploadStep({
             alt=""
             aria-hidden
           />
+
           <span className="photo-placeholder-copy">
-            {/* Fixed colors pair with the fixed light placeholder background.
-              Note: @toss/tds-mobile-ait currently pins colorPreference to
-              "light", so adaptive.* tokens never change today — if a future
-              provider honors dark mode, re-review fixed-vs-adaptive choices.
-              as="span": Paragraph defaults to <div>, which is invalid inside
-              a <button>; span keeps the markup valid without layout change. */}
             <Paragraph
               as="span"
               typography="t5"
@@ -148,6 +166,7 @@ export function PhotoUploadStep({
             >
               여름 사진 올리기
             </Paragraph>
+
             <Paragraph as="span" typography="t7" color={colors.grey600}>
               JPG · PNG · WEBP, 10MB 이하 사진 1장
             </Paragraph>
@@ -167,19 +186,25 @@ export function PhotoUploadStep({
         open={consentOpen}
         onOpenChange={(open) => {
           setConsentOpen(open);
+
           if (!open) {
             setAgreed(false);
           }
         }}
       >
         <Modal.Overlay />
+
         <Modal.Content
           className="photo-consent-modal"
           onOpenAutoFocus={(event) => {
-            // TDS otherwise focuses the first interactive control, which is
-            // the checkbox near the bottom and can open the sheet scrolled.
+            // 모달이 열릴 때 체크박스가 자동으로 포커스되면서
+            // 아래로 스크롤되는 현상을 방지합니다.
             event.preventDefault();
-            consentTitleRef.current?.focus({ preventScroll: true });
+
+            consentTitleRef.current?.focus({
+              preventScroll: true,
+            });
+
             if (consentScrollRef.current !== null) {
               consentScrollRef.current.scrollTop = 0;
               consentScrollRef.current.scrollLeft = 0;
@@ -200,8 +225,10 @@ export function PhotoUploadStep({
                   >
                     사진·일기 처리 동의
                   </h2>
+
                   <span className="photo-consent-required">필수</span>
                 </div>
+
                 <p className="photo-consent-description">
                   그림일기 제작에 필요한 정보 처리 내용을 확인해 주세요.
                 </p>
@@ -210,6 +237,7 @@ export function PhotoUploadStep({
               <div className="photo-consent-details">
                 <section className="photo-consent-section">
                   <h3>처리하는 정보</h3>
+
                   <p>
                     선택한 사진, 작성한 제목·일기·날짜·날씨와 사용량 제한을 위한
                     기기 식별값·IP를 처리해요.
@@ -218,14 +246,16 @@ export function PhotoUploadStep({
 
                 <section className="photo-consent-section">
                   <h3>이용 목적</h3>
+
                   <p>
-                    사진을 색연필 그림으로 바꾸고 일기를 분석해 한줄평과 첨삭을
+                    사진을 색연필 그림으로 바꾸고 일기를 분석해 한마디와 첨삭을
                     만들며, 반복 요청과 서비스 남용을 막는 데만 사용해요.
                   </p>
                 </section>
 
                 <section className="photo-consent-section">
                   <h3>전송 및 보관</h3>
+
                   {isSupabaseConfigured ? (
                     <p>
                       사진과 일기 내용은 Supabase Edge Function을 거쳐 OpenAI로
@@ -242,6 +272,7 @@ export function PhotoUploadStep({
                       않아요. 원본 사진과 기기 안의 예시 분석을 사용해요.
                     </p>
                   )}
+
                   <p>
                     선택한 사진과 작성 중인 내용은 임시 저장을 위해 이 기기에
                     보관돼요. 새 일기를 시작하거나 토스의 미니앱 용량 삭제
@@ -251,6 +282,7 @@ export function PhotoUploadStep({
 
                 <section className="photo-consent-section">
                   <h3>동의 거부</h3>
+
                   <p>
                     동의하지 않고 닫을 수 있어요. 동의하지 않으면 사진 선택과
                     그림일기 제작 기능을 이용할 수 없어요.
@@ -263,12 +295,13 @@ export function PhotoUploadStep({
                 </p>
               </div>
 
-              <div className="photo-consent-check-row">
+              <div ref={consentCheckRef} className="photo-consent-check-row">
                 <Checkbox.Line
                   checked={agreed}
                   onCheckedChange={setAgreed}
                   aria-label="필수 사진 및 일기 처리에 동의"
                 />
+
                 <button
                   type="button"
                   className="photo-consent-check-label"
@@ -289,13 +322,15 @@ export function PhotoUploadStep({
               >
                 닫기
               </Button>
+
               <Button
-                className="app-stable-button-state summer-diary-button summer-diary-button-primary"
+                className="app-stable-button-state summer-diary-button summer-diary-button-primary summer-diary-button-guide"
                 display="block"
-                disabled={!agreed}
+                aria-disabled={!agreed || processing}
+                loading={processing}
                 onClick={openPickerAfterConsent}
               >
-                동의하고 사진 선택하기
+                동의하고 사진 선택
               </Button>
             </div>
           </div>

@@ -42,7 +42,7 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
   },
   preview: {
     title: "그림일기 미리보기",
-    subtitle: "선생님의 한줄평과 함께 확인해 보세요.",
+    subtitle: "선생님의 한마디과 함께 확인해 보세요.",
   },
 };
 
@@ -255,7 +255,7 @@ function App() {
       // retry (the analysis hook only re-runs on an explicit retry) or a save
       // without the comment.
       const retry = await openConfirm({
-        title: "선생님 한줄평을 불러오지 못했어요",
+        title: "선생님 한마디을 불러오지 못했어요",
         description:
           "다시 시도해서 한줄평과 첨삭까지 담거나, 지금 이대로 저장할 수 있어요.",
         confirmButton: (
@@ -278,7 +278,7 @@ function App() {
       // so the dialog never claims a piece that is already done.
       const pending = [
         drawingLoading ? "색연필 그림" : null,
-        commentLoading ? "선생님 한줄평" : null,
+        commentLoading ? "선생님 한마디" : null,
       ].filter((part): part is string => part !== null);
       const proceed = await openConfirm({
         title: "아직 그림일기가 만들어지고 있어요",

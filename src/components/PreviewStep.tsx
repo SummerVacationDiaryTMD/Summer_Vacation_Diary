@@ -298,11 +298,7 @@ export function PreviewStep({
       : Math.max(1, Math.ceil(Array.from(analysis.comment).length / 28));
   const frameLayout =
     renderedPreview?.frameLayout ??
-    getDiaryFrameLayout(
-      draft.content,
-      fallbackCommentLines,
-      tags.length > 0,
-    );
+    getDiaryFrameLayout(draft.content, fallbackCommentLines, tags.length > 0);
 
   return (
     <div className="step-body preview-step">
@@ -437,7 +433,7 @@ export function PreviewStep({
             className="diary-card-comment"
             style={frameRegionStyle(frameLayout.comment, frameLayout)}
           >
-            <div className="diary-comment-label">선생님 한줄평</div>
+            <div className="diary-comment-label">선생님 한마디</div>
             {analysisState.status === "loading" && (
               <div className="comment-loading">
                 <Loader size="small" />

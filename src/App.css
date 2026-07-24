@@ -442,16 +442,15 @@ html:has(.diary-content-section textarea:focus) {
   min-height: 100dvh;
   overflow: hidden;
   isolation: isolate;
-  background:
-    linear-gradient(
-      180deg,
-      #e8faff 0,
-      var(--summer-sky-light) 60px,
-      var(--summer-sky) 174px,
-      #bce9ec 205px,
-      var(--summer-paper) 285px,
-      #fffdf7 100%
-    );
+  background: linear-gradient(
+    180deg,
+    #e8faff 0,
+    var(--summer-sky-light) 60px,
+    var(--summer-sky) 174px,
+    #bce9ec 205px,
+    var(--summer-paper) 285px,
+    #fffdf7 100%
+  );
 }
 
 .app-shell::before {
@@ -476,8 +475,12 @@ html:has(.diary-content-section textarea:focus) {
       rgba(255, 255, 255, 0.34) 43% 44%,
       transparent 45%
     );
-  background-size: 270px 80px, 330px 82px;
-  background-position: 0 34px, 120px 0;
+  background-size:
+    270px 80px,
+    330px 82px;
+  background-position:
+    0 34px,
+    120px 0;
   pointer-events: none;
   transform: rotate(-2deg);
 }
@@ -1086,6 +1089,36 @@ html:has(.diary-content-section textarea:focus) {
 
 .summer-diary-button-primary:disabled:not([aria-busy="true"]) {
   box-shadow: 1px 2px 0 rgba(159, 88, 78, 0.16) !important;
+}
+
+/* 동의 전: aria-disabled 상태를 회색으로 표시 */
+.summer-diary-button[aria-disabled="true"]:not([aria-busy="true"]) {
+  border-color: #d4c8b5 !important;
+  background: #f1ede3 !important;
+
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.45),
+    1px 2px 0 rgba(159, 145, 124, 0.16) !important;
+
+  color: #a59a89 !important;
+  opacity: 0.82 !important;
+  filter: none !important;
+
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+/* 회색 상태에서도 누르는 효과 */
+.summer-diary-button[aria-disabled="true"]:not([aria-busy="true"]):active {
+  transform: translateY(1px) rotate(0.2deg) scale(0.975) !important;
+
+  background: #e8e1d6 !important;
+
+  box-shadow:
+    inset 0 2px 3px rgba(159, 145, 124, 0.14),
+    0 1px 0 rgba(159, 145, 124, 0.14) !important;
+
+  filter: brightness(0.98) !important;
 }
 
 /* --- Finished diary save/share sheet --- */
