@@ -10,7 +10,11 @@ import { isAiConnected } from "../services/diaryAnalysis";
 import type { DiaryAnalysis } from "../services/diaryAnalysis";
 import { isSketchAiConnected } from "../services/styleTransfer";
 import { isAiTestMode } from "../services/supabaseEdge";
-import { buildDiaryTags, composeDiaryImage } from "../utils/diaryImage";
+import {
+  buildDiaryTags,
+  composeDiaryImage,
+  type ComposedDiaryImage,
+} from "../utils/diaryImage";
 import {
   DIARY_FRAME,
   getDiaryFrameLayout,
@@ -18,7 +22,10 @@ import {
   type DiaryFrameRegion,
 } from "../utils/diaryFrameLayout";
 import { pickCorrectionMarkAsset } from "../utils/correctionMarks";
-import { handwritingVariation } from "../utils/handwriting";
+import {
+  handwritingVariation,
+  TITLE_HANDWRITING_STRENGTH,
+} from "../utils/handwriting";
 import { buildHighlightSegments } from "../utils/highlight";
 
 interface PreviewStepProps {
@@ -226,7 +233,8 @@ export function PreviewStep({
   const includesAiGeneratedContent =
     (isSketchAiConnected && sketchState.status === "success") ||
     (isAiConnected && analysisState.status === "success");
-  const [renderedPreview, setRenderedPreview] = useState<string | null>(null);
+  const [renderedPreview, setRenderedPreview] =
+    useState<ComposedDiaryImage | null>(null);
 
   useEffect(() => {
     const imageDataUrl = draft.sketchDataUrl ?? draft.photoDataUrl;
@@ -246,8 +254,8 @@ export function PreviewStep({
       analysis,
       includesAiGeneratedContent,
     })
-      .then((dataUrl) => {
-        if (!cancelled) setRenderedPreview(dataUrl);
+      .then((result) => {
+        if (!cancelled) setRenderedPreview(result);
       })
       .catch(() => {
         if (!cancelled) setRenderedPreview(null);
@@ -280,7 +288,17 @@ export function PreviewStep({
   const weekday = Number.isNaN(diaryDate.getTime())
     ? ""
     : new Intl.DateTimeFormat("ko-KR", { weekday: "short" }).format(diaryDate);
-  const frameLayout = getDiaryFrameLayout(draft.content);
+  const fallbackCommentLines =
+    analysis === null
+      ? 1
+      : Math.max(1, Math.ceil(Array.from(analysis.comment).length / 28));
+  const frameLayout =
+    renderedPreview?.frameLayout ??
+    getDiaryFrameLayout(
+      draft.content,
+      fallbackCommentLines,
+      tags.length > 0,
+    );
 
   return (
     <div className="step-body preview-step">
@@ -367,6 +385,7 @@ export function PreviewStep({
               <HandwrittenText
                 text={draft.title !== "" ? draft.title : "제목 없는 일기"}
                 seedOffset={50}
+                strength={TITLE_HANDWRITING_STRENGTH}
               />
             </strong>
           </div>
@@ -470,7 +489,7 @@ export function PreviewStep({
           {renderedPreview !== null && (
             <img
               className="diary-rendered-preview"
-              src={renderedPreview}
+              src={renderedPreview.dataUrl}
               alt="저장될 그림일기 미리보기"
             />
           )}

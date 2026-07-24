@@ -9,11 +9,12 @@ export interface DiaryFrameLayout {
   width: number;
   height: number;
   contentRows: number;
+  commentLines: number;
+  commentExtraHeight: number;
   content: DiaryFrameRegion;
   comment: DiaryFrameRegion;
   topHeight: number;
   bottomTop: number;
-  bottomHeight: number;
 }
 
 /**
@@ -34,6 +35,15 @@ export const DIARY_FRAME = {
   photo: { x: 48, y: 393, width: 960, height: 564 },
   content: { x: 48, y: 991, width: 959 },
   comment: { x: 48, y: 1344, width: 960, height: 108 },
+} as const;
+
+export const DIARY_COMMENT = {
+  paddingX: 25,
+  lineHeight: 34,
+  tagExtraHeight: 18,
+  extensionSourceY: 1384,
+  bottomSplitSourceY: 1400,
+  extensionSliceHeight: 16,
 } as const;
 
 // The product limit is exactly 100 characters. The 11-column manuscript grid
@@ -57,7 +67,11 @@ function countOccupiedCells(content: string): number {
   return cellCount;
 }
 
-export function getDiaryFrameLayout(content: string): DiaryFrameLayout {
+export function getDiaryFrameLayout(
+  content: string,
+  commentLines = 1,
+  hasTags = false,
+): DiaryFrameLayout {
   const requiredRows = Math.ceil(
     countOccupiedCells(content) / DIARY_FRAME.columns,
   );
@@ -65,9 +79,14 @@ export function getDiaryFrameLayout(content: string): DiaryFrameLayout {
     DIARY_FRAME.maxRows,
     Math.max(DIARY_FRAME.baseRows, requiredRows),
   );
-  const extraHeight =
+  const contentExtraHeight =
     (contentRows - DIARY_FRAME.baseRows) * DIARY_FRAME.rowHeight;
-  const height = DIARY_FRAME.baseHeight + extraHeight;
+  const normalizedCommentLines = Math.max(1, commentLines);
+  const commentExtraHeight =
+    (normalizedCommentLines - 1) * DIARY_COMMENT.lineHeight +
+    (hasTags ? DIARY_COMMENT.tagExtraHeight : 0);
+  const height =
+    DIARY_FRAME.baseHeight + contentExtraHeight + commentExtraHeight;
   const contentHeight = contentRows * DIARY_FRAME.rowHeight;
   const bottomTop = DIARY_FRAME.topHeight + contentHeight;
 
@@ -75,16 +94,18 @@ export function getDiaryFrameLayout(content: string): DiaryFrameLayout {
     width: DIARY_FRAME.width,
     height,
     contentRows,
+    commentLines: normalizedCommentLines,
+    commentExtraHeight,
     content: {
       ...DIARY_FRAME.content,
       height: contentHeight,
     },
     comment: {
       ...DIARY_FRAME.comment,
-      y: DIARY_FRAME.comment.y + extraHeight,
+      y: DIARY_FRAME.comment.y + contentExtraHeight,
+      height: DIARY_FRAME.comment.height + commentExtraHeight,
     },
     topHeight: DIARY_FRAME.topHeight,
     bottomTop,
-    bottomHeight: DIARY_FRAME.baseHeight - DIARY_FRAME.bottomSourceY,
   };
 }

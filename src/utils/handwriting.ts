@@ -10,6 +10,8 @@ export interface HandwritingVariation {
   opacity: number;
 }
 
+export const TITLE_HANDWRITING_STRENGTH = 0.7;
+
 // 글자와 위치로 고정된 값을 만들기 때문에 React가 다시 렌더링되어도
 // 글자가 흔들리지 않습니다. 범위는 가독성을 해치지 않을 만큼만 작게 둡니다.
 export function handwritingVariation(

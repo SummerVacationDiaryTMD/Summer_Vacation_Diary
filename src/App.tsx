@@ -301,7 +301,7 @@ function App() {
 
     setSaving(true);
     try {
-      const imageDataUrl = await composeDiaryImage({
+      const { dataUrl: imageDataUrl } = await composeDiaryImage({
         imageDataUrl: draft.sketchDataUrl ?? draft.photoDataUrl,
         title: draft.title.trim() || "제목 없는 일기",
         content: draft.content,
