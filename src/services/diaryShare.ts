@@ -8,8 +8,6 @@ const APP_DEEP_LINK = "intoss://summer-vacation-diary";
 const SHARE_TITLE = "나의 여름방학일기";
 const SHARE_TEXT = "사진 한 장으로 나만의 여름방학 그림일기를 만들어 보세요!";
 
-export type LinkShareOutcome = "shared" | "copied" | "cancelled";
-
 export class DiaryShareError extends Error {
   constructor(public readonly userMessage: string) {
     super(userMessage);
@@ -20,6 +18,7 @@ export class DiaryShareError extends Error {
 function isInsideTossApp(): boolean {
   try {
     const environment = getOperationalEnvironment();
+
     return environment === "toss" || environment === "sandbox";
   } catch {
     return false;
@@ -30,18 +29,22 @@ function browserFallbackUrl(): string {
   return window.location.href;
 }
 
-/** A recipient opens the mini-app in Toss, or the Toss install page otherwise. */
+/**
+ * 토스 앱에서는 미니앱 공유 링크를 만들고,
+ * 일반 브라우저에서는 현재 페이지 주소를 반환합니다.
+ */
 export async function getDiaryAppShareLink(): Promise<string> {
-  if (isInsideTossApp()) {
-    try {
-      return await getTossShareLink(APP_DEEP_LINK);
-    } catch {
-      throw new DiaryShareError(
-        "공유 링크를 만들지 못했어요. 잠시 후 다시 시도해 주세요.",
-      );
-    }
+  if (!isInsideTossApp()) {
+    return browserFallbackUrl();
   }
-  return browserFallbackUrl();
+
+  try {
+    return await getTossShareLink(APP_DEEP_LINK);
+  } catch {
+    throw new DiaryShareError(
+      "공유 링크를 만들지 못했어요. 잠시 후 다시 시도해 주세요.",
+    );
+  }
 }
 
 async function copyWithBrowser(text: string): Promise<void> {
@@ -50,46 +53,65 @@ async function copyWithBrowser(text: string): Promise<void> {
     return;
   }
 
-  // Older WebViews do not expose navigator.clipboard. Keep the fallback small
-  // and remove the temporary element immediately after the synchronous copy.
   const field = document.createElement("textarea");
+
   field.value = text;
   field.setAttribute("readonly", "");
   field.style.position = "fixed";
   field.style.opacity = "0";
+
   document.body.appendChild(field);
   field.select();
+
   const copied = document.execCommand("copy");
+
   field.remove();
+
   if (!copied) {
     throw new Error("copy failed");
   }
 }
 
-/** Opens Toss/OS sharing. KakaoTalk appears when installed and available. */
-export async function shareDiaryAppLink(): Promise<LinkShareOutcome> {
+function isShareCancelled(error: unknown): boolean {
+  return (
+    error instanceof DOMException &&
+    (error.name === "AbortError" || error.name === "NotAllowedError")
+  );
+}
+
+/**
+ * 토스 또는 운영체제의 공유창을 엽니다.
+ *
+ * 실제 공유 완료 여부는 확인하지 않으며,
+ * 성공 및 취소 시에는 별도의 결과를 반환하지 않습니다.
+ * 공유 기능 실행 자체가 실패한 경우에만 예외를 발생시킵니다.
+ */
+export async function shareDiaryAppLink(): Promise<void> {
   const link = await getDiaryAppShareLink();
   const message = `${SHARE_TEXT}\n${link}`;
 
   try {
     if (isInsideTossApp()) {
       await shareThroughToss({ message });
-      return "shared";
+      return;
     }
+
     if (navigator.share !== undefined) {
       await navigator.share({
         title: SHARE_TITLE,
         text: SHARE_TEXT,
         url: link,
       });
-      return "shared";
+      return;
     }
+
     await copyWithBrowser(link);
-    return "copied";
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      return "cancelled";
+    // 사용자가 공유창을 닫거나 취소한 경우에는 아무것도 표시하지 않습니다.
+    if (isShareCancelled(error)) {
+      return;
     }
+
     throw new DiaryShareError(
       "공유창을 열지 못했어요. 잠시 후 다시 시도해 주세요.",
     );
