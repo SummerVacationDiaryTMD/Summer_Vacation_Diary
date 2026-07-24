@@ -40,7 +40,6 @@ export const DIARY_FRAME = {
 export const DIARY_COMMENT = {
   paddingX: 25,
   lineHeight: 68,
-  tagExtraHeight: 44,
   extensionSourceY: 1384,
   bottomSplitSourceY: 1400,
   extensionSliceHeight: 16,
@@ -70,7 +69,6 @@ function countOccupiedCells(content: string): number {
 export function getDiaryFrameLayout(
   content: string,
   commentLines = 1,
-  hasTags = false,
 ): DiaryFrameLayout {
   const requiredRows = Math.ceil(
     countOccupiedCells(content) / DIARY_FRAME.columns,
@@ -83,8 +81,7 @@ export function getDiaryFrameLayout(
     (contentRows - DIARY_FRAME.baseRows) * DIARY_FRAME.rowHeight;
   const normalizedCommentLines = Math.max(1, commentLines);
   const commentExtraHeight =
-    (normalizedCommentLines - 1) * DIARY_COMMENT.lineHeight +
-    (hasTags ? DIARY_COMMENT.tagExtraHeight : 0);
+    (normalizedCommentLines - 1) * DIARY_COMMENT.lineHeight;
   const height =
     DIARY_FRAME.baseHeight + contentExtraHeight + commentExtraHeight;
   const contentHeight = contentRows * DIARY_FRAME.rowHeight;

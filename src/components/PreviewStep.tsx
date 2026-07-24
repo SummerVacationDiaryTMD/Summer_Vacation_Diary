@@ -15,7 +15,6 @@ import type { DiaryAnalysis } from "../services/diaryAnalysis";
 import { isSketchAiConnected } from "../services/styleTransfer";
 import { isAiTestMode } from "../services/supabaseEdge";
 import {
-  buildDiaryTags,
   composeDiaryImage,
   type ComposedDiaryImage,
 } from "../utils/diaryImage";
@@ -288,9 +287,6 @@ export function PreviewStep({
         : sketchState.status === "error"
           ? "그림 변환에 실패해서 원본 사진이 보여요"
           : "";
-  // Shared with the saved-image renderer so the preview and the exported
-  // diary always show the same tags.
-  const tags = analysis === null ? [] : buildDiaryTags(analysis);
   const [year = "", month = "", day = ""] = draft.date.split("-");
   const diaryDate = new Date(`${draft.date}T00:00:00`);
   const weekday = Number.isNaN(diaryDate.getTime())
@@ -302,7 +298,7 @@ export function PreviewStep({
       : Math.max(1, Math.ceil(Array.from(analysis.comment).length / 16));
   const frameLayout =
     renderedPreview?.frameLayout ??
-    getDiaryFrameLayout(draft.content, fallbackCommentLines, tags.length > 0);
+    getDiaryFrameLayout(draft.content, fallbackCommentLines);
 
   return (
     <div className="step-body preview-step">
@@ -483,27 +479,14 @@ export function PreviewStep({
             )}
 
             {analysis !== null && (
-              <>
-                <Paragraph
-                  className="diary-comment-text"
-                  typography="t6"
-                  fontWeight="medium"
-                  color="#6b5e3f"
-                >
-                  {"“"}
-                  {analysis.comment}
-                  {"”"}
-                </Paragraph>
-                {tags.length > 0 && (
-                  <div className="diary-tags">
-                    {tags.map((tag) => (
-                      <span key={tag} className="diary-tag">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </>
+              <Paragraph
+                className="diary-comment-text"
+                typography="t6"
+                fontWeight="medium"
+                color="#6b5e3f"
+              >
+                {analysis.comment}
+              </Paragraph>
             )}
           </div>
 

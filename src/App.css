@@ -2039,31 +2039,6 @@ mark.highlight-underline {
   display: block;
 }
 
-.diary-tags {
-  position: static;
-  display: flex;
-  align-self: start;
-  flex-wrap: nowrap;
-  width: 100%;
-  min-width: 0;
-  gap: max(2px, 0.69cqw);
-  margin-top: 0;
-  overflow: hidden;
-}
-
-.diary-tag {
-  min-width: 0;
-  overflow: hidden;
-  font-size: clamp(6px, 2.08cqw, 9px);
-  line-height: clamp(9px, 3.24cqw, 14px);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #6b5e3f;
-  background-color: #f3ecd2;
-  border-radius: 10px;
-  padding: max(1px, 0.23cqw) clamp(3px, 1.16cqw, 5px);
-}
-
 .preview-mode-note {
   padding: 10px 14px;
   border-radius: 10px;
