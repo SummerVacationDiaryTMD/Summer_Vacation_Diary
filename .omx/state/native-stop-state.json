@@ -19,6 +19,16 @@
         "last_turn_id": "019f9351-b930-7ac1-ae8a-4bedc01a094f",
         "last_thread_id": null
       }
+    },
+    "019f9374-f792-75b1-85bf-e91c7176acfc": {
+      "ordinary_no_progress_guard": {
+        "fingerprint": "ordinary|선생님 한줄평 글자 크기를 약 **1.7배** 키웠습니다. - 미리보기: `3.21cqw → 5.46cqw` - 저장 이미지: `34px → 58px` - 줄바꿈, 줄 높이, 태그 영역도 글자가 잘리지 않도록 조정 검증 완료: 타입 검사, eslint, 프로덕션 빌드 모두 통과했습니다.",
+        "first_seen_at": "2026-07-24T09:34:51.450Z",
+        "last_seen_at": "2026-07-24T09:34:51.450Z",
+        "repeat_count": 1,
+        "last_turn_id": "019f9377-ee2d-70f2-ba57-81866ac88e77",
+        "last_thread_id": null
+      }
     }
   }
 }

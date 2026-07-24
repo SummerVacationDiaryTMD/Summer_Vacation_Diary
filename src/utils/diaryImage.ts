@@ -64,7 +64,7 @@ const TITLE_FONT = `400 ${TITLE_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const CONTENT_FONT_SIZE = 54;
 const CONTENT_FONT = `400 ${CONTENT_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const COMMENT_LABEL_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
-const COMMENT_FONT = `700 34px ${TEACHER_COMMENT_FONT_STACK}`;
+const COMMENT_FONT = `700 58px ${TEACHER_COMMENT_FONT_STACK}`;
 const TAG_FONT = `400 22px ${SYSTEM_FONT_STACK}`;
 const AI_WATERMARK_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
 
@@ -417,7 +417,7 @@ function drawComment(
 
   const commentLineHeight = DIARY_COMMENT.lineHeight;
   commentLines.forEach((line, index) => {
-    context.fillText(line, x + paddingX, y + 62 + index * commentLineHeight);
+    context.fillText(line, x + paddingX, y + 90 + index * commentLineHeight);
   });
 
   const tags = buildDiaryTags(analysis);

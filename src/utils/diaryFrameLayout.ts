@@ -39,8 +39,8 @@ export const DIARY_FRAME = {
 
 export const DIARY_COMMENT = {
   paddingX: 25,
-  lineHeight: 34,
-  tagExtraHeight: 18,
+  lineHeight: 68,
+  tagExtraHeight: 44,
   extensionSourceY: 1384,
   bottomSplitSourceY: 1400,
   extensionSliceHeight: 16,
