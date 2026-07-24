@@ -2,7 +2,7 @@
 
 ## Source of truth
 - Status: Active
-- Last refreshed: 2026-07-22
+- Last refreshed: 2026-07-24
 - Primary product surfaces: 사진 업로드, 일기 작성, 미리보기 및 저장 이미지
 - Evidence reviewed: `src/components/PreviewStep.tsx`, `src/components/WriteStep.tsx`, `src/App.css`, `src/utils/diaryImage.ts`, `public/picture-diary-frame.png`
 
@@ -14,7 +14,7 @@
 ## Product goals
 - Goals: 사진과 손글씨 일기를 한 장의 추억 이미지로 쉽게 완성하고 저장
 - Non-goals: 범용 문서 편집기나 무제한 장문 작성 도구
-- Success signals: 5~9행 일기에서 프레임, 주석, 코멘트가 겹치지 않고 저장 결과와 일치
+- Success signals: 5~9행 일기와 길이가 다른 한줄평에서 프레임, 주석, 코멘트가 겹치지 않고 저장 결과와 일치
 
 ## Personas and jobs
 - Primary personas: 초등학생과 가족
@@ -30,11 +30,13 @@
 - 원본 프레임의 비율과 질감을 늘리거나 찌그러뜨리지 않는다.
 - 미리보기와 저장 이미지는 하나의 레이아웃 계산 결과를 공유한다.
 - 본문은 11칸 원고지 행 단위로만 확장한다.
+- 선생님 한줄평 칸은 문장 줄 수와 태그 행에 맞춰 확장하고 내용을 말줄임표로 숨기지 않는다.
+- 한줄평 줄바꿈은 배경 프레임의 실제 내부 폭과 실제 렌더링 글꼴 폭으로 결정한다.
 - Tradeoffs: 긴 글을 위해 글자를 축소하지 않고 전체 카드 높이를 늘린다.
 
 ## Visual language
 - Color: 아이보리 종이, 옅은 갈색 테두리, 연필색 본문, 붉은 교정 표시
-- Typography: `NanumCoDingHeuiMang` 손글씨체와 시스템 한글 폰트
+- Typography: `NanumCoDingHeuiMang` 손글씨체와 시스템 한글 폰트, 제목은 글자 겹침을 줄인 0.7 손글씨 변형 강도
 - Spacing/layout rhythm: 원본 1058px 프레임 좌표와 69px 원고지 행을 기준으로 계산
 - Shape/radius/elevation: 원본 프레임의 둥근 하단과 얕은 그림자 유지
 - Motion: 필수 상태 전환 외 장식적 모션 최소화
@@ -43,7 +45,7 @@
 ## Components
 - Existing components to reuse: `PreviewStep`, 원고지 하이라이트, Canvas 저장 합성
 - New/changed components: `DiaryFrameBackground`, `DiaryFrameLayout`
-- Variants and states: 기본 5행, 가변 6~9행, 분석 로딩/오류/성공
+- Variants and states: 기본 5행, 가변 6~9행, 가변 한줄평 높이, 분석 로딩/오류/성공
 - Token/component ownership: 프레임 좌표와 행 제한은 `src/utils/diaryFrameLayout.ts`가 소유
 
 ## Accessibility
@@ -76,7 +78,7 @@
 - Design-token constraints: 기존 프레임 색과 좌표를 우선하며 새 디자인 시스템을 추가하지 않음
 - Performance constraints: 프레임 원본 한 장을 재사용하고 새 대형 이미지 자산을 추가하지 않음
 - Compatibility constraints: DOM 미리보기와 Canvas 저장이 동일한 픽셀 레이아웃을 사용
-- Test/screenshot expectations: 타입검사, 린트, 빌드 후 5행과 9행 시각 확인
+- Test/screenshot expectations: 타입검사, 린트, 빌드 후 5행/9행 및 한 줄/여러 줄 한줄평 시각 확인
 
 ## Open questions
 - [ ] 9행을 넘는 일기를 다음 장으로 나눌지 제품 정책 확정

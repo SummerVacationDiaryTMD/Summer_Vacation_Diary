@@ -6,11 +6,15 @@ import {
   pickCorrectionMarkAsset,
 } from "./correctionMarks";
 import {
+  DIARY_COMMENT,
   DIARY_FRAME,
   getDiaryFrameLayout,
   type DiaryFrameLayout,
 } from "./diaryFrameLayout";
-import { handwritingVariation } from "./handwriting";
+import {
+  handwritingVariation,
+  TITLE_HANDWRITING_STRENGTH,
+} from "./handwriting";
 import { buildHighlightSegments } from "./highlight";
 import { ImageProcessError, loadImageFromDataUrl } from "./image";
 
@@ -23,6 +27,11 @@ export interface DiaryImageInput {
   weather: WeatherValue;
   analysis: DiaryAnalysis | null;
   includesAiGeneratedContent: boolean;
+}
+
+export interface ComposedDiaryImage {
+  dataUrl: string;
+  frameLayout: DiaryFrameLayout;
 }
 
 // The export and preview both use diaryFrameLayout's source-pixel coordinates,
@@ -377,56 +386,15 @@ export function buildDiaryTags(analysis: DiaryAnalysis): string[] {
   ].slice(0, 6);
 }
 
-function wrapCanvasText(
-  context: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-  maxLines: number,
-): string[] {
-  const lines: string[] = [];
-  let currentLine = "";
-
-  for (const character of Array.from(text)) {
-    const candidate = currentLine + character;
-
-    if (currentLine !== "" && context.measureText(candidate).width > maxWidth) {
-      lines.push(currentLine);
-      currentLine = character;
-    } else {
-      currentLine = candidate;
-    }
-  }
-
-  if (currentLine !== "") {
-    lines.push(currentLine);
-  }
-
-  if (lines.length <= maxLines) {
-    return lines;
-  }
-
-  const visibleLines = lines.slice(0, maxLines);
-  let lastLine = visibleLines[maxLines - 1];
-
-  while (
-    lastLine.length > 0 &&
-    context.measureText(`${lastLine}…`).width > maxWidth
-  ) {
-    lastLine = Array.from(lastLine).slice(0, -1).join("");
-  }
-
-  visibleLines[maxLines - 1] = `${lastLine}…`;
-  return visibleLines;
-}
-
 function drawComment(
   context: CanvasRenderingContext2D,
   analysis: DiaryAnalysis | null,
   layout: DiaryFrameLayout,
+  commentLines: string[],
 ) {
   if (analysis === null) return;
   const { x, y, width, height } = layout.comment;
-  const paddingX = 25;
+  const paddingX = DIARY_COMMENT.paddingX;
 
   context.save();
   context.beginPath();
@@ -441,14 +409,7 @@ function drawComment(
   context.font = COMMENT_FONT;
   context.fillStyle = COMMENT_COLOR;
 
-  const commentLines = wrapCanvasText(
-    context,
-    `"${analysis.comment}"`,
-    width - paddingX * 2,
-    2,
-  );
-
-  const commentLineHeight = 34;
+  const commentLineHeight = DIARY_COMMENT.lineHeight;
   commentLines.forEach((line, index) => {
     context.fillText(line, x + paddingX, y + 62 + index * commentLineHeight);
   });
@@ -471,6 +432,32 @@ function drawComment(
     tagX += tagWidth + 8;
   }
   context.restore();
+}
+
+function wrapCommentToFrame(
+  context: CanvasRenderingContext2D,
+  comment: string,
+): string[] {
+  const maxWidth =
+    DIARY_FRAME.comment.width - DIARY_COMMENT.paddingX * 2;
+  const lines: string[] = [];
+  let currentLine = "";
+
+  for (const character of Array.from(`“${comment.trim()}”`)) {
+    const candidate = currentLine + character;
+    if (
+      currentLine !== "" &&
+      context.measureText(candidate).width > maxWidth
+    ) {
+      lines.push(currentLine);
+      currentLine = character;
+    } else {
+      currentLine = candidate;
+    }
+  }
+
+  if (currentLine !== "") lines.push(currentLine);
+  return lines.length > 0 ? lines : [""];
 }
 
 function drawFrameTemplate(
@@ -504,22 +491,60 @@ function drawFrameTemplate(
     );
   }
 
+  const bottomTopHeight =
+    DIARY_COMMENT.bottomSplitSourceY - DIARY_FRAME.bottomSourceY;
   context.drawImage(
     template,
     0,
     DIARY_FRAME.bottomSourceY,
     WIDTH,
-    layout.bottomHeight,
+    bottomTopHeight,
     0,
     layout.bottomTop,
     WIDTH,
-    layout.bottomHeight,
+    bottomTopHeight,
+  );
+
+  let extensionY = layout.bottomTop + bottomTopHeight;
+  let remainingExtension = layout.commentExtraHeight;
+  while (remainingExtension > 0) {
+    const sliceHeight = Math.min(
+      DIARY_COMMENT.extensionSliceHeight,
+      remainingExtension,
+    );
+    context.drawImage(
+      template,
+      0,
+      DIARY_COMMENT.extensionSourceY,
+      WIDTH,
+      sliceHeight,
+      0,
+      extensionY,
+      WIDTH,
+      sliceHeight,
+    );
+    extensionY += sliceHeight;
+    remainingExtension -= sliceHeight;
+  }
+
+  const bottomTailHeight =
+    DIARY_FRAME.baseHeight - DIARY_COMMENT.bottomSplitSourceY;
+  context.drawImage(
+    template,
+    0,
+    DIARY_COMMENT.bottomSplitSourceY,
+    WIDTH,
+    bottomTailHeight,
+    0,
+    extensionY,
+    WIDTH,
+    bottomTailHeight,
   );
 }
 
 export async function composeDiaryImage(
   input: DiaryImageInput,
-): Promise<string> {
+): Promise<ComposedDiaryImage> {
   const [image, template, weatherIcon] = await Promise.all([
     loadImageFromDataUrl(input.imageDataUrl),
     loadImageFromDataUrl(TEMPLATE_URL),
@@ -547,13 +572,28 @@ export async function composeDiaryImage(
     // 폰트를 못 읽어도 시스템 폰트 fallback으로 저장은 계속합니다.
   }
 
-  const frameLayout = getDiaryFrameLayout(input.content);
-
+  const tags =
+    input.analysis === null ? [] : buildDiaryTags(input.analysis);
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH;
-  canvas.height = frameLayout.height;
   const context = canvas.getContext("2d");
   if (!context) throw new ImageProcessError("load-failed");
+
+  // 배경 프레임의 실제 한줄평 칸(좌우 25px 안쪽)과 로드된 글꼴의
+  // 측정 폭으로 줄을 나눕니다. 글자 수 추정은 여백이 남아도 조기
+  // 줄바꿈될 수 있어 저장 이미지와 프레임 칸이 어긋납니다.
+  context.font = COMMENT_FONT;
+  const commentLines =
+    input.analysis === null
+      ? [""]
+      : wrapCommentToFrame(context, input.analysis.comment);
+  const frameLayout = getDiaryFrameLayout(
+    input.content,
+    commentLines.length,
+    tags.length > 0,
+  );
+
+  canvas.height = frameLayout.height;
 
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
@@ -633,14 +673,18 @@ export async function composeDiaryImage(
     titleX,
     titleY + titleHeight / 2 + 20,
     50,
+    TITLE_HANDWRITING_STRENGTH,
   );
   context.restore();
 
   drawContent(context, input.content, input.analysis, markImages);
-  drawComment(context, input.analysis, frameLayout);
+  drawComment(context, input.analysis, frameLayout, commentLines);
   if (input.includesAiGeneratedContent) {
     drawAiContentWatermark(context);
   }
 
-  return canvas.toDataURL("image/jpeg", 0.92);
+  return {
+    dataUrl: canvas.toDataURL("image/jpeg", 0.92),
+    frameLayout,
+  };
 }
