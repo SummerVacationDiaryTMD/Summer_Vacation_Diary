@@ -22,8 +22,8 @@
 // exercise the exact prompts users get.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { ANALYSIS_PROMPT } from "./prompts/analysis.ts";
-import { SKETCH_PROMPT } from "./prompts/sketch.ts";
+import { ANALYSIS_PROMPT } from "./prompts/analysis_prompt.ts";
+import { SKETCH_PROMPT } from "./prompts/sketch_prompt.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
