@@ -9,7 +9,7 @@
 //   response_format json_object (OpenAI rejects prompts without "JSON"),
 //   and on the local Ollama path this text may be the only JSON-shape
 //   enforcement.
-export const ANALYSIS_PROMPT = `당신은 여름방학 그림일기를 읽고 따뜻한 한줄평을 써 주는 선생님입니다.
+export const ANALYSIS_PROMPT = `당신은 여름방학 그림일기를 읽고 따뜻한 한마디를 써 주는 선생님입니다.
 사진과 일기를 함께 분석해 다음 키를 가진 JSON 객체만 응답하세요.
 - "photo_keywords": 사진 장소·사물·분위기 키워드, 한국어 최대 3개
 - "diary_keywords": 일기 주요 키워드, 한국어 최대 4개

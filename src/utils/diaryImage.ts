@@ -423,7 +423,7 @@ function drawComment(
   const tags = buildDiaryTags(analysis);
   context.font = TAG_FONT;
   let tagX = x + paddingX;
-  // 짧은 한줄평에서도 태그를 박스 맨 아래에 고정하지 않습니다.
+  // 한마디가 짧아도 태그를 박스 맨 아래에 고정하지 않습니다.
   // 미리보기와 동일하게 실제 댓글 줄 수 바로 다음 행에 배치합니다.
   const tagY = y + 50 + commentLines.length * commentLineHeight;
   for (const tag of tags) {
@@ -580,7 +580,7 @@ export async function composeDiaryImage(
   const context = canvas.getContext("2d");
   if (!context) throw new ImageProcessError("load-failed");
 
-  // 배경 프레임의 실제 한줄평 칸(좌우 25px 안쪽)과 로드된 글꼴의
+  // 배경 프레임의 실제 한마디 칸(좌우 25px 안쪽)과 로드된 글꼴의
   // 측정 폭으로 줄을 나눕니다. 글자 수 추정은 여백이 남아도 조기
   // 줄바꿈될 수 있어 저장 이미지와 프레임 칸이 어긋납니다.
   context.font = COMMENT_FONT;
@@ -600,7 +600,7 @@ export async function composeDiaryImage(
   context.imageSmoothingQuality = "high";
   context.textBaseline = "alphabetic";
 
-  // DOM 미리보기와 같은 순서: 템플릿 → 사진 → 글자/첨삭 → 한줄평/태그.
+  // DOM 미리보기와 같은 순서: 템플릿 → 사진 → 글자/첨삭 → 한마디/태그.
   drawFrameTemplate(context, template, frameLayout);
   drawCoverImage(context, image, PHOTO.x, PHOTO.y, PHOTO.width, PHOTO.height);
 

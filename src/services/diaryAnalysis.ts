@@ -116,7 +116,7 @@ function parseAnalysis(parsed: unknown, content: string): DiaryAnalysis {
     typeof record.comment === "string" ? record.comment.trim() : "";
   if (comment === "") {
     // The comment is the one field the user actually reads — without it the
-    // response is useless, so treat it as a failure (spec: 한줄평 생성 실패).
+    // response is useless, so treat it as a failure (spec: 한마디 생성 실패).
     throw new AnalysisError("invalid-response");
   }
 
