@@ -12,7 +12,9 @@ function resolveDevelopmentHost() {
   const interfaceNames = [
     "en0",
     "en1",
-    ...Object.keys(interfaces).filter((name) => name !== "en0" && name !== "en1"),
+    ...Object.keys(interfaces).filter(
+      (name) => name !== "en0" && name !== "en1",
+    ),
   ];
 
   for (const name of interfaceNames) {
@@ -38,7 +40,7 @@ export default defineConfig({
   brand: {
     // Console registration must use the same Korean app name and appName above.
     displayName: BRAND_DISPLAY_NAME,
-    // Summer-sky blue to match the seasonal diary concept.
+    // Warm sandy beige inspired by the beach and summer vacation theme.
     primaryColor: BRAND_PRIMARY_COLOR,
     // The registered look comes from the console upload
     // (docs/images/app-icon-600.png); the 2.x schema requires this key, so it
