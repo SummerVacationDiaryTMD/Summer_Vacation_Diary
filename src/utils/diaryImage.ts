@@ -65,13 +65,11 @@ const CONTENT_FONT_SIZE = 54;
 const CONTENT_FONT = `400 ${CONTENT_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const COMMENT_LABEL_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
 const COMMENT_FONT = `700 58px ${TEACHER_COMMENT_FONT_STACK}`;
-const TAG_FONT = `400 22px ${SYSTEM_FONT_STACK}`;
 const AI_WATERMARK_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
 
 const TEXT_COLOR = "#333333";
 const COMMENT_COLOR = "#6b5e3f";
 const LABEL_COLOR = "#806d3d";
-const TAG_BACKGROUND = "#f3ecd2";
 const AI_WATERMARK_COLOR = "#8B6A3E";
 
 interface DiaryCell {
@@ -381,17 +379,6 @@ function drawAiContentWatermark(context: CanvasRenderingContext2D) {
   context.restore();
 }
 
-/** 감정 → 사진 키워드 → 일기 키워드 순서로 중복 없이 최대 6개. */
-export function buildDiaryTags(analysis: DiaryAnalysis): string[] {
-  return [
-    ...new Set([
-      ...analysis.emotions,
-      ...analysis.photoKeywords,
-      ...analysis.diaryKeywords,
-    ]),
-  ].slice(0, 6);
-}
-
 function drawComment(
   context: CanvasRenderingContext2D,
   analysis: DiaryAnalysis | null,
@@ -420,23 +407,6 @@ function drawComment(
     context.fillText(line, x + paddingX, y + 90 + index * commentLineHeight);
   });
 
-  const tags = buildDiaryTags(analysis);
-  context.font = TAG_FONT;
-  let tagX = x + paddingX;
-  // 한마디가 짧아도 태그를 박스 맨 아래에 고정하지 않습니다.
-  // 미리보기와 동일하게 실제 댓글 줄 수 바로 다음 행에 배치합니다.
-  const tagY = y + 50 + commentLines.length * commentLineHeight;
-  for (const tag of tags) {
-    const text = `#${tag}`;
-    const tagWidth = context.measureText(text).width + 24;
-    if (tagX + tagWidth > x + width - paddingX) break;
-    context.fillStyle = TAG_BACKGROUND;
-    roundRectPath(context, tagX, tagY, tagWidth, 34, 17);
-    context.fill();
-    context.fillStyle = COMMENT_COLOR;
-    context.fillText(text, tagX + 12, tagY + 24);
-    tagX += tagWidth + 8;
-  }
   context.restore();
 }
 
@@ -448,7 +418,7 @@ function wrapCommentToFrame(
   const lines: string[] = [];
   let currentLine = "";
 
-  for (const character of Array.from(`“${comment.trim()}”`)) {
+  for (const character of Array.from(comment.trim())) {
     const candidate = currentLine + character;
     if (currentLine !== "" && context.measureText(candidate).width > maxWidth) {
       lines.push(currentLine);
@@ -574,7 +544,6 @@ export async function composeDiaryImage(
     // 폰트를 못 읽어도 시스템 폰트 fallback으로 저장은 계속합니다.
   }
 
-  const tags = input.analysis === null ? [] : buildDiaryTags(input.analysis);
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH;
   const context = canvas.getContext("2d");
@@ -591,7 +560,6 @@ export async function composeDiaryImage(
   const frameLayout = getDiaryFrameLayout(
     input.content,
     commentLines.length,
-    tags.length > 0,
   );
 
   canvas.height = frameLayout.height;
