@@ -478,7 +478,7 @@ export function PreviewStep({
                   typography="t7"
                   color="#8a7d55"
                 >
-                  한줄평을 불러오지 못했어요
+                  한마디를 불러오지 못했어요
                 </Paragraph>
               </div>
             )}
@@ -529,7 +529,7 @@ export function PreviewStep({
               color="dark"
               onClick={onRetry}
             >
-              한줄평 다시 시도
+              한마디 다시 시도
             </Button>
           </div>
         )}

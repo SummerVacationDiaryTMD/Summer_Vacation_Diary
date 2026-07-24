@@ -14,7 +14,7 @@
 ## Product goals
 - Goals: 사진과 손글씨 일기를 한 장의 추억 이미지로 쉽게 완성하고 저장
 - Non-goals: 범용 문서 편집기나 무제한 장문 작성 도구
-- Success signals: 5~9행 일기와 길이가 다른 한줄평에서 프레임, 주석, 코멘트가 겹치지 않고 저장 결과와 일치
+- Success signals: 5~9행 일기와 길이가 다른 한마디에서 프레임, 주석, 코멘트가 겹치지 않고 저장 결과와 일치
 
 ## Personas and jobs
 - Primary personas: 초등학생과 가족
@@ -24,14 +24,14 @@
 ## Information architecture
 - Primary navigation: 업로드 → 작성 → 미리보기
 - Core routes/screens: 단일 상태 기반 3단계 화면
-- Content hierarchy: 날짜/날씨 → 제목 → 사진 → 원고지 본문 → 선생님 한줄평
+- Content hierarchy: 날짜/날씨 → 제목 → 사진 → 원고지 본문 → 선생님 한마디
 
 ## Design principles
 - 원본 프레임의 비율과 질감을 늘리거나 찌그러뜨리지 않는다.
 - 미리보기와 저장 이미지는 하나의 레이아웃 계산 결과를 공유한다.
 - 본문은 11칸 원고지 행 단위로만 확장한다.
-- 선생님 한줄평 칸은 문장 줄 수와 태그 행에 맞춰 확장하고 내용을 말줄임표로 숨기지 않는다.
-- 한줄평 줄바꿈은 배경 프레임의 실제 내부 폭과 실제 렌더링 글꼴 폭으로 결정한다.
+- 선생님 한마디 칸은 문장 줄 수와 태그 행에 맞춰 확장하고 내용을 말줄임표로 숨기지 않는다.
+- 한마디 줄바꿈은 배경 프레임의 실제 내부 폭과 실제 렌더링 글꼴 폭으로 결정한다.
 - Tradeoffs: 긴 글을 위해 글자를 축소하지 않고 전체 카드 높이를 늘린다.
 
 ## Visual language
@@ -45,7 +45,7 @@
 ## Components
 - Existing components to reuse: `PreviewStep`, 원고지 하이라이트, Canvas 저장 합성
 - New/changed components: `DiaryFrameBackground`, `DiaryFrameLayout`
-- Variants and states: 기본 5행, 가변 6~9행, 가변 한줄평 높이, 분석 로딩/오류/성공
+- Variants and states: 기본 5행, 가변 6~9행, 가변 한마디 높이, 분석 로딩/오류/성공
 - Token/component ownership: 프레임 좌표와 행 제한은 `src/utils/diaryFrameLayout.ts`가 소유
 
 ## Accessibility
@@ -61,7 +61,7 @@
 - Touch/hover differences: 핵심 조작은 터치 대상으로 유지하며 hover에 의존하지 않음
 
 ## Interaction states
-- Loading: 사진 영역과 한줄평 영역에서 기존 로더 유지
+- Loading: 사진 영역과 한마디 영역에서 기존 로더 유지
 - Empty: 사진 미선택 상태 표시
 - Error: 변환 및 분석 재시도 제공
 - Success: 가변 프레임 안에 분석 주석과 태그 표시
@@ -70,7 +70,7 @@
 
 ## Content voice
 - Tone: 어린이에게 친근하고 격려하는 한국어
-- Terminology: 그림일기, 선생님 한줄평, 원본 사진, 그림
+- Terminology: 그림일기, 선생님 한마디, 원본 사진, 그림
 - Microcopy rules: 짧고 직접적이며 실패 시 다음 행동을 명시
 
 ## Implementation constraints
@@ -78,7 +78,7 @@
 - Design-token constraints: 기존 프레임 색과 좌표를 우선하며 새 디자인 시스템을 추가하지 않음
 - Performance constraints: 프레임 원본 한 장을 재사용하고 새 대형 이미지 자산을 추가하지 않음
 - Compatibility constraints: DOM 미리보기와 Canvas 저장이 동일한 픽셀 레이아웃을 사용
-- Test/screenshot expectations: 타입검사, 린트, 빌드 후 5행/9행 및 한 줄/여러 줄 한줄평 시각 확인
+- Test/screenshot expectations: 타입검사, 린트, 빌드 후 5행/9행 및 한 줄/여러 줄의 한마디 시각 확인
 
 ## Open questions
 - [ ] 9행을 넘는 일기를 다음 장으로 나눌지 제품 정책 확정

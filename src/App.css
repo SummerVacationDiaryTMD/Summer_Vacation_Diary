@@ -1860,7 +1860,7 @@ html:has(.diary-content-section textarea:focus) {
   align-content: start;
   row-gap: max(1px, 0.46cqw);
   margin: 0;
-  /* 원본 프레임의 한줄평 칸(x=48~1008)에서 좌우 25px씩 안쪽.
+  /* 원본 프레임의 한마디 칸(x=48~1008)에서 좌우 25px씩 안쪽.
      Canvas 저장 이미지와 같은 25 / 1058 비율을 그대로 사용합니다. */
   padding: clamp(3px, 1.16cqw, 5px) 2.36cqw;
   overflow: hidden;
