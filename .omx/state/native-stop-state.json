@@ -22,11 +22,11 @@
     },
     "019f9374-f792-75b1-85bf-e91c7176acfc": {
       "ordinary_no_progress_guard": {
-        "fingerprint": "ordinary|선생님 한줄평 글자 크기를 약 **1.7배** 키웠습니다. - 미리보기: `3.21cqw → 5.46cqw` - 저장 이미지: `34px → 58px` - 줄바꿈, 줄 높이, 태그 영역도 글자가 잘리지 않도록 조정 검증 완료: 타입 검사, eslint, 프로덕션 빌드 모두 통과했습니다.",
-        "first_seen_at": "2026-07-24T09:34:51.450Z",
-        "last_seen_at": "2026-07-24T09:34:51.450Z",
+        "fingerprint": "ordinary|네. `diary_frame.title` 좌표를 **미리보기와 저장 이미지가 공통으로 사용**해서 둘 다 바뀝니다. - 미리보기: `previewstep.tsx` - 저장 이미지: `diaryimage.ts` 따라서 `x`를 늘리고 `width`를 같은 만큼 줄이면 두 화면에서 제목 위치가 동일하게 오른쪽으로 이동합니다.",
+        "first_seen_at": "2026-07-24T09:47:10.530Z",
+        "last_seen_at": "2026-07-24T09:47:10.530Z",
         "repeat_count": 1,
-        "last_turn_id": "019f9377-ee2d-70f2-ba57-81866ac88e77",
+        "last_turn_id": "019f9385-7343-7351-a9ce-3d175c41d7d3",
         "last_thread_id": null
       }
     }
