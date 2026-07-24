@@ -226,6 +226,7 @@ function App() {
 
   const handleStartWriting = () => {
     if (!canWrite) {
+      toast.openToast("먼저 사진을 올려주세요.");
       return;
     }
 
@@ -233,6 +234,40 @@ function App() {
     // a photo can enter the draft, so another confirmation here would repeat
     // the same notice and interrupt the user a second time.
     setStep("write");
+  };
+
+  const handlePreview = () => {
+    const titleMissing = draft.title.trim() === "";
+    const trimmedContentLength = Array.from(draft.content.trim()).length;
+    const contentMissing = trimmedContentLength === 0;
+    const contentTooShort = trimmedContentLength < CONTENT_MIN_LENGTH;
+
+    if (titleMissing && contentMissing) {
+      toast.openToast("제목과 일기 내용을 입력해 주세요.");
+      return;
+    }
+    if (titleMissing && contentTooShort) {
+      toast.openToast(
+        `제목을 입력하고 일기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요.`,
+      );
+      return;
+    }
+    if (titleMissing) {
+      toast.openToast("제목을 입력해 주세요.");
+      return;
+    }
+    if (contentMissing) {
+      toast.openToast("일기 내용을 입력해 주세요.");
+      return;
+    }
+    if (contentTooShort) {
+      toast.openToast(
+        `일기 내용을 ${CONTENT_MIN_LENGTH}자 이상 입력해 주세요.`,
+      );
+      return;
+    }
+
+    setStep("preview");
   };
 
   // Stage 4: compose the finished diary once, then let the result sheet reuse
@@ -417,9 +452,9 @@ function App() {
       {step === "upload" && (
         <AppBottomBar>
           <Button
-            className="app-stable-button-state summer-diary-button summer-diary-button-primary"
+            className="app-stable-button-state feedback-disabled-button summer-diary-button summer-diary-button-primary"
             display="block"
-            disabled={!canWrite}
+            aria-disabled={!canWrite}
             onClick={handleStartWriting}
           >
             일기 쓰러 가기
@@ -438,10 +473,10 @@ function App() {
             이전
           </Button>
           <Button
-            className="app-stable-button-state summer-diary-button summer-diary-button-primary"
+            className="app-stable-button-state feedback-disabled-button summer-diary-button summer-diary-button-primary"
             display="block"
-            disabled={!canPreview}
-            onClick={() => setStep("preview")}
+            aria-disabled={!canPreview}
+            onClick={handlePreview}
           >
             미리보기
           </Button>
