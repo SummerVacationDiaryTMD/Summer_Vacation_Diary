@@ -40,6 +40,8 @@ interface PreviewStepProps {
   onSketchRetry: () => void;
 }
 
+const ANALYSIS_LOADING_MESSAGE = "선생님이 일기를 검사하고 있어요";
+
 function frameRegionStyle(
   region: DiaryFrameRegion,
   layout: DiaryFrameLayout,
@@ -306,6 +308,24 @@ export function PreviewStep({
         {sketchAnnouncement}
       </p>
 
+      {analysisState.status === "loading" && (
+        <div
+          className="analysis-loading-notice"
+          role="status"
+          aria-live="polite"
+        >
+          <Loader size="small" />
+          <Paragraph
+            as="span"
+            typography="t7"
+            fontWeight="medium"
+            color="#6b5e3f"
+          >
+            {ANALYSIS_LOADING_MESSAGE}
+          </Paragraph>
+        </div>
+      )}
+
       <div className="diary-card">
         <div
           className="diary-template"
@@ -435,7 +455,7 @@ export function PreviewStep({
           >
             <div className="diary-comment-label">선생님 한마디</div>
             {analysisState.status === "loading" && (
-              <div className="comment-loading">
+              <div className="comment-loading" aria-hidden="true">
                 <Loader size="small" />
                 <Paragraph
                   as="span"
@@ -443,7 +463,7 @@ export function PreviewStep({
                   typography="t7"
                   color="#8a7d55"
                 >
-                  선생님이 일기를 읽고 있어요...
+                  {ANALYSIS_LOADING_MESSAGE}
                 </Paragraph>
               </div>
             )}
@@ -486,7 +506,7 @@ export function PreviewStep({
             )}
           </div>
 
-          {renderedPreview !== null && (
+          {renderedPreview !== null && analysisState.status === "success" && (
             <img
               className="diary-rendered-preview"
               src={renderedPreview.dataUrl}
