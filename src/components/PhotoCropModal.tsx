@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Cropper, { type Area } from "react-easy-crop";
 import "react-easy-crop/react-easy-crop.css";
 
@@ -21,6 +22,19 @@ export function PhotoCropModal({
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [saving, setSaving] = useState(false);
+  
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
 
   const confirmCrop = async () => {
     if (croppedAreaPixels === null || saving) {
@@ -40,7 +54,7 @@ export function PhotoCropModal({
     }
   };
 
-  return (
+  return createPortal(
     <div
       className="photo-crop-modal"
       role="dialog"
@@ -69,11 +83,16 @@ export function PhotoCropModal({
           aspect={3 / 2}
           minZoom={1}
           maxZoom={3}
-          showGrid
+          showGrid={false}
           onCropChange={setCrop}
           onZoomChange={setZoom}
           onCropComplete={(_, areaPixels) => {
             setCroppedAreaPixels(areaPixels);
+          }}
+          style={{
+            cropAreaStyle: {
+              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.9)",
+            },
           }}
         />
       </div>
@@ -91,6 +110,7 @@ export function PhotoCropModal({
         />
         <p>사진을 움직여 일기에 담을 3:2 영역을 선택해 주세요.</p>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
