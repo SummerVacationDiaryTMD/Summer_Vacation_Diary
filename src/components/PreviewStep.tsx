@@ -30,6 +30,7 @@ import {
   TITLE_HANDWRITING_STRENGTH,
 } from "../utils/handwriting";
 import { buildHighlightSegments } from "../utils/highlight";
+import { STAMP_ALT_TEXT, STAMP_IMAGE_URLS } from "../constants/stamp";
 
 interface PreviewStepProps {
   draft: DiaryDraft;
@@ -449,6 +450,7 @@ export function PreviewStep({
             style={frameRegionStyle(frameLayout.comment, frameLayout)}
           >
             <div className="diary-comment-label">선생님 한마디</div>
+
             {analysisState.status === "loading" && (
               <div className="comment-loading" aria-hidden="true">
                 <Paragraph
@@ -475,9 +477,6 @@ export function PreviewStep({
               </div>
             )}
 
-            {/* Idle means the check was never run — either the budget was gone
-                when 검사 받기 was pressed, or the user edited afterwards. The
-                box must say something, or it reads as a rendering bug. */}
             {analysisState.status === "idle" && (
               <div className="comment-error">
                 <Paragraph
@@ -502,6 +501,15 @@ export function PreviewStep({
               </Paragraph>
             )}
           </div>
+
+          {analysis !== null && (
+            <img
+              key={analysis.stamp}
+              className={`diary-stamp diary-stamp-${analysis.stamp}`}
+              src={STAMP_IMAGE_URLS[analysis.stamp]}
+              alt={STAMP_ALT_TEXT[analysis.stamp]}
+            />
+          )}
 
           {renderedPreview !== null && analysisState.status === "success" && (
             <img

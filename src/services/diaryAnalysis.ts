@@ -23,6 +23,8 @@ export interface DiaryAnalysisInput {
   weather: WeatherValue;
 }
 
+export type DiaryStamp = "great" | "effort";
+
 export interface DiaryAnalysis {
   photoKeywords: string[];
   diaryKeywords: string[];
@@ -33,6 +35,8 @@ export interface DiaryAnalysis {
   highlightSentence: string | null;
   /** The teacher-style one-line comment. */
   comment: string;
+  /** The stamp displayed on the completed diary. */
+  stamp: DiaryStamp;
 }
 
 export type AnalysisErrorCode =
@@ -144,6 +148,10 @@ function toStringArray(value: unknown, max: number): string[] {
     .slice(0, max);
 }
 
+function toDiaryStamp(value: unknown): DiaryStamp {
+  return value === "effort" ? "effort" : "great";
+}
+
 // The model is instructed not to repeat or highlight profanity, but its JSON
 // is still untrusted. Normalize spacing/symbol obfuscations and enforce that
 // rule again before any keyword, tag or correction mark reaches the UI.
@@ -209,6 +217,7 @@ function parseAnalysis(parsed: unknown, content: string): DiaryAnalysis {
     highlightWords,
     highlightSentence: sentenceIsUsable ? sentence : null,
     comment: capComment(comment),
+    stamp: toDiaryStamp(record.stamp),
   };
 }
 
@@ -314,6 +323,22 @@ function pickHighlightSentence(content: string): string | null {
   );
 }
 
+function mockStamp(content: string): DiaryStamp {
+  const normalized = content.replace(/\s/g, "");
+
+  if (normalized.length < 3) {
+    return "effort";
+  }
+
+  const uniqueCharacters = new Set(Array.from(normalized));
+
+  if (normalized.length >= 6 && uniqueCharacters.size <= 2) {
+    return "effort";
+  }
+
+  return "great";
+}
+
 async function analyzeWithMock(
   input: DiaryAnalysisInput,
 ): Promise<DiaryAnalysis> {
@@ -335,5 +360,6 @@ async function analyzeWithMock(
     highlightWords: words.slice(0, 3),
     highlightSentence: pickHighlightSentence(input.content),
     comment: MOCK_COMMENTS[input.content.length % MOCK_COMMENTS.length],
+    stamp: mockStamp(input.content),
   };
 }
