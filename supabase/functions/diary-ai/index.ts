@@ -23,9 +23,23 @@ const USAGE_LIMITS = {
   ipDaily: 60,
 } as const;
 
-// Cap the local-LLM attempt well below the Edge Function wall-clock limit so
-// a hung tunnel still leaves time for the OpenAI fallback to run.
-const LOCAL_LLM_TIMEOUT_MS = 60_000;
+// The binding ceiling is not this Function's wall-clock limit but the
+// CLIENT's: src/services/diaryAnalysis.ts aborts at 30s, so a failed local
+// attempt AND the OpenAI fallback (~3-8s with an image) must both fit inside
+// it — otherwise the fallback answer is computed but never delivered. 15s sits
+// just above the 10.9s measured warm generation; slower than that is treated
+// as "not available right now". Overridable per deployment but hard-capped, so
+// a stray secret cannot reintroduce a local attempt that outlives the client.
+const LOCAL_LLM_TIMEOUT_MS = Math.min(
+  Number(Deno.env.get("LOCAL_LLM_TIMEOUT_MS")) || 15_000,
+  20_000,
+);
+
+// The proxy answers with this the moment Ollama's generation slot is already
+// held by an earlier request. Without such a gate the request would wait in
+// Ollama's FIFO queue (OLLAMA_MAX_QUEUE, default 512) and be indistinguishable
+// from a slow generation, burning the whole budget before falling back.
+const LOCAL_BUSY_CODE = "busy";
 
 class FunctionError extends Error {
   constructor(
@@ -174,7 +188,73 @@ async function openAiError(response: Response): Promise<FunctionError> {
   return new FunctionError("api-error", 502);
 }
 
+// Local-LLM failures never reach the client — analyze() always falls back to
+// OpenAI — so unlike FunctionError these carry no client-facing status/code,
+// only enough detail to tell a routine rejection ("busy") from a broken Mac
+// mini when reading the Function logs.
+class LocalLlmError extends Error {
+  constructor(
+    readonly reason: "busy" | "unavailable",
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+async function localLlmError(response: Response): Promise<LocalLlmError> {
+  // Read as text first: a Cloudflare Tunnel outage replies with an HTML error
+  // page, and response.json() would throw before the status could be logged.
+  const bodyText = await response.text().catch(() => "");
+  let code = "";
+  try {
+    const parsed = JSON.parse(bodyText) as { error?: { code?: unknown } };
+    if (typeof parsed?.error?.code === "string") {
+      code = parsed.error.code;
+    }
+  } catch {
+    // Not JSON — classify by status alone below.
+  }
+
+  // Only an explicit busy code or a throttle status counts as "busy". A bare
+  // 503 stays "unavailable" because cloudflared and the proxy's own upstream
+  // failures use it too, and relabelling those would hide a real outage behind
+  // a routine message. Misclassification only changes the log line, never the
+  // fallback: every LocalLlmError leads to OpenAI regardless of reason.
+  const reason =
+    code === LOCAL_BUSY_CODE || response.status === 429
+      ? "busy"
+      : "unavailable";
+  return new LocalLlmError(
+    reason,
+    `HTTP ${response.status}${code ? ` (${code})` : ""} ${bodyText.slice(0, 200)}`,
+  );
+}
+
+// These logs are the only signal that the Mac mini stopped serving, so keep
+// expected rejections at log level and everything else at error level.
+function logLocalFallback(error: unknown): void {
+  if (error instanceof LocalLlmError && error.reason === "busy") {
+    console.log(`Local LLM busy, using OpenAI — ${error.message}`);
+    return;
+  }
+  // AbortSignal.timeout rejects with a DOMException named "TimeoutError";
+  // transport-level failures (DNS, TLS, refused connection) are TypeErrors.
+  if ((error as { name?: string })?.name === "TimeoutError") {
+    console.error(
+      `Local LLM produced nothing within ${LOCAL_LLM_TIMEOUT_MS}ms, using OpenAI`,
+    );
+    return;
+  }
+  console.error(
+    "Local LLM unavailable, using OpenAI —",
+    error instanceof Error ? `${error.name}: ${error.message}` : error,
+  );
+}
+
 interface ChatTarget {
+  // Picks the error classifier: local failures are swallowed into a fallback,
+  // so they must not be mapped onto client-facing OpenAI error codes.
+  kind: "local" | "openai";
   url: string;
   apiKey: string;
   model: string;
@@ -217,7 +297,11 @@ async function requestAnalysis(
         : AbortSignal.timeout(target.timeoutMs),
   });
 
-  if (!response.ok) throw await openAiError(response);
+  if (!response.ok) {
+    throw target.kind === "local"
+      ? await localLlmError(response)
+      : await openAiError(response);
+  }
   const body = await response.json();
   const raw = body?.choices?.[0]?.message?.content;
   if (typeof raw !== "string") {
@@ -254,14 +338,16 @@ async function analyze(input: unknown, apiKey: string): Promise<unknown> {
 
   // Local-first: when LOCAL_LLM_BASE_URL is configured, try the self-hosted
   // Ollama proxy and fall back to OpenAI on ANY failure, so the mini being
-  // offline degrades to the paid path instead of breaking analysis.
-  const localBaseUrl = Deno.env
-    .get("LOCAL_LLM_BASE_URL")
-    ?.replace(/\/+$/, "");
+  // offline degrades to the paid path instead of breaking analysis. The proxy's
+  // single-flight gate turns "already generating for someone else" into an
+  // immediate LOCAL_BUSY_CODE rejection, so a second concurrent diary reaches
+  // OpenAI right away instead of queueing behind the first one.
+  const localBaseUrl = Deno.env.get("LOCAL_LLM_BASE_URL")?.replace(/\/+$/, "");
   if (localBaseUrl) {
     try {
       return await requestAnalysis(
         {
+          kind: "local",
           url: `${localBaseUrl}/v1/chat/completions`,
           apiKey: Deno.env.get("LOCAL_LLM_API_KEY") ?? "",
           model: Deno.env.get("LOCAL_LLM_MODEL") || "gemma4:12b-64k",
@@ -272,15 +358,13 @@ async function analyze(input: unknown, apiKey: string): Promise<unknown> {
         userContent,
       );
     } catch (error) {
-      console.error(
-        "Local LLM analysis failed, falling back to OpenAI",
-        error instanceof Error ? error.message : error,
-      );
+      logLocalFallback(error);
     }
   }
 
   return requestAnalysis(
     {
+      kind: "openai",
       url: "https://api.openai.com/v1/chat/completions",
       apiKey,
       model: Deno.env.get("OPENAI_MODEL") || "gpt-4o-mini",
