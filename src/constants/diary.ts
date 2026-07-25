@@ -51,7 +51,7 @@ export const AI_CONTENT_WATERMARK = "AI 생성 콘텐츠 포함";
 // Daily AI budgets reset at 00:00 UTC, which is 09:00 KST — so "내일" alone
 // would be a lie for anyone who runs out in the evening and comes back before
 // breakfast. One constant so every screen and error message agrees.
-export const QUOTA_RESET_NOTICE = "내일 아침 9시부터 다시 이용할 수 있어요.";
+export const QUOTA_RESET_NOTICE = "내일 아침 9시에 기회가 다시 생겨요.";
 // The expandable frame supports 100 characters across ten 11-cell rows.
 export { CONTENT_MAX_LENGTH } from "../utils/diaryFrameLayout";
 
