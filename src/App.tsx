@@ -1,6 +1,6 @@
 import { Button, Top, useDialog, useToast } from "@toss/tds-mobile";
 import { SafeAreaInsets } from "@apps-in-toss/web-framework";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import "./App.css";
 import { DiaryShareModal } from "./components/DiaryShareModal";
@@ -8,6 +8,12 @@ import { PhotoUploadStep } from "./components/PhotoUploadStep";
 import { PreviewStep } from "./components/PreviewStep";
 import { WriteStep } from "./components/WriteStep";
 import { CONTENT_MIN_LENGTH } from "./constants/diary";
+import {
+  isActionSpent,
+  isRegionBlocked,
+  refreshAiQuota,
+  useAiQuota,
+} from "./hooks/useAiQuota";
 import { useDiaryAnalysis } from "./hooks/useDiaryAnalysis";
 import { useDiaryDraft } from "./hooks/useDiaryDraft";
 import { useSketch } from "./hooks/useSketch";
@@ -111,12 +117,25 @@ function App() {
   const { draft, updateDraft, clearDraft } = useDiaryDraft({
     restoreOnStart: false,
   });
-  // Analysis runs only while the preview is visible; results are cached by
-  // input inside the hook, so re-entering preview without edits is free.
-  const { state: analysisState, retry: retryAnalysis } = useDiaryAnalysis(
-    draft,
-    step === "preview",
-  );
+  // Not part of the draft: it is only a cache key, and persisting it would mean
+  // versioning the draft shape for something that dies with the session anyway.
+  const [photoSourceHash, setPhotoSourceHash] = useState<string | null>(null);
+  const quota = useAiQuota();
+  // Refused outright by country, which unlike the daily budgets never comes
+  // back — so it gates both operations rather than one.
+  const regionBlocked = isRegionBlocked(quota);
+  // Gate on "would this actually reach the server". Mock and test mode never
+  // do, so they must never be blocked by a counter they don't spend.
+  const sketchAllowed =
+    !isSketchAiConnected || (!regionBlocked && !isActionSpent(quota, "sketch"));
+  const analyzeAllowed =
+    !isAiConnected || (!regionBlocked && !isActionSpent(quota, "analyze"));
+
+  // Analysis is triggered explicitly by 검사 받기, not by opening the preview:
+  // at five checks a day, re-running on every edit would spend the budget on
+  // typo fixes. Results are cached by input inside the hook, so asking again
+  // without editing is free.
+  const { state: analysisState, run: runAnalysis } = useDiaryAnalysis(draft);
   // The drawing conversion starts when the user commits to writing (leaves
   // the upload step): its 30-60s latency then overlaps with typing time, and
   // an abandoned photo pick never spends an API call.
@@ -124,8 +143,11 @@ function App() {
     draft,
     updateDraft,
     step !== "upload",
+    sketchAllowed,
+    photoSourceHash,
   );
-  const { openConfirm } = useDialog();
+  const { openAlert, openConfirm } = useDialog();
+  const regionNoticeShownRef = useRef(false);
   const toast = useToast();
   const [saving, setSaving] = useState(false);
   const [finishedDiary, setFinishedDiary] = useState<{
@@ -165,6 +187,28 @@ function App() {
       return undefined;
     }
   }, []);
+
+  // Once per session, and only after onboarding: the quota fetch that reveals
+  // this is fired by 시작하기, so before that there is nothing to say. The ref
+  // guard is also what makes openAlert's reference stability irrelevant. The
+  // dialog portals, so the onboarding early return below does not hide it.
+  useEffect(() => {
+    if (showOnboarding || !regionBlocked || regionNoticeShownRef.current) {
+      return;
+    }
+    regionNoticeShownRef.current = true;
+    void openAlert({
+      title: "해외 IP는 AI 기능을 사용할 수 없어요",
+      description:
+        "그림 그리기와 일기 검사는 한국에서만 이용할 수 있어요. 사진 그대로 그림일기를 만드는 건 그대로 할 수 있어요.",
+      alertButton: (
+        <Button className="summer-diary-button summer-diary-button-primary">
+          확인
+        </Button>
+      ),
+      closeOnDimmerClick: false,
+    });
+  }, [openAlert, regionBlocked, showOnboarding]);
 
   const header = STEP_HEADERS[step];
   const progress = STEP_PROGRESS[step];
@@ -215,7 +259,13 @@ function App() {
           <button
             className="summer-diary-button summer-diary-button-primary summer-diary-button-onboarding"
             type="button"
-            onClick={() => setShowOnboarding(false)}
+            onClick={() => {
+              setShowOnboarding(false);
+              // Fetched here rather than on mount so a visitor who never
+              // starts a diary costs nothing, while the counter is still
+              // ready before the upload step that displays it.
+              void refreshAiQuota();
+            }}
           >
             시작하기
           </button>
@@ -269,6 +319,11 @@ function App() {
       return;
     }
 
+    // Navigation is never gated on the budget: with no check the preview simply
+    // shows the diary without a comment, and 완성하기 still works from there.
+    if (analyzeAllowed) {
+      runAnalysis();
+    }
     setStep("preview");
   };
 
@@ -286,32 +341,8 @@ function App() {
     // explicitly endorses and the preview already communicates.
     const drawingLoading = sketchState.status === "loading";
     const commentLoading = analysisState.status === "loading";
-    const commentFailed = analysisState.status === "error";
 
-    if (!drawingLoading && !commentLoading && commentFailed) {
-      // Nothing will finish on its own — waiting wouldn't help, so offer a
-      // retry (the analysis hook only re-runs on an explicit retry) or a save
-      // without the comment.
-      const retry = await openConfirm({
-        title: "선생님의 한마디를 불러오지 못했어요",
-        description:
-          "다시 시도해서 한마디와 첨삭까지 담거나, 지금 이대로 저장할 수 있어요.",
-        confirmButton: (
-          <Button className="summer-diary-button summer-diary-button-primary">
-            다시 시도
-          </Button>
-        ),
-        cancelButton: (
-          <Button className="summer-diary-button summer-diary-button-secondary">
-            이대로 저장
-          </Button>
-        ),
-      });
-      if (retry) {
-        retryAnalysis();
-        return;
-      }
-    } else if (drawingLoading || commentLoading) {
+    if (drawingLoading || commentLoading) {
       // Name only what is actually still generating (not a fixed "both"),
       // so the dialog never claims a piece that is already done.
       const pending = [
@@ -333,6 +364,54 @@ function App() {
         ),
       });
       if (!proceed) {
+        return;
+      }
+    } else if (analysisState.status === "error" && analysisState.retryable) {
+      // Nothing will finish on its own — waiting wouldn't help, so offer a
+      // retry (the analysis hook only re-runs on an explicit trigger) or a save
+      // without the comment. A non-retryable failure means the daily budget is
+      // gone, so it falls through and saves: asking would offer something that
+      // cannot happen today.
+      const retry = await openConfirm({
+        title: "선생님의 한마디를 불러오지 못했어요",
+        description:
+          "다시 시도해서 한마디와 첨삭까지 담거나, 지금 이대로 저장할 수 있어요.",
+        confirmButton: (
+          <Button className="summer-diary-button summer-diary-button-primary">
+            다시 시도
+          </Button>
+        ),
+        cancelButton: (
+          <Button className="summer-diary-button summer-diary-button-secondary">
+            이대로 저장
+          </Button>
+        ),
+      });
+      if (retry) {
+        runAnalysis();
+        return;
+      }
+    } else if (analysisState.status === "idle" && analyzeAllowed) {
+      // Never asked for a check at all. The comment and 첨삭 are the point of
+      // the app, so leaving them out has to be a knowing choice — but only ask
+      // when a check is actually still possible.
+      const check = await openConfirm({
+        title: "아직 선생님께 검사받지 않았어요",
+        description:
+          "지금 검사받으면 선생님 한마디와 첨삭까지 담을 수 있어요. 오늘 남은 검사 횟수가 한 번 줄어들어요.",
+        confirmButton: (
+          <Button className="summer-diary-button summer-diary-button-primary">
+            검사 받기
+          </Button>
+        ),
+        cancelButton: (
+          <Button className="summer-diary-button summer-diary-button-secondary">
+            이대로 저장
+          </Button>
+        ),
+      });
+      if (check) {
+        runAnalysis();
         return;
       }
     }
@@ -418,11 +497,17 @@ function App() {
       {step === "upload" && (
         <PhotoUploadStep
           photoDataUrl={draft.photoDataUrl}
-          onPhotoChange={(dataUrl) => {
+          onPhotoChange={({ dataUrl, sourceHash, reusedSketchDataUrl }) => {
+            setPhotoSourceHash(sourceHash);
             // A sketch belongs to exactly one photo — replacing the photo
             // must drop the old drawing in the same state update, or the
-            // preview could pair the new photo with the previous sketch.
-            updateDraft({ photoDataUrl: dataUrl, sketchDataUrl: null });
+            // preview could pair the new photo with the previous sketch. The
+            // one exception is a drawing the user explicitly asked to reuse,
+            // which also keeps the sketch hook from spending a request.
+            updateDraft({
+              photoDataUrl: dataUrl,
+              sketchDataUrl: reusedSketchDataUrl ?? null,
+            });
           }}
         />
       )}
@@ -431,7 +516,7 @@ function App() {
         <PreviewStep
           draft={draft}
           analysisState={analysisState}
-          onRetry={retryAnalysis}
+          onRetry={runAnalysis}
           sketchState={sketchState}
           onSketchRetry={retrySketch}
         />
@@ -481,7 +566,7 @@ function App() {
             aria-disabled={!canPreview}
             onClick={handlePreview}
           >
-            미리보기
+            검사 받기
           </Button>
         </AppBottomBar>
       )}

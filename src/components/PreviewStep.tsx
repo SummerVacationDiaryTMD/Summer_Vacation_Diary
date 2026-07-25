@@ -475,6 +475,22 @@ export function PreviewStep({
               </div>
             )}
 
+            {/* Idle means the check was never run — either the budget was gone
+                when 검사 받기 was pressed, or the user edited afterwards. The
+                box must say something, or it reads as a rendering bug. */}
+            {analysisState.status === "idle" && (
+              <div className="comment-error">
+                <Paragraph
+                  as="span"
+                  className="diary-comment-text"
+                  typography="t5"
+                  color="#8a7d55"
+                >
+                  아직 검사받지 않았어요
+                </Paragraph>
+              </div>
+            )}
+
             {analysis !== null && (
               <Paragraph
                 className="diary-comment-text"
@@ -501,15 +517,19 @@ export function PreviewStep({
             <Paragraph typography="t7" color="#6b5e3f">
               {analysisState.message}
             </Paragraph>
-            <Button
-              className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
-              size="small"
-              variant="weak"
-              color="dark"
-              onClick={onRetry}
-            >
-              한마디 다시 시도
-            </Button>
+            {/* Hidden once the daily budget is gone: the button would be an
+                invitation to press something that cannot succeed today. */}
+            {analysisState.retryable && (
+              <Button
+                className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
+                size="small"
+                variant="weak"
+                color="dark"
+                onClick={onRetry}
+              >
+                한마디 다시 시도
+              </Button>
+            )}
           </div>
         )}
 

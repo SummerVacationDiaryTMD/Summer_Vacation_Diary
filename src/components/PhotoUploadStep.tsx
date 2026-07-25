@@ -1,4 +1,11 @@
-import { Button, Checkbox, Modal, Paragraph, useToast } from "@toss/tds-mobile";
+import {
+  Button,
+  Checkbox,
+  Modal,
+  Paragraph,
+  useDialog,
+  useToast,
+} from "@toss/tds-mobile";
 import { colors } from "@toss/tds-colors";
 import { useRef, useState } from "react";
 
@@ -11,12 +18,22 @@ import {
   loadImageFileForCrop,
   validateImageFile,
 } from "../utils/image";
+import { getCachedSketch, hashPhotoFile } from "../services/sketchCache";
 import { isAiTestMode, isSupabaseConfigured } from "../services/supabaseEdge";
+import { SketchQuotaNotice } from "./AiQuotaNotice";
 import { PhotoCropModal } from "./PhotoCropModal";
+
+export interface PhotoSelection {
+  dataUrl: string;
+  /** SHA-256 of the source file, or null when hashing was unavailable. */
+  sourceHash: string | null;
+  /** Set only when the user chose to reuse a previously drawn sketch. */
+  reusedSketchDataUrl?: string;
+}
 
 interface PhotoUploadStepProps {
   photoDataUrl: string | null;
-  onPhotoChange: (dataUrl: string) => void;
+  onPhotoChange: (selection: PhotoSelection) => void;
 }
 
 /**
@@ -41,8 +58,51 @@ export function PhotoUploadStep({
   const [consentOpen, setConsentOpen] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [cropSource, setCropSource] = useState<string | null>(null);
+  // The File object exists only inside handleFileChange, so its hash is stashed
+  // here to survive the trip through the crop modal.
+  const sourceHashRef = useRef<string | null>(null);
 
   const toast = useToast();
+  const { openConfirm } = useDialog();
+
+  const commitPhoto = async (croppedDataUrl: string) => {
+    const sourceHash = sourceHashRef.current;
+    const cachedSketch = getCachedSketch(sourceHash);
+    if (cachedSketch === null) {
+      onPhotoChange({ dataUrl: croppedDataUrl, sourceHash });
+      return;
+    }
+
+    // Drawing again costs one of only three daily requests, so the choice is
+    // the user's rather than an automatic substitution — they may well have
+    // re-picked this photo precisely to crop it differently.
+    // Reuse is the primary button, not redrawing: the confirm slot is the one
+    // people press without reading, and it should be the one that does not
+    // spend a request.
+    const reuse = await openConfirm({
+      title: "친구가 그린 적 있는 사진이에요",
+      description:
+        "다시 그릴건가요? 다시 그리면 오늘 남은 횟수가 하나 줄어들어요.",
+      confirmButton: (
+        <Button className="summer-diary-button summer-diary-button-primary">
+          원래 그림 사용하기
+        </Button>
+      ),
+      cancelButton: (
+        <Button className="summer-diary-button summer-diary-button-secondary">
+          다시그리기
+        </Button>
+      ),
+    });
+
+    onPhotoChange({
+      dataUrl: croppedDataUrl,
+      sourceHash,
+      // Handing the sketch back with the photo is what skips the request: the
+      // sketch hook only runs when the draft has no drawing yet.
+      ...(reuse ? { reusedSketchDataUrl: cachedSketch } : {}),
+    });
+  };
 
   const requestPhotoSelection = () => {
     // 이전 사진 처리가 진행 중이면 중복 선택을 막습니다.
@@ -101,6 +161,9 @@ export function PhotoUploadStep({
     setProcessing(true);
 
     try {
+      // Hashed before the crop so the key describes the photo the user picked,
+      // not the rectangle they happened to drag.
+      sourceHashRef.current = await hashPhotoFile(file);
       setCropSource(await loadImageFileForCrop(file));
     } catch (error) {
       const code =
@@ -133,16 +196,6 @@ export function PhotoUploadStep({
           >
             다른 사진 선택하기
           </Button>
-
-          <Paragraph
-            typography="t7"
-            color={colors.grey600}
-            style={{ textAlign: "center" }}
-          >
-            {isAiTestMode
-              ? "테스트 모드에서는 원본 사진으로 일기를 분석해요."
-              : "다음 단계로 가면 사진이 색연필 그림으로 바뀌어요 ✏️"}
-          </Paragraph>
         </div>
       ) : (
         <button
@@ -175,6 +228,11 @@ export function PhotoUploadStep({
         </button>
       )}
 
+      {/* Outside the photo/no-photo branch on purpose: how many drawings are
+          left is exactly what someone needs to know *before* committing to a
+          photo, not after. */}
+      <SketchQuotaNotice />
+
       <input
         ref={fileInputRef}
         type="file"
@@ -189,7 +247,7 @@ export function PhotoUploadStep({
           onCancel={() => setCropSource(null)}
           onConfirm={(croppedDataUrl) => {
             setCropSource(null);
-            onPhotoChange(croppedDataUrl);
+            void commitPhoto(croppedDataUrl);
           }}
           onError={() => {
             toast.openToast(IMAGE_ERROR_MESSAGES["load-failed"]);

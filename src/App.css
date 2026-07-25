@@ -2134,6 +2134,31 @@ mark.highlight-underline {
   text-align: center;
 }
 
+/* Same passive-information card as .preview-mode-note, plus stacking for the
+   multi-line usage copy. Deliberately kept in normal document flow: on the
+   write step it sits next to .diary-character-status, which is pulled out into
+   a fixed floating bar while the textarea has focus, and the usage lines must
+   not travel with it. */
+.ai-quota-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #f7f3e9;
+  color: #6b5e3f;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* Once .diary-character-status detaches into the floating bar above the
+   keyboard, this notice becomes the last thing in the form and would sit
+   underneath it. Reserve the bar's height (min 42px) plus its 8px offset. */
+.app-shell-write:has(.diary-content-section textarea:focus) .ai-quota-notice {
+  margin-bottom: calc(50px + var(--app-safe-bottom));
+}
+
 @media (max-width: 359px) {
   .photo-consent-actions {
     grid-template-columns: 1fr;

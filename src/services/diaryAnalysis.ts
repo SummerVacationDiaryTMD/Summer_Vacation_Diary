@@ -1,4 +1,4 @@
-import { weatherLabel } from "../constants/diary";
+import { QUOTA_RESET_NOTICE, weatherLabel } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import {
   EdgeFunctionError,
@@ -40,6 +40,13 @@ export type AnalysisErrorCode =
   | "network"
   | "invalid-key"
   | "rate-limited"
+  | "region-blocked"
+  | "analyze-daily-limit-exceeded"
+  | "ip-burst-limit-exceeded"
+  | "ip-daily-limit-exceeded"
+  | "service-daily-limit-exceeded"
+  // Legacy: the server stopped sending this when limits went per-action. Kept
+  // so rolling the Edge Function back cannot produce a blank message.
   | "daily-limit-exceeded"
   | "api-error"
   | "invalid-response";
@@ -49,11 +56,27 @@ export const ANALYSIS_ERROR_MESSAGES: Record<AnalysisErrorCode, string> = {
   network: "네트워크 연결을 확인하고 다시 시도해 주세요.",
   "invalid-key": "AI 연결 설정을 확인해 주세요.",
   "rate-limited": "지금은 요청이 많아요. 잠시 후 다시 시도해 주세요.",
-  "daily-limit-exceeded":
-    "오늘 사용할 수 있는 횟수를 모두 사용했어요. 내일 다시 이용해 주세요.",
+  "region-blocked": "해외에서는 선생님이 일기를 검사해 줄 수 없어요.",
+  "analyze-daily-limit-exceeded": `오늘의 일기 검사 횟수를 모두 사용했어요.\n${QUOTA_RESET_NOTICE}`,
+  "ip-burst-limit-exceeded":
+    "잠깐 사이에 요청이 너무 많았어요. 잠시 후 다시 시도해 주세요.",
+  "ip-daily-limit-exceeded": `같은 인터넷에서 오늘 이용할 수 있는 횟수를 모두 사용했어요.\n${QUOTA_RESET_NOTICE}`,
+  "service-daily-limit-exceeded": `오늘은 많은 친구들이 이용했어요.\n${QUOTA_RESET_NOTICE}`,
+  "daily-limit-exceeded": `오늘 사용할 수 있는 횟수를 모두 사용했어요.\n${QUOTA_RESET_NOTICE}`,
   "api-error": "분석 서비스에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
   "invalid-response": "분석 결과를 읽지 못했어요. 다시 시도해 주세요.",
 };
+
+// Retrying these can never succeed from here: the budget is gone until the
+// daily reset, or the caller's country is refused outright. The UI must not
+// offer a retry button for them.
+const NON_RETRYABLE_ANALYSIS_CODES: readonly AnalysisErrorCode[] = [
+  "region-blocked",
+  "analyze-daily-limit-exceeded",
+  "ip-daily-limit-exceeded",
+  "service-daily-limit-exceeded",
+  "daily-limit-exceeded",
+];
 
 export class AnalysisError extends Error {
   constructor(public readonly code: AnalysisErrorCode) {
@@ -62,11 +85,29 @@ export class AnalysisError extends Error {
   }
 }
 
+export function analysisErrorCode(error: unknown): AnalysisErrorCode {
+  return error instanceof AnalysisError ? error.code : "api-error";
+}
+
 export function analysisErrorMessage(error: unknown): string {
-  if (error instanceof AnalysisError) {
-    return ANALYSIS_ERROR_MESSAGES[error.code];
-  }
-  return ANALYSIS_ERROR_MESSAGES["api-error"];
+  return ANALYSIS_ERROR_MESSAGES[analysisErrorCode(error)];
+}
+
+export function isAnalysisErrorRetryable(error: unknown): boolean {
+  return !NON_RETRYABLE_ANALYSIS_CODES.includes(analysisErrorCode(error));
+}
+
+function isAnalysisErrorCode(
+  value: string | undefined,
+): value is AnalysisErrorCode {
+  // An own-property check rather than `in`: `in` walks the prototype chain, so
+  // a server code of "toString" would resolve to a function where a message
+  // belongs. hasOwnProperty.call instead of Object.hasOwn because the latter is
+  // ES2022 and the target here is ES2020.
+  return (
+    value !== undefined &&
+    Object.prototype.hasOwnProperty.call(ANALYSIS_ERROR_MESSAGES, value)
+  );
 }
 
 // Analysis remains available in test mode. Only the costly image-generation
@@ -202,17 +243,16 @@ async function analyzeWithEdgeFunction(
       if (error.kind === "invalid-response") {
         throw new AnalysisError("invalid-response");
       }
-      if (
-        error.status === 401 ||
-        error.status === 403 ||
-        error.code === "invalid-key"
-      ) {
+      // Pass a recognised server code straight through. This has to come before
+      // the status checks below: the quota codes all arrive as 429, and a
+      // status-first chain would flatten them into "rate-limited".
+      if (isAnalysisErrorCode(error.code)) {
+        throw new AnalysisError(error.code);
+      }
+      if (error.status === 401 || error.status === 403) {
         throw new AnalysisError("invalid-key");
       }
-      if (error.code === "daily-limit-exceeded") {
-        throw new AnalysisError("daily-limit-exceeded");
-      }
-      if (error.status === 429 || error.code === "rate-limited") {
+      if (error.status === 429) {
         throw new AnalysisError("rate-limited");
       }
     }

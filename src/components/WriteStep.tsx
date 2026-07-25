@@ -14,6 +14,7 @@ import {
 } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
+import { AnalyzeQuotaNotice } from "./AiQuotaNotice";
 
 interface WriteStepProps {
   draft: DiaryDraft;
@@ -180,6 +181,12 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
               {contentLength}/{CONTENT_MAX_LENGTH}
             </strong>
           </div>
+
+          {/* Sibling of .diary-character-status, never a child of it. While the
+              textarea has focus, App.css lifts that div out of the flow into a
+              fixed bar above the keyboard; anything nested inside would travel
+              with it and the usage lines would end up floating over the diary. */}
+          <AnalyzeQuotaNotice />
         </section>
       </div>
     </div>

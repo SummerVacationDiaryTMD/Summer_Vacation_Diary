@@ -1,21 +1,35 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
-import { analyzeDiary, analysisErrorMessage } from "../services/diaryAnalysis";
+import {
+  analyzeDiary,
+  analysisErrorCode,
+  analysisErrorMessage,
+  isAnalysisErrorRetryable,
+} from "../services/diaryAnalysis";
 import type { DiaryAnalysis } from "../services/diaryAnalysis";
+import { refreshAiQuota } from "./useAiQuota";
 import type { DiaryDraft } from "./useDiaryDraft";
 
 export type AnalysisState =
+  | { status: "idle" }
   | { status: "loading" }
   | { status: "success"; analysis: DiaryAnalysis }
-  | { status: "error"; message: string };
+  // `retryable` is false once the daily budget is gone — pressing again before
+  // the reset cannot succeed, so the UI must not offer the button.
+  | { status: "error"; message: string; retryable: boolean };
 
 // Internal state remembers which input produced it, so a result computed for
-// an older draft is never shown against newer content — not even for the one
-// frame before the effect resets to loading.
+// an older draft is never shown against newer content.
 type InternalState =
+  | { status: "idle" }
   | { status: "loading" }
   | { status: "success"; analysis: DiaryAnalysis; signature: string }
-  | { status: "error"; message: string; signature: string };
+  | {
+      status: "error";
+      message: string;
+      retryable: boolean;
+      signature: string;
+    };
 
 interface PendingRequest {
   signature: string;
@@ -26,50 +40,71 @@ interface PendingRequest {
 // to A) is common, and each entry is small next to the photo it already keyed.
 const CACHE_MAX_ENTRIES = 3;
 
+function toPublicState(
+  internal: InternalState,
+  signature: string,
+): AnalysisState {
+  if (internal.status === "idle" || internal.status === "loading") {
+    return internal;
+  }
+  // A result produced by different input falls back to idle rather than
+  // loading. With an explicit trigger there is no effect queued up to replace
+  // it, so idle is what puts the 검사 받기 call to action back in front of the
+  // user instead of a spinner that would never resolve.
+  if (internal.signature !== signature) {
+    return { status: "idle" };
+  }
+  return internal.status === "success"
+    ? { status: "success", analysis: internal.analysis }
+    : {
+        status: "error",
+        message: internal.message,
+        retryable: internal.retryable,
+      };
+}
+
 /**
- * Runs the diary analysis while `active` is true (i.e. the preview step is
- * showing). Successful results are cached by input signature and an in-flight
- * request for the same input is reused, so toggling 수정하기 ↔ 미리보기
- * without edits never spends a second API call.
+ * Runs the diary analysis on demand: `run()` is wired to the 검사 받기 button.
+ *
+ * It used to fire automatically whenever the preview opened, which cannot
+ * survive a five-per-day budget — editing one character changes the input
+ * signature, so "preview → fix a typo → preview" four times would spend the
+ * whole day. Results are still cached by input signature and an in-flight
+ * request for the same input is reused, so asking again without editing costs
+ * nothing.
  */
-export function useDiaryAnalysis(draft: DiaryDraft, active: boolean) {
+export function useDiaryAnalysis(draft: DiaryDraft) {
   const [internalState, setInternalState] = useState<InternalState>({
-    status: "loading",
+    status: "idle",
   });
-  // Bumping this forces the effect to re-run for the same inputs (retry).
-  const [attempt, setAttempt] = useState(0);
   const cacheRef = useRef(new Map<string, DiaryAnalysis>());
   const pendingRef = useRef<PendingRequest | null>(null);
   const requestIdRef = useRef(0);
 
   // `date` is excluded on purpose: it doesn't change the AI input, so editing
-  // it must not re-trigger a request.
+  // it must not invalidate a result the user already paid for.
   const { photoDataUrl, title, content, weather } = draft;
   // JSON.stringify gives an unambiguous key without inventing a separator
   // that user text could theoretically contain.
   const signature = JSON.stringify([photoDataUrl, title, content, weather]);
 
-  useEffect(() => {
-    if (!active) {
-      return;
-    }
-
+  const run = useCallback(() => {
     const cached = cacheRef.current.get(signature);
     if (cached !== undefined) {
-      // Invalidate any in-flight request for an abandoned input: without this
-      // bump, its late result could overwrite the cached one on screen.
+      // A cache hit never reaches the server, so it never spends a request.
+      // Invalidate any in-flight call for abandoned input: without this bump,
+      // its late result could overwrite the cached one on screen.
       requestIdRef.current += 1;
       setInternalState({ status: "success", analysis: cached, signature });
       return;
     }
 
-    // Stale-response guard: only the newest effect run may commit state.
+    // Stale-response guard: only the newest run may commit state.
     const requestId = ++requestIdRef.current;
     setInternalState({ status: "loading" });
 
-    // Reuse the in-flight request when the input hasn't changed (the user
-    // toggled 수정하기 ↔ 미리보기 mid-analysis) instead of firing — and
-    // paying for — a duplicate API call.
+    // Reuse the in-flight request when the input hasn't changed (a double tap,
+    // or navigating away and back mid-analysis) instead of paying twice.
     let pending = pendingRef.current;
     if (pending === null || pending.signature !== signature) {
       pending = {
@@ -107,25 +142,23 @@ export function useDiaryAnalysis(draft: DiaryDraft, active: boolean) {
         if (pendingRef.current === request) {
           pendingRef.current = null;
         }
+        // A client-side timeout does not cancel the Edge Function, so the call
+        // may still have succeeded and stayed charged. Only a fresh read can
+        // tell; every other failure already carried a snapshot back with it.
+        if (analysisErrorCode(error) === "timeout") {
+          void refreshAiQuota();
+        }
         if (requestId !== requestIdRef.current) {
           return;
         }
         setInternalState({
           status: "error",
           message: analysisErrorMessage(error),
+          retryable: isAnalysisErrorRetryable(error),
           signature: request.signature,
         });
       });
-  }, [active, attempt, photoDataUrl, title, content, weather, signature]);
+  }, [photoDataUrl, title, content, weather, signature]);
 
-  const retry = useCallback(() => setAttempt((count) => count + 1), []);
-
-  // A result produced by a different input is masked as loading — the effect
-  // that replaces it is already scheduled for this same render.
-  const state: AnalysisState =
-    internalState.status !== "loading" && internalState.signature !== signature
-      ? { status: "loading" }
-      : internalState;
-
-  return { state, retry };
+  return { state: toPublicState(internalState, signature), run };
 }
