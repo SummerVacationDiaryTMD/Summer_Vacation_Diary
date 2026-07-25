@@ -8,10 +8,11 @@ import { ALLOWED_IMAGE_TYPES } from "../constants/diary";
 import {
   IMAGE_ERROR_MESSAGES,
   ImageProcessError,
-  processImageFile,
+  loadImageFileForCrop,
   validateImageFile,
 } from "../utils/image";
 import { isAiTestMode, isSupabaseConfigured } from "../services/supabaseEdge";
+import { PhotoCropModal } from "./PhotoCropModal";
 
 interface PhotoUploadStepProps {
   photoDataUrl: string | null;
@@ -39,6 +40,7 @@ export function PhotoUploadStep({
   const [processing, setProcessing] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [cropSource, setCropSource] = useState<string | null>(null);
 
   const toast = useToast();
 
@@ -99,8 +101,7 @@ export function PhotoUploadStep({
     setProcessing(true);
 
     try {
-      const processed = await processImageFile(file);
-      onPhotoChange(processed.dataUrl);
+      setCropSource(await loadImageFileForCrop(file));
     } catch (error) {
       const code =
         error instanceof ImageProcessError ? error.code : "load-failed";
@@ -181,6 +182,20 @@ export function PhotoUploadStep({
         hidden
         onChange={handleFileChange}
       />
+
+      {cropSource !== null && (
+        <PhotoCropModal
+          imageDataUrl={cropSource}
+          onCancel={() => setCropSource(null)}
+          onConfirm={(croppedDataUrl) => {
+            setCropSource(null);
+            onPhotoChange(croppedDataUrl);
+          }}
+          onError={() => {
+            toast.openToast(IMAGE_ERROR_MESSAGES["load-failed"]);
+          }}
+        />
+      )}
 
       <Modal
         open={consentOpen}

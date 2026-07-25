@@ -748,6 +748,72 @@ html:has(.diary-content-section textarea:focus) {
   background-color: #f2f4f6;
 }
 
+.photo-crop-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  background: #111111;
+  color: #ffffff;
+}
+
+.photo-crop-header {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 64px;
+  align-items: end;
+  min-height: calc(56px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 12px 0;
+  background: #111111;
+}
+
+.photo-crop-header strong {
+  align-self: center;
+  text-align: center;
+}
+
+.photo-crop-header button {
+  min-height: 48px;
+  border: 0;
+  padding: 8px 4px;
+  background: transparent;
+  color: #ffffff;
+  font: inherit;
+}
+
+.photo-crop-header button:disabled {
+  opacity: 0.45;
+}
+
+.photo-crop-body {
+  position: relative;
+  min-height: 0;
+  background: #000000;
+  touch-action: none;
+}
+
+.photo-crop-controls {
+  padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+  background: #111111;
+}
+
+.photo-crop-controls label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.photo-crop-controls input {
+  width: 100%;
+}
+
+.photo-crop-controls p {
+  margin: 10px 0 0;
+  color: #b9b9b9;
+  font-size: 13px;
+  text-align: center;
+}
+
 .photo-consent-modal {
   display: flex;
   flex-direction: column;

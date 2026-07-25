@@ -20,6 +20,8 @@ export const IMAGE_ERROR_MESSAGES: Record<ImageErrorCode, string> = {
 // become ~13MB as base64 and always fail to save).
 const MAX_DIMENSION_PX = 1280;
 const JPEG_QUALITY = 0.85;
+const CROPPED_IMAGE_WIDTH = 1278;
+const CROPPED_IMAGE_HEIGHT = 852;
 
 export interface ProcessedImage {
   dataUrl: string;
@@ -112,6 +114,83 @@ export function processImageFile(file: File): Promise<ProcessedImage> {
 
     image.src = objectUrl;
   });
+}
+
+/**
+ * Decodes the selected file without resizing it so the cropper can work from
+ * the original pixels. The data URL is temporary and is replaced by the
+ * compact 1278×852 JPEG as soon as the user confirms the crop.
+ */
+export function loadImageFileForCrop(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        reject(new ImageProcessError("load-failed"));
+        return;
+      }
+
+      const image = new Image();
+      image.onload = () => {
+        if (
+          image.naturalWidth < MIN_IMAGE_DIMENSION_PX ||
+          image.naturalHeight < MIN_IMAGE_DIMENSION_PX
+        ) {
+          reject(new ImageProcessError("image-too-small"));
+          return;
+        }
+
+        resolve(reader.result as string);
+      };
+      image.onerror = () => reject(new ImageProcessError("load-failed"));
+      image.src = reader.result;
+    };
+
+    reader.onerror = () => reject(new ImageProcessError("load-failed"));
+    reader.readAsDataURL(file);
+  });
+}
+
+export interface PixelCrop {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** Converts the user-selected 3:2 area into the app's fixed upload format. */
+export async function cropImageToThreeByTwo(
+  imageDataUrl: string,
+  crop: PixelCrop,
+): Promise<string> {
+  const image = await loadImageFromDataUrl(imageDataUrl);
+  const canvas = document.createElement("canvas");
+  canvas.width = CROPPED_IMAGE_WIDTH;
+  canvas.height = CROPPED_IMAGE_HEIGHT;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new ImageProcessError("load-failed");
+  }
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = "high";
+  context.drawImage(
+    image,
+    crop.x,
+    crop.y,
+    crop.width,
+    crop.height,
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+  );
+
+  return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
 }
 
 /**
