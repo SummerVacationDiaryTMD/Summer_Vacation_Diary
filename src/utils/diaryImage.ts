@@ -21,6 +21,7 @@ import {
 } from "./handwriting";
 import { buildHighlightSegments } from "./highlight";
 import { ImageProcessError, loadImageFromDataUrl } from "./image";
+import { STAMP_IMAGE_URLS } from "../constants/stamp";
 
 export interface DiaryImageInput {
   imageDataUrl: string;
@@ -401,6 +402,47 @@ function drawComment(
 
   context.restore();
 }
+function drawStamp(
+  context: CanvasRenderingContext2D,
+  stampImage: HTMLImageElement,
+  layout: DiaryFrameLayout,
+) {
+  const stampWidth = layout.width * 0.2;
+
+  const aspectRatio =
+    stampImage.naturalWidth > 0
+      ? stampImage.naturalHeight / stampImage.naturalWidth
+      : 1;
+
+  const stampHeight = stampWidth * aspectRatio;
+
+  // CSS의 right: 3.5%
+  const rightOffset = layout.width * 0.035;
+
+  // CSS의 bottom: 11%
+  const bottomOffset = layout.height * 0.11;
+
+  const centerX = layout.width - rightOffset - stampWidth / 2;
+
+  const centerY = layout.height - bottomOffset - stampHeight / 2;
+
+  context.save();
+
+  context.translate(centerX, centerY);
+  context.rotate((-35 * Math.PI) / 180);
+
+  context.globalAlpha = 0.75;
+
+  context.drawImage(
+    stampImage,
+    -stampWidth / 2,
+    -stampHeight / 2,
+    stampWidth,
+    stampHeight,
+  );
+
+  context.restore();
+}
 
 function wrapCommentToFrame(
   context: CanvasRenderingContext2D,
@@ -438,10 +480,16 @@ function drawFrameTemplate(
 export async function composeDiaryImage(
   input: DiaryImageInput,
 ): Promise<ComposedDiaryImage> {
-  const [image, template, weatherIcon] = await Promise.all([
+  const stampImagePromise =
+    input.analysis === null
+      ? Promise.resolve<HTMLImageElement | null>(null)
+      : loadImageFromDataUrl(STAMP_IMAGE_URLS[input.analysis.stamp]);
+
+  const [image, template, weatherIcon, stampImage] = await Promise.all([
     loadImageFromDataUrl(input.imageDataUrl),
     loadImageFromDataUrl(TEMPLATE_URL),
     loadImageFromDataUrl(weatherIconUrl(input.weather)),
+    stampImagePromise,
   ]);
 
   // 손그림 첨삭 에셋은 분석 결과가 있을 때만 필요합니다. 8장 전부를
@@ -579,6 +627,11 @@ export async function composeDiaryImage(
 
   drawContent(context, input.content, input.analysis, markImages);
   drawComment(context, input.analysis, frameLayout, commentLines);
+
+  if (stampImage !== null) {
+    drawStamp(context, stampImage, frameLayout);
+  }
+
   if (input.includesAiGeneratedContent) {
     drawAiContentWatermark(context);
   }
