@@ -4,14 +4,6 @@ import { QUOTA_RESET_NOTICE } from "../constants/diary";
 import { isRegionBlocked, useAiQuota } from "../hooks/useAiQuota";
 import { isAiTestMode } from "../services/supabaseEdge";
 
-/**
- * The two AI budgets, told to the user in the screen where they are about to be
- * spent. Each notice reads the store directly rather than taking props, because
- * the value it needs never belongs to its parent's state.
- *
- * These numbers are informational. Enforcement is the server's atomic consume,
- * so a stale or edited counter here changes nothing about what is allowed.
- */
 function NoticeBox({ lines }: { lines: string[] }) {
   return (
     <div className="ai-quota-notice">
@@ -49,12 +41,11 @@ export function SketchQuotaNotice() {
   }
 
   if (quota.mode !== "ready") {
-    return (
-      <NoticeBox lines={["다음 단계에서 AI친구가 색연필 그림을 그려줘요 ✏️"]} />
-    );
+    return null;
   }
 
   const { used, limit, available } = quota.sketch;
+
   if (!available) {
     return (
       <NoticeBox
@@ -69,7 +60,7 @@ export function SketchQuotaNotice() {
   return (
     <NoticeBox
       lines={[
-        "'일기 쓰러 가기'를 누르면 AI친구가 그림을 그려줘요.",
+        `"일기 쓰러 가기"를 누르면 AI친구가 그림을 그려줘요.`,
         `하루에 ${limit}번까지 그림을 그릴 수 있어요.`,
         `오늘 그림 그리기: ${used}/${limit}`,
       ]}
@@ -96,6 +87,7 @@ export function AnalyzeQuotaNotice() {
   }
 
   const { used, limit, available } = quota.analyze;
+
   if (!available) {
     return (
       <NoticeBox

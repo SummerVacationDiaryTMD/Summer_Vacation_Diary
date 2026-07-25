@@ -1,4 +1,4 @@
-import { Button, Loader, Paragraph } from "@toss/tds-mobile";
+import { Button, Paragraph } from "@toss/tds-mobile";
 import { useEffect, useState, type CSSProperties } from "react";
 
 import {
@@ -423,8 +423,9 @@ export function PreviewStep({
                   // component already announces the conversion; reading this
                   // overlay too would announce it twice.
                   <div className="sketch-overlay" aria-hidden>
-                    <Loader size="small" />
-                    <span>사진을 색연필 그림으로 바꾸고 있어요</span>
+                    <span className="loading-blink">
+                      사진을 색연필 그림으로 바꾸고 있어요
+                    </span>
                   </div>
                 )}
               </>
@@ -555,13 +556,15 @@ export function PreviewStep({
 
         {sketchState.status === "error" && (
           <div className="sketch-error">
-            <Paragraph typography="t7" color="#6b5e3f">
+            <Paragraph typography="t7" color="#5A442C">
               {sketchState.message}
             </Paragraph>
-            <div className="sketch-error-actions">
-              <Paragraph as="span" typography="t7" color="#6b5e3f">
+            {!sketchState.retryable && (
+              <Paragraph as="span" typography="t7" color="#5A442C">
                 원본 사진으로도 완성할 수 있어요
               </Paragraph>
+            )}
+            <div className="sketch-error-actions">
               {sketchState.retryable && (
                 <Button
                   className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
