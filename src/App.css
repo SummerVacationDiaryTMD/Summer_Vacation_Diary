@@ -2197,13 +2197,17 @@ mark.highlight-underline {
 .ai-quota-notice {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: #f7f3e9;
-  color: #6b5e3f;
-  font-size: 13px;
-  line-height: 1.45;
+  gap: 4px;
+  padding: 14px 16px;
+  margin-top: -5px;
+  background: #f5eee3;
+  border: 1px solid #ddccb3;
+  border-radius: 14px;
+
+  color: #5a442c;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
   text-align: center;
 }
 
