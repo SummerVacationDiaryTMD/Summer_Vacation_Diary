@@ -1,5 +1,5 @@
 import { Button, Paragraph } from "@toss/tds-mobile";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import {
   AI_CONTENT_WATERMARK,
@@ -7,6 +7,7 @@ import {
   weatherLabel,
 } from "../constants/diary";
 import { DiaryFrameBackground } from "./DiaryFrameBackground";
+import { ProfanityEffectControls } from "./ProfanityEffectControls";
 import type { AnalysisState } from "../hooks/useDiaryAnalysis";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
 import type { SketchState } from "../hooks/useSketch";
@@ -30,11 +31,15 @@ import {
   TITLE_HANDWRITING_STRENGTH,
 } from "../utils/handwriting";
 import { buildHighlightSegments } from "../utils/highlight";
+import { drawTextMosaic } from "../utils/mosaic";
+import { findProfanityMatches } from "../utils/profanity";
+import { buildProfanityCorrectionRuns } from "../utils/profanityCorrection";
 import { STAMP_ALT_TEXT, STAMP_IMAGE_URLS } from "../constants/stamp";
 
 interface PreviewStepProps {
   draft: DiaryDraft;
   analysisState: AnalysisState;
+  onDraftChange: (patch: Partial<DiaryDraft>) => void;
   onRetry: () => void;
   sketchState: SketchState;
   onSketchRetry: () => void;
@@ -91,6 +96,50 @@ function HandwrittenText({
   });
 }
 
+function MosaicCharacter({
+  character,
+  seed,
+}: {
+  character: string;
+  seed: number;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const draw = () => {
+      const canvas = canvasRef.current;
+      const context = canvas?.getContext("2d");
+      if (canvas === null || context === null || context === undefined) return;
+
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      drawTextMosaic(context, character, 0, 0, canvas.width, canvas.height, {
+        fontFamily: '"NanumCoDingHeuiMang", sans-serif',
+        seed,
+      });
+    };
+
+    draw();
+    void document.fonts.ready.then(() => {
+      if (!cancelled) draw();
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [character, seed]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="diary-grid-character-mosaic"
+      width={72}
+      height={84}
+      aria-hidden="true"
+    />
+  );
+}
+
 // Renders the diary text onto a 13x5 manuscript grid, one character per cell.
 // Correction marks (circle/underline) are drawn as an absolutely-positioned
 // visual overlay. The overlay is aria-hidden, so these marks are NOT exposed
@@ -98,9 +147,15 @@ function HandwrittenText({
 function HighlightedContent({
   content,
   analysis,
+  profanityMosaicEnabled,
+  profanityUnderlineEnabled,
+  profanityTeacherNoteEnabled,
 }: {
   content: string;
   analysis: DiaryAnalysis | null;
+  profanityMosaicEnabled: boolean;
+  profanityUnderlineEnabled: boolean;
+  profanityTeacherNoteEnabled: boolean;
 }) {
   const columnCount = DIARY_FRAME.columns;
   const layout = getDiaryFrameLayout(content);
@@ -116,17 +171,51 @@ function HighlightedContent({
   const cells: Array<{
     text: string;
     mark: "circle" | "underline" | "both" | null;
+    isProfanity: boolean;
+    profanityMatchIndex: number | null;
   }> = [];
+  const profanityEffectsEnabled =
+    profanityMosaicEnabled ||
+    profanityUnderlineEnabled ||
+    profanityTeacherNoteEnabled;
+  const profanityMatches = profanityEffectsEnabled
+    ? findProfanityMatches(content)
+    : [];
+  const profanityMatchBySourceIndex = new Map<number, number>();
+  profanityMatches.forEach((match, matchIndex) => {
+    for (
+      let matchedSourceIndex = match.start;
+      matchedSourceIndex <= match.end;
+      matchedSourceIndex += 1
+    ) {
+      profanityMatchBySourceIndex.set(matchedSourceIndex, matchIndex);
+    }
+  });
+  let sourceIndex = 0;
 
   for (const segment of segments) {
     for (const character of Array.from(segment.text)) {
       if (character === "\n") {
         while (cells.length % columnCount !== 0) {
-          cells.push({ text: "", mark: null });
+          cells.push({
+            text: "",
+            mark: null,
+            isProfanity: false,
+            profanityMatchIndex: null,
+          });
         }
+        sourceIndex += 1;
         continue;
       }
-      cells.push({ text: character, mark: segment.mark });
+      const profanityMatchIndex =
+        profanityMatchBySourceIndex.get(sourceIndex) ?? null;
+      cells.push({
+        text: character,
+        mark: segment.mark,
+        isProfanity: profanityMatchIndex !== null,
+        profanityMatchIndex,
+      });
+      sourceIndex += 1;
     }
   }
 
@@ -136,8 +225,18 @@ function HighlightedContent({
     Math.ceil(cells.length / columnCount) * columnCount,
   );
   while (cells.length < visibleCellCount) {
-    cells.push({ text: "", mark: null });
+    cells.push({
+      text: "",
+      mark: null,
+      isProfanity: false,
+      profanityMatchIndex: null,
+    });
   }
+  const visibleCells = cells.slice(0, columnCount * rowCount);
+  const profanityRuns =
+    profanityUnderlineEnabled || profanityTeacherNoteEnabled
+      ? buildProfanityCorrectionRuns(visibleCells, columnCount)
+      : [];
 
   const correctionRuns: Array<{
     mark: "circle" | "underline";
@@ -146,8 +245,8 @@ function HighlightedContent({
     length: number;
   }> = [];
   (["circle", "underline"] as const).forEach((mark) => {
-    cells.slice(0, columnCount * rowCount).forEach((cell, index) => {
-      if (cell.mark !== mark && cell.mark !== "both") {
+    visibleCells.forEach((cell, index) => {
+      if (cell.isProfanity || (cell.mark !== mark && cell.mark !== "both")) {
         return;
       }
       const row = Math.floor(index / columnCount);
@@ -173,23 +272,27 @@ function HighlightedContent({
 
   return (
     <>
-      {cells.slice(0, columnCount * rowCount).map((cell, index) => {
+      {visibleCells.map((cell, index) => {
         // 본문도 날짜·날씨·제목과 동일한 기본 강도 1을 사용합니다.
         const variation = handwritingVariation(cell.text, index, 1);
         return (
           <span key={index} className="diary-grid-cell">
-            <span
-              className="diary-grid-character"
-              style={{
-                fontSize: `${variation.scale}em`,
-                // 본문에도 같은 굵기와 농도 변화를 적용합니다.
-                fontWeight: variation.fontWeight,
-                opacity: variation.opacity,
-                transform: `translate(${variation.offsetXEm}em, ${variation.offsetYEm}em) rotate(${variation.rotationDeg}deg)`,
-              }}
-            >
-              {cell.text === " " ? "\u00a0" : cell.text}
-            </span>
+            {cell.isProfanity && profanityMosaicEnabled ? (
+              <MosaicCharacter character={cell.text} seed={index} />
+            ) : (
+              <span
+                className="diary-grid-character"
+                style={{
+                  fontSize: `${variation.scale}em`,
+                  // 본문에도 같은 굵기와 농도 변화를 적용합니다.
+                  fontWeight: variation.fontWeight,
+                  opacity: variation.opacity,
+                  transform: `translate(${variation.offsetXEm}em, ${variation.offsetYEm}em) rotate(${variation.rotationDeg}deg)`,
+                }}
+              >
+                {cell.text === " " ? "\u00a0" : cell.text}
+              </span>
+            )}
           </span>
         );
       })}
@@ -212,6 +315,68 @@ function HighlightedContent({
             }}
           />
         ))}
+        {profanityRuns.map((run, index) => {
+          const alignRight = run.startColumn + run.length / 2 > columnCount / 2;
+          return (
+            <span
+              key={`profanity-${index}`}
+              className="profanity-correction"
+              style={{
+                left: `${(run.startColumn / columnCount) * 100}%`,
+                top: `${(run.row / rowCount) * 100}%`,
+                width: `${(run.length / columnCount) * 100}%`,
+                height: `${100 / rowCount}%`,
+              }}
+            >
+              {profanityUnderlineEnabled && (
+                <>
+                  {(run.decoration === "underline" ||
+                    run.decoration === "double-underline") && (
+                    <span
+                      className={`profanity-correction-line profanity-correction-line-${run.decoration}`}
+                      style={{
+                        backgroundImage: `url("${pickCorrectionMarkAsset(
+                          "underline",
+                          run.row,
+                          run.startColumn,
+                          run.length,
+                        )}")`,
+                      }}
+                    />
+                  )}
+                  {run.decoration === "double-underline" && (
+                    <span
+                      className="profanity-correction-line profanity-correction-line-double-second"
+                      style={{
+                        backgroundImage: `url("${pickCorrectionMarkAsset(
+                          "underline",
+                          run.row,
+                          run.startColumn,
+                          run.length,
+                        )}")`,
+                      }}
+                    />
+                  )}
+                  {run.decoration === "cross" && (
+                    <span className="profanity-correction-cross" />
+                  )}
+                  {run.decoration === "check" && (
+                    <span className="profanity-correction-check" />
+                  )}
+                </>
+              )}
+              {profanityTeacherNoteEnabled && run.showMessage && (
+                <span
+                  className={`profanity-correction-note${
+                    alignRight ? " profanity-correction-note-right" : ""
+                  }`}
+                >
+                  {run.message}
+                </span>
+              )}
+            </span>
+          );
+        })}
       </span>
     </>
   );
@@ -228,6 +393,7 @@ function HighlightedContent({
 export function PreviewStep({
   draft,
   analysisState,
+  onDraftChange,
   onRetry,
   sketchState,
   onSketchRetry,
@@ -263,6 +429,9 @@ export function PreviewStep({
       weather: draft.weather,
       analysis,
       includesAiGeneratedContent,
+      profanityMosaicEnabled: draft.profanityMosaicEnabled,
+      profanityUnderlineEnabled: draft.profanityUnderlineEnabled,
+      profanityTeacherNoteEnabled: draft.profanityTeacherNoteEnabled,
     })
       .then((result) => {
         if (!cancelled) setRenderedPreview(result);
@@ -326,6 +495,12 @@ export function PreviewStep({
           </Paragraph>
         </div>
       )}
+
+      <ProfanityEffectControls
+        className="preview-profanity-controls"
+        draft={draft}
+        onChange={onDraftChange}
+      />
 
       <div className="diary-card">
         <div
@@ -441,7 +616,13 @@ export function PreviewStep({
               gridTemplateRows: `repeat(${frameLayout.contentRows}, minmax(0, 1fr))`,
             }}
           >
-            <HighlightedContent content={draft.content} analysis={analysis} />
+            <HighlightedContent
+              content={draft.content}
+              analysis={analysis}
+              profanityMosaicEnabled={draft.profanityMosaicEnabled}
+              profanityUnderlineEnabled={draft.profanityUnderlineEnabled}
+              profanityTeacherNoteEnabled={draft.profanityTeacherNoteEnabled}
+            />
           </div>
 
           {/* Fixed colors throughout the card: it sits on a fixed paper
