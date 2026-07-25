@@ -8,7 +8,7 @@ function NoticeBox({ lines }: { lines: string[] }) {
   return (
     <div className="ai-quota-notice">
       {lines.map((line) => (
-        <Paragraph key={line} as="span" typography="t7" color="#6b5e3f">
+        <Paragraph key={line} as="span" typography="t7" color="#5A442C">
           {line}
         </Paragraph>
       ))}

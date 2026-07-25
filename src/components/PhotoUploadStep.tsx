@@ -80,17 +80,17 @@ export function PhotoUploadStep({
     // people press without reading, and it should be the one that does not
     // spend a request.
     const reuse = await openConfirm({
-      title: "친구가 그린 적 있는 사진이에요",
+      title: "이미 그린 그림이 있어요",
       description:
-        "다시 그릴건가요? 다시 그리면 오늘 남은 횟수가 하나 줄어들어요.",
+        "기존 그림을 사용할까요? 다시 그리면 오늘 남은 횟수가 1회 차감돼요.",
       confirmButton: (
         <Button className="summer-diary-button summer-diary-button-primary">
-          원래 그림 사용하기
+          기존 그림 사용하기
         </Button>
       ),
       cancelButton: (
         <Button className="summer-diary-button summer-diary-button-secondary">
-          다시그리기
+          다시 그리기
         </Button>
       ),
     });
