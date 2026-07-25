@@ -14,14 +14,24 @@ const jsonHeaders = {
 };
 
 // Change limits here without touching the database function. One sketch or
-// analysis call consumes one request. Daily windows reset at 00:00 UTC.
+// analysis call consumes one request from three budgets at once: the device's
+// per-action budget, the shared IP budget, and the service-wide cap. Daily
+// windows reset at 00:00 UTC, which is 09:00 KST — every user-facing message
+// must say "내일 아침 9시부터", never "내일".
 const USAGE_LIMITS = {
-  shortWindowSeconds: 10 * 60,
-  userShort: 5,
-  ipShort: 10,
-  userDaily: 20,
-  ipDaily: 60,
+  // The burst window is IP-only. A device budget cannot stop a scripted caller
+  // (x-diary-client-id is just a header on a public endpoint), so the short
+  // window is only useful where identity cannot be reset at will.
+  ipBurstWindowSeconds: 10 * 60,
+  ipBurst: 20,
+  ipDaily: 100,
+  userDaily: { sketch: 3, analyze: 5 },
+  // Cost circuit breaker: the real ceiling on a day's spend. Split per action
+  // so a flood of cheap analyses cannot starve the expensive sketch budget.
+  serviceDaily: { sketch: 150, analyze: 250 },
 } as const;
+
+type QuotaAction = "sketch" | "analyze";
 
 // The binding ceiling is not this Function's wall-clock limit but the
 // CLIENT's: src/services/diaryAnalysis.ts aborts at 30s, so a failed local
@@ -99,7 +109,82 @@ async function sha256(value: string): Promise<string> {
   ).join("");
 }
 
-async function enforceUsageLimit(request: Request): Promise<void> {
+interface QuotaCounter {
+  used: number;
+  limit: number;
+  remaining: number;
+}
+
+// What the client is allowed to see: its own two counters, when they reset, and
+// one reason string when something shared is blocking. The raw service-wide
+// numbers stay server-side — publishing how much headroom is left would help
+// somebody time a burst against it.
+interface QuotaSnapshot {
+  sketch: QuotaCounter;
+  analyze: QuotaCounter;
+  resetAt: string;
+  blocked: null | "device" | "ip-burst" | "ip-daily" | "service";
+}
+
+// Raw counters as the database returns them.
+interface QuotaCounts {
+  userSketch: number;
+  userAnalyze: number;
+  ipShort: number;
+  ipDay: number;
+  serviceSketch: number;
+  serviceAnalyze: number;
+}
+
+interface Reservation {
+  action: QuotaAction;
+  userHash: string;
+  ipHash: string;
+  // Kept from the consume call rather than recomputed when refunding: a request
+  // consumed at 23:59 UTC that fails at 00:01 must give its request back to
+  // yesterday's row — a harmless no-op, since that budget already reset —
+  // instead of handing out a free credit against today's.
+  shortWindowStart: string;
+  dayWindowStart: string;
+  snapshot: QuotaSnapshot;
+}
+
+// Carries the snapshot so a rejection can tell the client "0 left" in the same
+// response instead of forcing a follow-up quota-status call.
+class QuotaError extends FunctionError {
+  constructor(
+    code: string,
+    readonly quota: QuotaSnapshot,
+  ) {
+    super(code, 429);
+  }
+}
+
+function windowStarts(): { shortWindowStart: string; dayWindowStart: string } {
+  const burstMs = USAGE_LIMITS.ipBurstWindowSeconds * 1000;
+  const dayStart = new Date();
+  dayStart.setUTCHours(0, 0, 0, 0);
+  return {
+    shortWindowStart: new Date(
+      Math.floor(Date.now() / burstMs) * burstMs,
+    ).toISOString(),
+    dayWindowStart: dayStart.toISOString(),
+  };
+}
+
+function adminClient() {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  if (!supabaseUrl) {
+    throw new FunctionError("missing-supabase-url", 500);
+  }
+  return createClient(supabaseUrl, getSupabaseSecret(), {
+    auth: { persistSession: false },
+  });
+}
+
+async function hashIdentifiers(
+  request: Request,
+): Promise<{ userHash: string; ipHash: string }> {
   const clientId = requireString(
     request.headers.get("x-diary-client-id"),
     "client-id",
@@ -111,50 +196,249 @@ async function enforceUsageLimit(request: Request): Promise<void> {
 
   // Supabase normally supplies x-forwarded-for. If it is absent, keep the
   // request usable without collapsing every visitor into one shared bucket;
-  // the device bucket still enforces the user limits.
+  // the device bucket still enforces the per-action limits.
   const ip = clientIp(request) ?? `unavailable:${clientId}`;
   const [userHash, ipHash] = await Promise.all([
     sha256(`user:${salt}:${clientId}`),
     sha256(`ip:${salt}:${ip}`),
   ]);
+  return { userHash, ipHash };
+}
 
-  const now = Date.now();
-  const shortMs = USAGE_LIMITS.shortWindowSeconds * 1000;
-  const shortWindowStart = new Date(Math.floor(now / shortMs) * shortMs);
-  const dayWindowStart = new Date();
-  dayWindowStart.setUTCHours(0, 0, 0, 0);
+const COUNT_KEYS = [
+  "userSketch",
+  "userAnalyze",
+  "ipShort",
+  "ipDay",
+  "serviceSketch",
+  "serviceAnalyze",
+] as const;
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  if (!supabaseUrl) {
-    throw new FunctionError("missing-supabase-url", 500);
+function parseCounts(data: unknown): QuotaCounts | null {
+  if (typeof data !== "object" || data === null) {
+    return null;
   }
-  const admin = createClient(supabaseUrl, getSupabaseSecret(), {
-    auth: { persistSession: false },
-  });
-  const { data, error } = await admin.rpc("consume_diary_ai_quota", {
+  const record = data as Record<string, unknown>;
+  const counts = {} as QuotaCounts;
+  for (const key of COUNT_KEYS) {
+    const value = record[key];
+    if (typeof value !== "number") {
+      return null;
+    }
+    counts[key] = value;
+  }
+  return counts;
+}
+
+function counter(used: number, limit: number): QuotaCounter {
+  return { used, limit, remaining: Math.max(limit - used, 0) };
+}
+
+// `decision` comes from consume and is authoritative for that request. A plain
+// read has no decision, so the same precedence is re-derived from the counts.
+// Per-device exhaustion is deliberately absent here: the per-action `remaining`
+// fields already say that, and they say it per action.
+function blockedReason(
+  counts: QuotaCounts,
+  decision?: string,
+): QuotaSnapshot["blocked"] {
+  if (decision !== undefined && decision !== "allowed") {
+    if (decision === "device-daily") return "device";
+    if (decision === "ip-short") return "ip-burst";
+    if (decision === "ip-daily") return "ip-daily";
+    if (decision === "service-daily") return "service";
+    return null;
+  }
+  if (counts.ipShort >= USAGE_LIMITS.ipBurst) return "ip-burst";
+  if (counts.ipDay >= USAGE_LIMITS.ipDaily) return "ip-daily";
+  if (
+    counts.serviceSketch >= USAGE_LIMITS.serviceDaily.sketch &&
+    counts.serviceAnalyze >= USAGE_LIMITS.serviceDaily.analyze
+  ) {
+    return "service";
+  }
+  return null;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function buildSnapshot(
+  counts: QuotaCounts,
+  dayWindowStart: string,
+  decision?: string,
+): QuotaSnapshot {
+  return {
+    sketch: counter(counts.userSketch, USAGE_LIMITS.userDaily.sketch),
+    analyze: counter(counts.userAnalyze, USAGE_LIMITS.userDaily.analyze),
+    resetAt: new Date(Date.parse(dayWindowStart) + DAY_MS).toISOString(),
+    blocked: blockedReason(counts, decision),
+  };
+}
+
+function rejectionCode(decision: string, action: QuotaAction): string {
+  if (decision === "device-daily") {
+    return action === "sketch"
+      ? "sketch-daily-limit-exceeded"
+      : "analyze-daily-limit-exceeded";
+  }
+  if (decision === "ip-short") return "ip-burst-limit-exceeded";
+  if (decision === "ip-daily") return "ip-daily-limit-exceeded";
+  if (decision === "service-daily") return "service-daily-limit-exceeded";
+  return "";
+}
+
+/**
+ * Consumes one request up front, before any paid call. Doing it in this order
+ * — rather than charging after a successful response — is what makes the limit
+ * hold under concurrency: check-then-call would let every parallel request read
+ * the same pre-increment count and pass.
+ */
+async function reserveQuota(
+  request: Request,
+  action: QuotaAction,
+): Promise<Reservation> {
+  const { userHash, ipHash } = await hashIdentifiers(request);
+  const { shortWindowStart, dayWindowStart } = windowStarts();
+
+  const { data, error } = await adminClient().rpc("consume_diary_ai_quota", {
+    p_action: action,
     p_user_hash: userHash,
     p_ip_hash: ipHash,
-    p_short_window_start: shortWindowStart.toISOString(),
-    p_day_window_start: dayWindowStart.toISOString(),
-    p_user_short_limit: USAGE_LIMITS.userShort,
-    p_ip_short_limit: USAGE_LIMITS.ipShort,
-    p_user_daily_limit: USAGE_LIMITS.userDaily,
+    p_short_window_start: shortWindowStart,
+    p_day_window_start: dayWindowStart,
+    p_user_daily_limit: USAGE_LIMITS.userDaily[action],
+    p_ip_short_limit: USAGE_LIMITS.ipBurst,
     p_ip_daily_limit: USAGE_LIMITS.ipDaily,
+    p_service_daily_limit: USAGE_LIMITS.serviceDaily[action],
   });
 
-  if (error || typeof data !== "string") {
-    console.error("Rate limit RPC failed", error?.message ?? "invalid result");
+  const counts = parseCounts(data);
+  const decision = (data as { decision?: unknown } | null)?.decision;
+  if (error || counts === null || typeof decision !== "string") {
+    console.error("Quota consume failed", error?.message ?? "invalid result");
     // Fail closed: a database outage must not turn into unlimited paid calls.
     throw new FunctionError("rate-limit-unavailable", 503);
   }
-  if (data.endsWith("-short")) {
-    throw new FunctionError("rate-limited", 429);
+
+  if (decision !== "allowed") {
+    const code = rejectionCode(decision, action);
+    if (code === "") {
+      throw new FunctionError("rate-limit-unavailable", 503);
+    }
+    throw new QuotaError(code, buildSnapshot(counts, dayWindowStart, decision));
   }
-  if (data.endsWith("-daily")) {
-    throw new FunctionError("daily-limit-exceeded", 429);
+
+  return {
+    action,
+    userHash,
+    ipHash,
+    shortWindowStart,
+    dayWindowStart,
+    snapshot: buildSnapshot(counts, dayWindowStart, decision),
+  };
+}
+
+/**
+ * Gives a reserved request back. Never throws: this runs inside the error path,
+ * and replacing the original failure with a refund failure would hide what
+ * actually went wrong. A lost refund costs one request and heals at the reset.
+ */
+async function refundQuota(
+  reservation: Reservation,
+): Promise<QuotaSnapshot | null> {
+  try {
+    const { data, error } = await adminClient().rpc("refund_diary_ai_quota", {
+      p_action: reservation.action,
+      p_user_hash: reservation.userHash,
+      p_ip_hash: reservation.ipHash,
+      p_short_window_start: reservation.shortWindowStart,
+      p_day_window_start: reservation.dayWindowStart,
+    });
+    const counts = parseCounts(data);
+    if (error || counts === null) {
+      console.error("Quota refund failed", error?.message ?? "invalid result");
+      return null;
+    }
+    return buildSnapshot(counts, reservation.dayWindowStart);
+  } catch (cause) {
+    console.error(
+      "Quota refund threw",
+      cause instanceof Error ? cause.message : cause,
+    );
+    return null;
   }
-  if (data !== "allowed") {
+}
+
+async function readQuota(request: Request): Promise<QuotaSnapshot> {
+  const { userHash, ipHash } = await hashIdentifiers(request);
+  const { shortWindowStart, dayWindowStart } = windowStarts();
+
+  const { data, error } = await adminClient().rpc("read_diary_ai_quota", {
+    p_user_hash: userHash,
+    p_ip_hash: ipHash,
+    p_short_window_start: shortWindowStart,
+    p_day_window_start: dayWindowStart,
+  });
+
+  const counts = parseCounts(data);
+  if (error || counts === null) {
+    console.error("Quota read failed", error?.message ?? "invalid result");
     throw new FunctionError("rate-limit-unavailable", 503);
+  }
+  return buildSnapshot(counts, dayWindowStart);
+}
+
+// Denylist, not an allowlist: anything not explicitly the user's fault gets
+// refunded, so a code added later defaults to giving the request back. Charging
+// somebody for our own bug is the worse of the two failures. The invariant that
+// keeps this honest: HTTP 400 means the user's fault, which means no refund.
+const NON_REFUNDABLE = new Set([
+  "content-blocked",
+  "invalid-image",
+  "invalid-input",
+  "invalid-title",
+  "invalid-content",
+  "invalid-weather",
+]);
+
+function shouldRefund(error: unknown): boolean {
+  return error instanceof FunctionError
+    ? !NON_REFUNDABLE.has(error.code)
+    : true;
+}
+
+// analyze() returns whatever JSON the model produced, so spreading it blindly
+// would turn an array or a scalar into {0: ..., 1: ...}. quota goes last so a
+// model that happens to emit a "quota" key cannot shadow the real one.
+function withQuota(result: unknown, quota: QuotaSnapshot): unknown {
+  if (typeof result !== "object" || result === null || Array.isArray(result)) {
+    return result;
+  }
+  return { ...(result as Record<string, unknown>), quota };
+}
+
+// quota-status spends no money and moves no counters, so it does not need the
+// database-backed limiter — this only stops one client from hammering the read
+// in a loop. Isolates are ephemeral and there are several, so treat it as a
+// speed bump rather than a guarantee.
+const STATUS_LIMIT = 30;
+const STATUS_WINDOW_MS = 10 * 60 * 1000;
+const statusHits = new Map<string, number>();
+let statusWindowStart = 0;
+
+function enforceStatusLimit(clientId: string): void {
+  const windowStart =
+    Math.floor(Date.now() / STATUS_WINDOW_MS) * STATUS_WINDOW_MS;
+  if (windowStart !== statusWindowStart) {
+    // Clearing on the window roll keeps the map bounded without an O(n) sweep
+    // on every new client.
+    statusWindowStart = windowStart;
+    statusHits.clear();
+  }
+  const count = (statusHits.get(clientId) ?? 0) + 1;
+  statusHits.set(clientId, count);
+  if (count > STATUS_LIMIT) {
+    throw new FunctionError("rate-limited", 429);
   }
 }
 
@@ -381,7 +665,15 @@ function dataUrlToBlob(dataUrl: string): Blob {
     throw new FunctionError("invalid-image", 400);
   }
 
-  const binary = atob(dataUrl.slice(comma + 1));
+  // atob throws a DOMException on malformed base64. Without this guard it would
+  // escape as a generic api-error 500 and be classified as refundable, even
+  // though a broken payload is the caller's fault and must not be refunded.
+  let binary: string;
+  try {
+    binary = atob(dataUrl.slice(comma + 1));
+  } catch {
+    throw new FunctionError("invalid-image", 400);
+  }
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index += 1) {
     bytes[index] = binary.charCodeAt(index);
@@ -428,25 +720,59 @@ Deno.serve(async (request) => {
     return responseJson({ code: "method-not-allowed" }, 405);
   }
 
-  try {
-    const apiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!apiKey) throw new FunctionError("invalid-key", 500);
+  // Held outside the try so the catch can tell "nothing was consumed yet" from
+  // "one request is charged and may need giving back".
+  let reservation: Reservation | null = null;
 
+  try {
     const body = await request.json();
+
+    // Routed before the OPENAI_API_KEY check on purpose: a missing key is a
+    // server misconfiguration that must not break the usage counters, and
+    // answering a status request with invalid-key would be actively misleading.
+    if (body?.action === "quota-status") {
+      enforceStatusLimit(
+        requireString(request.headers.get("x-diary-client-id"), "client-id"),
+      );
+      return responseJson({ quota: await readQuota(request) });
+    }
     if (body?.action !== "analyze" && body?.action !== "sketch") {
       throw new FunctionError("invalid-action", 400);
     }
 
-    await enforceUsageLimit(request);
-    if (body.action === "analyze") {
-      return responseJson(await analyze(body.input, apiKey));
-    }
-    return responseJson(await sketch(body.photoDataUrl, apiKey));
+    const apiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!apiKey) throw new FunctionError("invalid-key", 500);
+
+    // Reserve before validating the payload: a junk request must still count
+    // against the shared IP budget, or throwing garbage at this endpoint would
+    // be a free way to probe it.
+    reservation = await reserveQuota(request, body.action);
+    const result =
+      body.action === "analyze"
+        ? await analyze(body.input, apiKey)
+        : await sketch(body.photoDataUrl, apiKey);
+    return responseJson(withQuota(result, reservation.snapshot));
   } catch (error) {
+    // Classifying in one place covers every failure — including the ones that
+    // are not FunctionErrors, like a bug in our own code — and lets the
+    // corrected snapshot ride along on the error response.
+    let quota =
+      reservation?.snapshot ??
+      (error instanceof QuotaError ? error.quota : undefined);
+    if (reservation !== null && shouldRefund(error)) {
+      quota = (await refundQuota(reservation)) ?? quota;
+    }
+
     if (error instanceof FunctionError) {
-      return responseJson({ code: error.code }, error.status);
+      return responseJson(
+        { code: error.code, ...(quota ? { quota } : {}) },
+        error.status,
+      );
     }
     console.error(error instanceof Error ? error.message : "Unknown error");
-    return responseJson({ code: "api-error" }, 500);
+    return responseJson(
+      { code: "api-error", ...(quota ? { quota } : {}) },
+      500,
+    );
   }
 });

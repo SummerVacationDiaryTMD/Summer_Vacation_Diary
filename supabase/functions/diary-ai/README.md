@@ -1,14 +1,15 @@
-# Prompts
+# `diary-ai` prompt modules
 
-All LLM prompt texts for the `diary-ai` Edge Function live here — one file
-per prompt, as plain TypeScript content modules (a single exported template
-literal, no logic). To change a prompt, edit only the text between the
-backticks; everything there is sent to the model verbatim.
+All LLM prompt texts for this Edge Function live in this directory, next to
+`index.ts` — one file per prompt, as plain TypeScript content modules (a
+single exported template literal, no logic). To change a prompt, edit only
+the text between the backticks; everything there is sent to the model
+verbatim.
 
 | File                 | Exports           | Used by                                   | Sent as                     |
 | -------------------- | ----------------- | ----------------------------------------- | --------------------------- |
-| `analysis_prompt.ts` | `ANALYSIS_PROMPT` | `analyze` action (diary + photo analysis) | chat `system` message       |
-| `sketch_prompt.ts`   | `SKETCH_PROMPT`   | `sketch` action (photo → colored pencil)  | `images/edits` prompt field |
+| `prompt_analysis.ts` | `ANALYSIS_PROMPT` | `analyze` action (diary + photo analysis) | chat `system` message       |
+| `prompt_sketch.ts`   | `SKETCH_PROMPT`   | `sketch` action (photo → colored pencil)  | `images/edits` prompt field |
 
 Both entrypoints (`index.ts` and the debug variant `index_debug.ts`) import
 the same modules, so the prompts can never diverge between them.
@@ -28,9 +29,11 @@ Content modules are regular imports, so they bundle on every deploy path —
 no `static_files` config and no Docker requirement:
 
 - **Dashboard** (the team's usual path): in the Functions editor, create or
-  update these files alongside `index.ts` (add a file named
-  `prompts/analysis_prompt.ts`, etc.). Keep "Enforce JWT Verification" OFF —
-  dashboard deploys ignore `config.toml`, and this function must stay
-  public (abuse control lives inside the function).
+  update `prompt_analysis.ts` and `prompt_sketch.ts` at the same level as
+  `index.ts` — no subdirectory. Deploying `index.ts` alone fails, because it
+  imports both. This README is documentation only; do not create it there.
+  Keep "Enforce JWT Verification" OFF — dashboard deploys ignore
+  `config.toml`, and this function must stay public (abuse control lives
+  inside the function).
 - **CLI**: `npx supabase functions deploy diary-ai` works unchanged and
   honors `config.toml`.

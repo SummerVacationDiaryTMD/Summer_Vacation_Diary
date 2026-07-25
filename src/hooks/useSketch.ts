@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { refreshAiQuota } from "./useAiQuota";
+import { putCachedSketch } from "../services/sketchCache";
 import {
+  isSketchAiConnected,
   isSketchErrorRetryable,
+  sketchCauseMessage,
+  sketchErrorCode,
   sketchErrorMessage,
   transferPhotoToSketch,
 } from "../services/styleTransfer";
 import type { DiaryDraft } from "./useDiaryDraft";
+
+// Shown when the daily budget is already spent, so no request is ever made.
+const QUOTA_SPENT_MESSAGE = sketchCauseMessage("sketch-daily-limit-exceeded");
 
 export type SketchState =
   | { status: "idle" }
@@ -43,6 +51,15 @@ export function useSketch(
   draft: Pick<DiaryDraft, "photoDataUrl" | "sketchDataUrl">,
   updateDraft: (patch: Partial<DiaryDraft>) => void,
   active: boolean,
+  /**
+   * False only when the daily budget is known to be spent. It is a courtesy
+   * gate that saves a round trip, never the enforcement point — the server's
+   * atomic consume decides, and it must stay true while the budget is unknown
+   * so a slow first quota fetch cannot lock a user out of their own diary.
+   */
+  allowed: boolean,
+  /** SHA-256 of the file the photo came from; keys the cross-session cache. */
+  sourceHash: string | null,
 ) {
   const { photoDataUrl, sketchDataUrl } = draft;
 
@@ -67,7 +84,12 @@ export function useSketch(
   }, [photoDataUrl]);
 
   useEffect(() => {
-    if (!active || photoDataUrl === null || sketchDataUrl !== null) {
+    if (
+      !active ||
+      !allowed ||
+      photoDataUrl === null ||
+      sketchDataUrl !== null
+    ) {
       return;
     }
     // A failed conversion must NOT auto-retry on step navigation — each
@@ -109,6 +131,12 @@ export function useSketch(
         // The sketch is valid for the photo that produced it, so cache it
         // even if superseded — the user may revert to that photo.
         cacheRef.current.set(request.source, sketch);
+        // Persist only real conversions. In test mode this "sketch" is the
+        // untouched photo, and offering to reuse that later would promise a
+        // drawing that was never made.
+        if (isSketchAiConnected) {
+          putCachedSketch(sourceHash, sketch);
+        }
         if (cacheRef.current.size > CACHE_MAX_ENTRIES) {
           const oldestKey = cacheRef.current.keys().next().value;
           if (oldestKey !== undefined) {
@@ -136,13 +164,28 @@ export function useSketch(
         if (requestId !== requestIdRef.current) {
           return;
         }
+        // A client-side timeout does not cancel the Edge Function, so the call
+        // may still have succeeded and stayed charged. Only a fresh read can
+        // tell us; every other failure already carried a snapshot back.
+        if (sketchErrorCode(cause) === "timeout") {
+          void refreshAiQuota();
+        }
         setError({
           source: request.source,
           message: sketchErrorMessage(cause),
           retryable: isSketchErrorRetryable(cause),
         });
       });
-  }, [active, attempt, error, photoDataUrl, sketchDataUrl, updateDraft]);
+  }, [
+    active,
+    allowed,
+    attempt,
+    error,
+    photoDataUrl,
+    sketchDataUrl,
+    sourceHash,
+    updateDraft,
+  ]);
 
   const retry = useCallback(() => {
     setError(null);
@@ -154,6 +197,12 @@ export function useSketch(
     state = { status: "idle" };
   } else if (sketchDataUrl !== null) {
     state = { status: "success", sketchDataUrl };
+  } else if (!allowed) {
+    // Derived rather than stored: when the budget comes back the state heals on
+    // its own, and a stale "no budget" error can never outlive the reset. It
+    // also outranks any remembered error, so no retry button is offered for
+    // something that cannot succeed.
+    state = { status: "error", message: QUOTA_SPENT_MESSAGE, retryable: false };
   } else if (error !== null && error.source === photoDataUrl) {
     state = {
       status: "error",

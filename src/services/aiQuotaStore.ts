@@ -1,0 +1,142 @@
+/**
+ * Holds the most recent AI usage snapshot the server sent.
+ *
+ * This module deliberately imports nothing. `supabaseEdge.ts` writes into it on
+ * every response, so an import back the other way would form a cycle — and a
+ * cycle would leave that module's top-level constants (`isAiTestMode`,
+ * `isSupabaseConfigured`) undefined while this file is being evaluated.
+ *
+ * The counters here are for display only. Enforcement is the server's atomic
+ * consume; a client that ignores or edits these numbers changes nothing.
+ */
+
+export interface QuotaCounter {
+  used: number;
+  limit: number;
+  remaining: number;
+}
+
+/**
+ * Why a request would be refused for a reason that is not the device's own
+ * per-action budget. Used for wording, not for gating: `device` and `service`
+ * are per-action on the server, so treating them as a global block would wrongly
+ * disable the other action.
+ */
+export type QuotaBlockedReason = "device" | "ip-burst" | "ip-daily" | "service";
+
+export interface QuotaSnapshot {
+  sketch: QuotaCounter;
+  analyze: QuotaCounter;
+  /** ISO timestamp of the next daily reset (00:00 UTC = 09:00 KST). */
+  resetAt: string;
+  blocked: QuotaBlockedReason | null;
+}
+
+const BLOCKED_REASONS: readonly string[] = [
+  "device",
+  "ip-burst",
+  "ip-daily",
+  "service",
+];
+
+let snapshot: QuotaSnapshot | null = null;
+const listeners = new Set<() => void>();
+
+function emit(): void {
+  for (const listener of listeners) {
+    listener();
+  }
+}
+
+function parseCounter(value: unknown): QuotaCounter | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+  const { used, limit, remaining } = value as Record<string, unknown>;
+  if (
+    typeof used !== "number" ||
+    typeof limit !== "number" ||
+    typeof remaining !== "number"
+  ) {
+    return null;
+  }
+  return { used, limit, remaining };
+}
+
+/**
+ * Pulls a snapshot out of any Edge Function response body. Returns null rather
+ * than throwing, because this runs on the response path of every call —
+ * including error responses — and must never turn a server error into a
+ * different client error.
+ */
+export function parseQuotaSnapshot(body: unknown): QuotaSnapshot | null {
+  if (typeof body !== "object" || body === null) {
+    return null;
+  }
+  const quota = (body as { quota?: unknown }).quota;
+  if (typeof quota !== "object" || quota === null) {
+    return null;
+  }
+
+  const record = quota as Record<string, unknown>;
+  const sketch = parseCounter(record.sketch);
+  const analyze = parseCounter(record.analyze);
+  if (sketch === null || analyze === null) {
+    return null;
+  }
+  if (
+    typeof record.resetAt !== "string" ||
+    Number.isNaN(Date.parse(record.resetAt))
+  ) {
+    return null;
+  }
+
+  const blocked = record.blocked ?? null;
+  if (blocked !== null && !BLOCKED_REASONS.includes(blocked as string)) {
+    return null;
+  }
+
+  return {
+    sketch,
+    analyze,
+    resetAt: record.resetAt,
+    blocked: blocked as QuotaBlockedReason | null,
+  };
+}
+
+/**
+ * Records the snapshot carried by a response, if there is one. Called for both
+ * success and failure bodies so a rejected over-limit request still updates the
+ * counter to zero instead of leaving a stale number on screen.
+ */
+export function recordQuotaSnapshot(body: unknown): void {
+  const parsed = parseQuotaSnapshot(body);
+  if (parsed === null) {
+    return;
+  }
+  snapshot = parsed;
+  emit();
+}
+
+/**
+ * Returns the same object reference until a new snapshot arrives, which is what
+ * `useSyncExternalStore` needs to avoid re-rendering on every check.
+ */
+export function getQuotaSnapshot(): QuotaSnapshot | null {
+  return snapshot;
+}
+
+/** Drops the snapshot once its daily window has passed. */
+export function expireQuotaSnapshot(now: number): void {
+  if (snapshot !== null && now >= Date.parse(snapshot.resetAt)) {
+    snapshot = null;
+    emit();
+  }
+}
+
+export function subscribeQuota(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}

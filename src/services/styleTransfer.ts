@@ -11,31 +11,59 @@ export type SketchErrorCode =
   | "timeout"
   | "network"
   | "invalid-key"
+  | "invalid-image"
   | "model-unavailable"
   | "rate-limited"
+  | "sketch-daily-limit-exceeded"
+  | "ip-burst-limit-exceeded"
+  | "ip-daily-limit-exceeded"
+  | "service-daily-limit-exceeded"
+  // Legacy: the server stopped sending this when limits went per-action. Kept
+  // so rolling the Edge Function back cannot produce a blank message.
   | "daily-limit-exceeded"
   | "quota-exceeded"
   | "content-blocked"
   | "api-error"
   | "invalid-response";
 
-export const SKETCH_ERROR_MESSAGES: Record<SketchErrorCode, string> = {
-  timeout: "그림 변환이 너무 오래 걸려요. 잠시 후 다시 시도해 주세요.",
-  network: "네트워크 연결을 확인하고 다시 시도해 주세요.",
-  "invalid-key": "AI 연결 설정을 확인해 주세요.",
-  "model-unavailable":
-    "이 API 키로는 그림 변환 모델을 쓸 수 없어요. OpenAI 조직 인증 여부를 확인해 주세요.",
-  "rate-limited": "지금은 요청이 많아요. 잠시 후 다시 시도해 주세요.",
-  "daily-limit-exceeded":
-    "오늘 사용할 수 있는 횟수를 모두 사용했어요. 내일 다시 이용해 주세요.",
-  "quota-exceeded":
-    "OpenAI 크레딧이 모두 소진됐어요. 결제 설정을 확인해 주세요.",
-  "content-blocked":
-    "이 사진은 그림으로 바꾸지 못했어요. 다른 사진으로 시도해 주세요.",
-  "api-error":
-    "그림 변환 서비스에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.",
-  "invalid-response": "변환된 그림을 읽지 못했어요. 다시 시도해 주세요.",
+/**
+ * The preview shows one short line, "{cause} 그림을 못그렸어요.", so these are
+ * sentence fragments rather than full messages. Naming the cause matters: it is
+ * what tells a child whether picking a different photo would help or whether
+ * there is simply nothing to do right now.
+ */
+export const SKETCH_ERROR_CAUSES: Record<SketchErrorCode, string> = {
+  "content-blocked": "부적절한 이미지때문에",
+  "invalid-image": "깨진 이미지때문에",
+  "sketch-daily-limit-exceeded": "오늘 그림 그리기 횟수를 다 써서",
+  "ip-daily-limit-exceeded": "오늘 그림 그리기 횟수를 다 써서",
+  "service-daily-limit-exceeded": "오늘 그림 그리기 횟수를 다 써서",
+  "daily-limit-exceeded": "오늘 그림 그리기 횟수를 다 써서",
+  // Everything transient reads the same way on purpose — the distinction
+  // between a timeout, a busy model and a dead tunnel is ours to debug from the
+  // logs, not the child's to interpret.
+  timeout: "친구가 쉬러가서",
+  network: "친구가 쉬러가서",
+  "api-error": "친구가 쉬러가서",
+  "model-unavailable": "친구가 쉬러가서",
+  "rate-limited": "친구가 쉬러가서",
+  "ip-burst-limit-exceeded": "친구가 쉬러가서",
+  "quota-exceeded": "친구가 쉬러가서",
+  "invalid-key": "친구가 쉬러가서",
+  "invalid-response": "알 수 없는 이유로",
 };
+
+// Retrying these cannot succeed: the budget is gone until the daily reset, the
+// photo will be rejected again, or our own billing is the problem.
+const NON_RETRYABLE_SKETCH_CODES: readonly SketchErrorCode[] = [
+  "content-blocked",
+  "invalid-image",
+  "sketch-daily-limit-exceeded",
+  "ip-daily-limit-exceeded",
+  "service-daily-limit-exceeded",
+  "daily-limit-exceeded",
+  "quota-exceeded",
+];
 
 export class SketchError extends Error {
   constructor(public readonly code: SketchErrorCode) {
@@ -44,8 +72,14 @@ export class SketchError extends Error {
   }
 }
 
+/** Builds the preview line for a code, including causes never thrown as an
+ *  error — the quota gate blocks before a request is even attempted. */
+export function sketchCauseMessage(code: SketchErrorCode): string {
+  return `${SKETCH_ERROR_CAUSES[code]} 그림을 못그렸어요.`;
+}
+
 export function sketchErrorMessage(error: unknown): string {
-  return SKETCH_ERROR_MESSAGES[sketchErrorCode(error)];
+  return sketchCauseMessage(sketchErrorCode(error));
 }
 
 export function sketchErrorCode(error: unknown): SketchErrorCode {
@@ -53,11 +87,7 @@ export function sketchErrorCode(error: unknown): SketchErrorCode {
 }
 
 export function isSketchErrorRetryable(error: unknown): boolean {
-  return ![
-    "content-blocked",
-    "daily-limit-exceeded",
-    "quota-exceeded",
-  ].includes(sketchErrorCode(error));
+  return !NON_RETRYABLE_SKETCH_CODES.includes(sketchErrorCode(error));
 }
 
 export const isSketchAiConnected = isSupabaseConfigured && !isAiTestMode;
@@ -79,7 +109,14 @@ const REQUEST_TIMEOUT_MS = 120_000;
 function isSketchErrorCode(
   value: string | undefined,
 ): value is SketchErrorCode {
-  return value !== undefined && value in SKETCH_ERROR_MESSAGES;
+  // An own-property check rather than `in`: `in` walks the prototype chain, so
+  // a server code of "toString" would resolve to a function where a message
+  // belongs and crash the render. hasOwnProperty.call instead of Object.hasOwn
+  // because the latter is ES2022 and the target here is ES2020.
+  return (
+    value !== undefined &&
+    Object.prototype.hasOwnProperty.call(SKETCH_ERROR_CAUSES, value)
+  );
 }
 
 async function sketchWithEdgeFunction(photoDataUrl: string): Promise<string> {

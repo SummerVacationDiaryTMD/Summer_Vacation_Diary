@@ -1,5 +1,7 @@
 import { getDeviceId } from "@apps-in-toss/web-framework";
 
+import { recordQuotaSnapshot } from "./aiQuotaStore";
+
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL ?? "")
   .trim()
   .replace(/\/$/, "");
@@ -111,6 +113,12 @@ export async function invokeDiaryAi(
     } catch {
       throw new EdgeFunctionError("invalid-response", response.status);
     }
+
+    // Every response carries the post-request usage snapshot, rejections
+    // included. Recording before the error branch is what lets an
+    // over-the-limit refusal drop the on-screen counter to zero in the same
+    // round trip, with no follow-up quota-status call.
+    recordQuotaSnapshot(responseBody);
 
     if (!response.ok) {
       const errorBody = responseBody as EdgeErrorBody;

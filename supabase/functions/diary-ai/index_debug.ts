@@ -10,15 +10,15 @@
 //   3. Extra action "debug-ping" probes the proxy's /healthz and /v1/models
 //      to separate tunnel/auth problems from chat-completion problems.
 //   4. "analyze" SKIPS rate limiting: it no longer triggers paid calls, and
-//      the 5-per-10-min device quota would block a debugging loop while also
-//      draining the shared daily quota used by the real app.
+//      the 5-per-day device quota would block a debugging loop while also
+//      draining the shared IP and service-wide quotas used by the real app.
 //   5. "sketch" is unchanged (still OpenAI, still rate limited).
 //
 // This file is self-contained on purpose: importing from ./index.ts would
 // execute its top-level Deno.serve() and register the production handler,
 // so shared helpers are duplicated here instead. The one deliberate
-// exception is the ./prompts/ content modules — they are side-effect free,
-// and importing the same files as production means debug runs always
+// exception is the ./prompt_*.ts content modules — they are side-effect
+// free, and importing the same files as production means debug runs always
 // exercise the exact prompts users get.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -36,13 +36,14 @@ const jsonHeaders = {
   "Content-Type": "application/json; charset=utf-8",
 };
 
-// Only "sketch" consumes quota in this debug build — see header comment.
+// Only "sketch" consumes quota in this debug build — see header comment. Values
+// mirror index.ts, minus the analyze budgets this build never spends.
 const USAGE_LIMITS = {
-  shortWindowSeconds: 10 * 60,
-  userShort: 5,
-  ipShort: 10,
-  userDaily: 20,
-  ipDaily: 60,
+  ipBurstWindowSeconds: 10 * 60,
+  ipBurst: 20,
+  ipDaily: 100,
+  sketchDaily: 3,
+  serviceSketchDaily: 150,
 } as const;
 
 const DEFAULT_LOCAL_MODEL = "gemma4:12b-64k";
@@ -541,8 +542,8 @@ async function enforceUsageLimit(request: Request): Promise<void> {
   ]);
 
   const now = Date.now();
-  const shortMs = USAGE_LIMITS.shortWindowSeconds * 1000;
-  const shortWindowStart = new Date(Math.floor(now / shortMs) * shortMs);
+  const burstMs = USAGE_LIMITS.ipBurstWindowSeconds * 1000;
+  const shortWindowStart = new Date(Math.floor(now / burstMs) * burstMs);
   const dayWindowStart = new Date();
   dayWindowStart.setUTCHours(0, 0, 0, 0);
 
@@ -553,30 +554,43 @@ async function enforceUsageLimit(request: Request): Promise<void> {
   const admin = createClient(supabaseUrl, getSupabaseSecret(), {
     auth: { persistSession: false },
   });
+  // Mirrors index.ts's reserve step, with p_action pinned to "sketch". There is
+  // deliberately no refund half here: this build is diagnostic, so a failed
+  // sketch simply keeps the request it consumed rather than adding a second
+  // code path that could drift from production.
   const { data, error } = await admin.rpc("consume_diary_ai_quota", {
+    p_action: "sketch",
     p_user_hash: userHash,
     p_ip_hash: ipHash,
     p_short_window_start: shortWindowStart.toISOString(),
     p_day_window_start: dayWindowStart.toISOString(),
-    p_user_short_limit: USAGE_LIMITS.userShort,
-    p_ip_short_limit: USAGE_LIMITS.ipShort,
-    p_user_daily_limit: USAGE_LIMITS.userDaily,
+    p_user_daily_limit: USAGE_LIMITS.sketchDaily,
+    p_ip_short_limit: USAGE_LIMITS.ipBurst,
     p_ip_daily_limit: USAGE_LIMITS.ipDaily,
+    p_service_daily_limit: USAGE_LIMITS.serviceSketchDaily,
   });
 
-  if (error || typeof data !== "string") {
-    console.error("Rate limit RPC failed", error?.message ?? "invalid result");
+  const decision = (data as { decision?: unknown } | null)?.decision;
+  if (error || typeof decision !== "string") {
+    console.error("Quota consume failed", error?.message ?? "invalid result");
     throw new FunctionError("rate-limit-unavailable", 503);
   }
-  if (data.endsWith("-short")) {
-    throw new FunctionError("rate-limited", 429);
+  if (decision === "allowed") {
+    return;
   }
-  if (data.endsWith("-daily")) {
-    throw new FunctionError("daily-limit-exceeded", 429);
+  if (decision === "device-daily") {
+    throw new FunctionError("sketch-daily-limit-exceeded", 429);
   }
-  if (data !== "allowed") {
-    throw new FunctionError("rate-limit-unavailable", 503);
+  if (decision === "ip-short") {
+    throw new FunctionError("ip-burst-limit-exceeded", 429);
   }
+  if (decision === "ip-daily") {
+    throw new FunctionError("ip-daily-limit-exceeded", 429);
+  }
+  if (decision === "service-daily") {
+    throw new FunctionError("service-daily-limit-exceeded", 429);
+  }
+  throw new FunctionError("rate-limit-unavailable", 503);
 }
 
 async function openAiError(response: Response): Promise<FunctionError> {
