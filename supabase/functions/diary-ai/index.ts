@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { ANALYSIS_PROMPT } from "./prompts/analysis_prompt.ts";
-import { SKETCH_PROMPT } from "./prompts/sketch_prompt.ts";
+import { ANALYSIS_PROMPT } from "./prompt_analysis.ts";
+import { SKETCH_PROMPT } from "./prompt_sketch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
