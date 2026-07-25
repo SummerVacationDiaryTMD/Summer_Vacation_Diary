@@ -40,6 +40,7 @@ export type AnalysisErrorCode =
   | "network"
   | "invalid-key"
   | "rate-limited"
+  | "region-blocked"
   | "analyze-daily-limit-exceeded"
   | "ip-burst-limit-exceeded"
   | "ip-daily-limit-exceeded"
@@ -55,6 +56,7 @@ export const ANALYSIS_ERROR_MESSAGES: Record<AnalysisErrorCode, string> = {
   network: "네트워크 연결을 확인하고 다시 시도해 주세요.",
   "invalid-key": "AI 연결 설정을 확인해 주세요.",
   "rate-limited": "지금은 요청이 많아요. 잠시 후 다시 시도해 주세요.",
+  "region-blocked": "해외에서는 선생님이 일기를 검사해 줄 수 없어요.",
   "analyze-daily-limit-exceeded": `오늘의 일기 검사 횟수를 모두 사용했어요.\n${QUOTA_RESET_NOTICE}`,
   "ip-burst-limit-exceeded":
     "잠깐 사이에 요청이 너무 많았어요. 잠시 후 다시 시도해 주세요.",
@@ -65,9 +67,11 @@ export const ANALYSIS_ERROR_MESSAGES: Record<AnalysisErrorCode, string> = {
   "invalid-response": "분석 결과를 읽지 못했어요. 다시 시도해 주세요.",
 };
 
-// Retrying these can never succeed before the daily reset, so the UI must not
+// Retrying these can never succeed from here: the budget is gone until the
+// daily reset, or the caller's country is refused outright. The UI must not
 // offer a retry button for them.
 const NON_RETRYABLE_ANALYSIS_CODES: readonly AnalysisErrorCode[] = [
+  "region-blocked",
   "analyze-daily-limit-exceeded",
   "ip-daily-limit-exceeded",
   "service-daily-limit-exceeded",
@@ -91,11 +95,6 @@ export function analysisErrorMessage(error: unknown): string {
 
 export function isAnalysisErrorRetryable(error: unknown): boolean {
   return !NON_RETRYABLE_ANALYSIS_CODES.includes(analysisErrorCode(error));
-}
-
-/** True when the failure was the daily budget running out, not a fault. */
-export function isAnalysisQuotaError(error: unknown): boolean {
-  return NON_RETRYABLE_ANALYSIS_CODES.includes(analysisErrorCode(error));
 }
 
 function isAnalysisErrorCode(

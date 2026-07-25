@@ -1,6 +1,11 @@
 import { recompressDataUrl } from "../utils/image";
 import { applyPencilFilter } from "../utils/sketchFilter";
 import {
+  releaseSketchTicket,
+  reserveSketchTicket,
+  settleSketchTicket,
+} from "./sketchLedger";
+import {
   EdgeFunctionError,
   invokeDiaryAi,
   isAiTestMode,
@@ -14,6 +19,7 @@ export type SketchErrorCode =
   | "invalid-image"
   | "model-unavailable"
   | "rate-limited"
+  | "region-blocked"
   | "sketch-daily-limit-exceeded"
   | "ip-burst-limit-exceeded"
   | "ip-daily-limit-exceeded"
@@ -35,6 +41,7 @@ export type SketchErrorCode =
 export const SKETCH_ERROR_CAUSES: Record<SketchErrorCode, string> = {
   "content-blocked": "부적절한 이미지때문에",
   "invalid-image": "깨진 이미지때문에",
+  "region-blocked": "해외 IP라서",
   "sketch-daily-limit-exceeded": "오늘 그림 그리기 횟수를 다 써서",
   "ip-daily-limit-exceeded": "오늘 그림 그리기 횟수를 다 써서",
   "service-daily-limit-exceeded": "오늘 그림 그리기 횟수를 다 써서",
@@ -58,11 +65,22 @@ export const SKETCH_ERROR_CAUSES: Record<SketchErrorCode, string> = {
 const NON_RETRYABLE_SKETCH_CODES: readonly SketchErrorCode[] = [
   "content-blocked",
   "invalid-image",
+  "region-blocked",
   "sketch-daily-limit-exceeded",
   "ip-daily-limit-exceeded",
   "service-daily-limit-exceeded",
   "daily-limit-exceeded",
   "quota-exceeded",
+];
+
+// Mirrors the Edge Function's NON_REFUNDABLE denylist (index.ts). These are the
+// only failures the server keeps the money for, so they are the only ones whose
+// ticket stays claimed; everything else gives the count back. Both quota (429)
+// and region (403) rejections happen before the server reserves anything, so
+// they release too.
+const CHARGED_SKETCH_CODES: readonly SketchErrorCode[] = [
+  "content-blocked",
+  "invalid-image",
 ];
 
 export class SketchError extends Error {
@@ -88,6 +106,20 @@ export function sketchErrorCode(error: unknown): SketchErrorCode {
 
 export function isSketchErrorRetryable(error: unknown): boolean {
   return !NON_RETRYABLE_SKETCH_CODES.includes(sketchErrorCode(error));
+}
+
+// No response body reached us, so no usage snapshot rode back with it and the
+// counter on screen is now a guess. Everything else already carries the
+// server's own numbers.
+const UNVERIFIED_SKETCH_CODES: readonly SketchErrorCode[] = [
+  "timeout",
+  "network",
+  "invalid-response",
+];
+
+/** True when the counter has to be re-read rather than inferred. */
+export function isSketchOutcomeUnverified(error: unknown): boolean {
+  return UNVERIFIED_SKETCH_CODES.includes(sketchErrorCode(error));
 }
 
 export const isSketchAiConnected = isSupabaseConfigured && !isAiTestMode;
@@ -119,7 +151,29 @@ function isSketchErrorCode(
   );
 }
 
+/**
+ * Owns the photo's ledger ticket. This is the one function that is 1:1 with a
+ * paid server request — test and mock mode short-circuit above it in
+ * `transferPhotoToSketch` — so a mode that never spends can never leave a
+ * ticket behind, and no caller has to remember to count.
+ */
 async function sketchWithEdgeFunction(photoDataUrl: string): Promise<string> {
+  reserveSketchTicket(photoDataUrl);
+  try {
+    const sketch = await requestSketch(photoDataUrl);
+    settleSketchTicket(photoDataUrl);
+    return sketch;
+  } catch (error) {
+    if (CHARGED_SKETCH_CODES.includes(sketchErrorCode(error))) {
+      settleSketchTicket(photoDataUrl);
+    } else {
+      releaseSketchTicket(photoDataUrl);
+    }
+    throw error;
+  }
+}
+
+async function requestSketch(photoDataUrl: string): Promise<string> {
   try {
     const body = await invokeDiaryAi(
       { action: "sketch", photoDataUrl },

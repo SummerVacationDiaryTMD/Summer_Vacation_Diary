@@ -11,8 +11,9 @@ verbatim.
 | `prompt_analysis.ts` | `ANALYSIS_PROMPT` | `analyze` action (diary + photo analysis) | chat `system` message       |
 | `prompt_sketch.ts`   | `SKETCH_PROMPT`   | `sketch` action (photo → colored pencil)  | `images/edits` prompt field |
 
-Both entrypoints (`index.ts` and the debug variant `index_debug.ts`) import
-the same modules, so the prompts can never diverge between them.
+`index.ts` is the only entrypoint and imports both modules directly. (There
+used to be a second, debug-only entrypoint sharing them; it was removed once
+`index.ts` grew its own request logging.)
 
 ## Editing rules
 
@@ -20,8 +21,9 @@ the same modules, so the prompts can never diverge between them.
   call uses `response_format: json_object` (OpenAI rejects the request when
   the prompt does not contain "JSON"), and on the local Ollama path the
   prompt text may be the only thing enforcing the JSON shape.
-- Keep these files free of imports and logic so they stay safe to share
-  between entrypoints.
+- Keep these files free of imports and logic. They are pasted by hand into
+  the Dashboard editor, and anything beyond a template literal turns a
+  prompt edit into a code review.
 
 ## Deploying
 

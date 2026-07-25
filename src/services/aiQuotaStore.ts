@@ -24,12 +24,20 @@ export interface QuotaCounter {
  */
 export type QuotaBlockedReason = "device" | "ip-burst" | "ip-daily" | "service";
 
+export interface QuotaRegion {
+  /** False when the server refuses this caller's country outright. */
+  allowed: boolean;
+  /** ISO-3166 alpha-2, or null when the country could not be determined. */
+  country: string | null;
+}
+
 export interface QuotaSnapshot {
   sketch: QuotaCounter;
   analyze: QuotaCounter;
   /** ISO timestamp of the next daily reset (00:00 UTC = 09:00 KST). */
   resetAt: string;
   blocked: QuotaBlockedReason | null;
+  region: QuotaRegion;
 }
 
 const BLOCKED_REASONS: readonly string[] = [
@@ -61,6 +69,22 @@ function parseCounter(value: unknown): QuotaCounter | null {
     return null;
   }
   return { used, limit, remaining };
+}
+
+/**
+ * Deliberately lenient, and never a reason to reject the whole snapshot: a
+ * function deployed before the region gate simply omits this field, and turning
+ * that into "blocked" would lock everyone out of the AI features on a rollback.
+ */
+function parseRegion(value: unknown): QuotaRegion {
+  if (typeof value !== "object" || value === null) {
+    return { allowed: true, country: null };
+  }
+  const { allowed, country } = value as Record<string, unknown>;
+  return {
+    allowed: allowed !== false,
+    country: typeof country === "string" && country !== "" ? country : null,
+  };
 }
 
 /**
@@ -101,6 +125,7 @@ export function parseQuotaSnapshot(body: unknown): QuotaSnapshot | null {
     analyze,
     resetAt: record.resetAt,
     blocked: blocked as QuotaBlockedReason | null,
+    region: parseRegion(record.region),
   };
 }
 

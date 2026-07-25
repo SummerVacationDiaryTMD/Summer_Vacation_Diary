@@ -1,7 +1,7 @@
 import { Paragraph } from "@toss/tds-mobile";
 
 import { QUOTA_RESET_NOTICE } from "../constants/diary";
-import { useAiQuota } from "../hooks/useAiQuota";
+import { isRegionBlocked, useAiQuota } from "../hooks/useAiQuota";
 import { isAiTestMode } from "../services/supabaseEdge";
 
 /**
@@ -35,6 +35,19 @@ export function SketchQuotaNotice() {
       <NoticeBox
         lines={[
           "테스트 모드에서는 그림을 그리지 않고 원본 사진을 그대로 사용해요.",
+        ]}
+      />
+    );
+  }
+
+  // Ahead of every count: a blocked region does not reset overnight, so the
+  // exhausted copy's "내일 아침 9시부터" would be a promise nothing can keep.
+  if (isRegionBlocked(quota)) {
+    return (
+      <NoticeBox
+        lines={[
+          "해외에서는 AI친구가 그림을 그려줄 수 없어요.",
+          "사진 그대로 그림일기를 완성할 수 있어요.",
         ]}
       />
     );
@@ -75,6 +88,19 @@ export function SketchQuotaNotice() {
 
 export function AnalyzeQuotaNotice() {
   const quota = useAiQuota();
+
+  // Same precedence as the drawing notice: region first, because it is the one
+  // block the daily reset does not lift.
+  if (isRegionBlocked(quota)) {
+    return (
+      <NoticeBox
+        lines={[
+          "해외에서는 선생님이 일기를 검사해 줄 수 없어요.",
+          "한마디 없이도 그림일기를 완성할 수 있어요.",
+        ]}
+      />
+    );
+  }
 
   // No server budget to report in mock mode, and nothing trustworthy to say
   // before the first snapshot lands.
