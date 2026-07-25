@@ -1,5 +1,6 @@
 import { QUOTA_RESET_NOTICE, weatherLabel } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
+import { containsProfanity } from "../utils/profanity";
 import {
   EdgeFunctionError,
   invokeDiaryAi,
@@ -152,20 +153,6 @@ function toDiaryStamp(value: unknown): DiaryStamp {
   return value === "effort" ? "effort" : "great";
 }
 
-// The model is instructed not to repeat or highlight profanity, but its JSON
-// is still untrusted. Normalize spacing/symbol obfuscations and enforce that
-// rule again before any keyword, tag or correction mark reaches the UI.
-function containsProfanity(value: string): boolean {
-  const normalized = value
-    .normalize("NFKC")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]/gu, "");
-
-  return /(씨발|시발(?!점)|ㅅㅂ|개새끼|개새|병신|ㅂㅅ|좆|존나|ㅈㄴ|지랄|꺼져|fuck|shit|욕설)/u.test(
-    normalized,
-  );
-}
-
 function capComment(comment: string): string {
   const characters = Array.from(comment);
   if (characters.length <= 50) {
@@ -225,6 +212,7 @@ async function analyzeWithEdgeFunction(
   input: DiaryAnalysisInput,
 ): Promise<DiaryAnalysis> {
   try {
+    // AIDEV-NOTE: 원문 분석 뒤 PreviewStep/diaryImage에서만 선택된 욕설 효과를 적용한다. 요청 본문을 변형하지 말 것.
     const body = await invokeDiaryAi(
       {
         action: "analyze",
@@ -345,7 +333,10 @@ async function analyzeWithMock(
   // Simulated latency so the loading UI is actually exercised in dev.
   await new Promise((resolve) => setTimeout(resolve, MOCK_DELAY_MS));
 
-  const words = extractCandidateWords(input.content);
+  const words = extractCandidateWords(input.content).filter(
+    (word) => !containsProfanity(word),
+  );
+  const highlightSentence = pickHighlightSentence(input.content);
   const emotions = MOCK_EMOTION_RULES.filter((rule) =>
     rule.pattern.test(input.content),
   )
@@ -358,7 +349,10 @@ async function analyzeWithMock(
     diaryKeywords: words.slice(0, 4),
     emotions: emotions.length > 0 ? emotions : ["행복", "여유"],
     highlightWords: words.slice(0, 3),
-    highlightSentence: pickHighlightSentence(input.content),
+    highlightSentence:
+      highlightSentence !== null && !containsProfanity(highlightSentence)
+        ? highlightSentence
+        : null,
     comment: MOCK_COMMENTS[input.content.length % MOCK_COMMENTS.length],
     stamp: mockStamp(input.content),
   };
