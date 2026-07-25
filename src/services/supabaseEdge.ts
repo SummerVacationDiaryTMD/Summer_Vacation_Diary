@@ -1,4 +1,4 @@
-import { getDeviceId } from "@apps-in-toss/web-framework";
+import { getAnonymousKey } from "@apps-in-toss/web-framework";
 
 import { recordQuotaSnapshot } from "./aiQuotaStore";
 
@@ -51,15 +51,15 @@ function createClientId(): string {
 }
 
 /**
- * Uses Toss's installation/device identifier when available. Plain-browser
+ * Uses Toss's anonymous mini-app key when available. Plain-browser
  * development gets a random, persisted installation ID instead. This is only
  * a rate-limit hint: the server hashes it with a secret salt before storage.
  */
-function getRateLimitClientId(): string {
+async function getRateLimitClientId(): Promise<string> {
   try {
-    const tossDeviceId = getDeviceId();
-    if (tossDeviceId.trim() !== "") {
-      return `toss:${tossDeviceId}`;
+    const anonymousKey = await getAnonymousKey();
+    if (typeof anonymousKey === "string" && anonymousKey.trim() !== "") {
+      return `toss:${anonymousKey}`;
     }
   } catch {
     // Expected in a normal browser outside the Toss bridge.
@@ -94,13 +94,14 @@ export async function invokeDiaryAi(
   let phase: "request" | "body" = "request";
 
   try {
+    const clientId = await getRateLimitClientId();
     const response = await fetch(DIARY_AI_FUNCTION_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         // New sb_publishable_* keys belong in apikey, not Authorization.
         apikey: publishableKey,
-        "x-diary-client-id": getRateLimitClientId(),
+        "x-diary-client-id": clientId,
       },
       body: JSON.stringify(body),
       signal: controller.signal,
