@@ -18,9 +18,6 @@ export interface DiaryDraft {
   sketchDataUrl: string | null;
   title: string;
   content: string;
-  profanityMosaicEnabled: boolean;
-  profanityUnderlineEnabled: boolean;
-  profanityTeacherNoteEnabled: boolean;
   /** Local date in YYYY-MM-DD, matching what <input type="date"> uses. */
   date: string;
   weather: WeatherValue;
@@ -41,9 +38,6 @@ function emptyDraft(): DiaryDraft {
     sketchDataUrl: null,
     title: "",
     content: "",
-    profanityMosaicEnabled: false,
-    profanityUnderlineEnabled: false,
-    profanityTeacherNoteEnabled: false,
     date: todayString(),
     weather: "sunny",
   };
@@ -81,18 +75,6 @@ function loadDraft(): DiaryDraft {
           ? Array.from(candidate.title).slice(0, TITLE_MAX_LENGTH).join("")
           : "",
       content: typeof candidate.content === "string" ? candidate.content : "",
-      profanityMosaicEnabled:
-        candidate.profanityMosaicEnabled === true ||
-        (candidate as Record<string, unknown>).profanityCorrectionEnabled ===
-          true,
-      profanityUnderlineEnabled:
-        candidate.profanityUnderlineEnabled === true ||
-        (candidate as Record<string, unknown>).profanityCorrectionEnabled ===
-          true,
-      profanityTeacherNoteEnabled:
-        candidate.profanityTeacherNoteEnabled === true ||
-        (candidate as Record<string, unknown>).profanityCorrectionEnabled ===
-          true,
       date:
         typeof candidate.date === "string" &&
         /^\d{4}-\d{2}-\d{2}$/.test(candidate.date)

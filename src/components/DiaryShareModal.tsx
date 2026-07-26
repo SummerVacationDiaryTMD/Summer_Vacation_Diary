@@ -8,7 +8,6 @@ interface DiaryShareModalProps {
   open: boolean;
   imageDataUrl: string;
   fileName: string;
-  isAndroid: boolean;
   onClose: () => void;
   onStartNew: () => void;
 }
@@ -23,7 +22,6 @@ export function DiaryShareModal({
   open,
   imageDataUrl,
   fileName,
-  isAndroid,
   onClose,
   onStartNew,
 }: DiaryShareModalProps) {
@@ -60,9 +58,7 @@ export function DiaryShareModal({
     <Modal open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <Modal.Overlay />
 
-      <Modal.Content
-        className={`diary-share-modal${isAndroid ? " diary-share-modal-android" : ""}`}
-      >
+      <Modal.Content className="diary-share-modal">
         <div className="diary-share-content">
           <div className="diary-share-body">
             <div>

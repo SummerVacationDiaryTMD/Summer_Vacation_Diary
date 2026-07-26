@@ -450,9 +450,6 @@ function App() {
         analysis:
           analysisState.status === "success" ? analysisState.analysis : null,
         includesAiGeneratedContent,
-        profanityMosaicEnabled: draft.profanityMosaicEnabled,
-        profanityUnderlineEnabled: draft.profanityUnderlineEnabled,
-        profanityTeacherNoteEnabled: draft.profanityTeacherNoteEnabled,
       });
       setFinishedDiary({
         imageDataUrl,
@@ -542,7 +539,6 @@ function App() {
         <PreviewStep
           draft={draft}
           analysisState={analysisState}
-          onDraftChange={updateDraft}
           onRetry={runAnalysis}
           sketchState={sketchState}
           onSketchRetry={retrySketch}
@@ -554,7 +550,6 @@ function App() {
           open
           imageDataUrl={finishedDiary.imageDataUrl}
           fileName={finishedDiary.fileName}
-          isAndroid={isAndroid}
           onClose={() => setFinishedDiary(null)}
           onStartNew={() => {
             setFinishedDiary(null);
