@@ -111,6 +111,17 @@ supabase secrets set OPENAI_IMAGE_MODEL=gpt-image-1
 supabase secrets set OPENAI_IMAGE_QUALITY=medium
 ```
 
+반복 테스트 중 사용량 제한을 끄려면 아래 Secret을 추가합니다.
+
+```bash
+supabase secrets set DIARY_AI_TEST_MODE=true
+```
+
+클라이언트의 `.env`에도 `VITE_AI_TEST_MODE=true`가 있어야 사용량 안내와 사전
+차단이 숨겨집니다. 두 값은 의도적으로 분리되어 있습니다. `VITE_*` 값은 공개되므로
+그 값만으로 서버 제한을 해제하면 누구나 요청을 위조할 수 있습니다. 테스트가 끝나면
+`DIARY_AI_TEST_MODE=false`로 바꾸거나 Secret을 삭제하세요.
+
 `OPENAI_API_KEY`, `RATE_LIMIT_SALT`만 직접 등록하면 됩니다. OpenAI 모델 관련 값은
 생략 시 위 값이 기본값입니다. 자세한 로그가 필요할 때만 `DIARY_AI_DEBUG=true`를
 추가로 등록하세요(5절). Supabase가 제공하는 `SUPABASE_URL`과 서버 Secret은
