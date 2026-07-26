@@ -21,9 +21,10 @@ import {
 } from "./handwriting";
 import { buildHighlightSegments } from "./highlight";
 import { ImageProcessError, loadImageFromDataUrl } from "./image";
-import { drawTextMosaic } from "./mosaic";
-import { findProfanityMatches } from "./profanity";
-import { buildProfanityCorrectionRuns } from "./profanityCorrection";
+import {
+  applyProfanityReplacements,
+  buildFallbackProfanityReplacements,
+} from "./profanityReplacement";
 import { STAMP_IMAGE_URLS } from "../constants/stamp";
 import {
   buildStarPlacements,
@@ -40,9 +41,6 @@ export interface DiaryImageInput {
   weather: WeatherValue;
   analysis: DiaryAnalysis | null;
   includesAiGeneratedContent: boolean;
-  profanityMosaicEnabled: boolean;
-  profanityUnderlineEnabled: boolean;
-  profanityTeacherNoteEnabled: boolean;
 }
 
 export interface ComposedDiaryImage {
@@ -88,8 +86,6 @@ const AI_WATERMARK_COLOR = "#8B6A3E";
 interface DiaryCell {
   text: string;
   mark: "circle" | "underline" | "both" | null;
-  isProfanity: boolean;
-  profanityMatchIndex: number | null;
 }
 
 interface CorrectionRun {
@@ -211,7 +207,6 @@ function buildDiaryCells(
   content: string,
   analysis: DiaryAnalysis | null,
   rowCount: number,
-  profanityEffectsEnabled: boolean,
 ): DiaryCell[] {
   const segments =
     analysis === null
@@ -222,20 +217,6 @@ function buildDiaryCells(
           analysis.highlightSentence,
         );
   const cells: DiaryCell[] = [];
-  const profanityMatches = profanityEffectsEnabled
-    ? findProfanityMatches(content)
-    : [];
-  const profanityMatchBySourceIndex = new Map<number, number>();
-  profanityMatches.forEach((match, matchIndex) => {
-    for (
-      let matchedSourceIndex = match.start;
-      matchedSourceIndex <= match.end;
-      matchedSourceIndex += 1
-    ) {
-      profanityMatchBySourceIndex.set(matchedSourceIndex, matchIndex);
-    }
-  });
-  let sourceIndex = 0;
 
   for (const segment of segments) {
     for (const character of Array.from(segment.text)) {
@@ -244,21 +225,13 @@ function buildDiaryCells(
           cells.push({
             text: "",
             mark: null,
-            isProfanity: false,
-            profanityMatchIndex: null,
           });
         }
-        sourceIndex += 1;
       } else {
-        const profanityMatchIndex =
-          profanityMatchBySourceIndex.get(sourceIndex) ?? null;
         cells.push({
           text: character,
           mark: segment.mark,
-          isProfanity: profanityMatchIndex !== null,
-          profanityMatchIndex,
         });
-        sourceIndex += 1;
       }
     }
   }
@@ -270,7 +243,7 @@ function buildCorrectionRuns(cells: DiaryCell[]): CorrectionRun[] {
   const runs: CorrectionRun[] = [];
   (["circle", "underline"] as const).forEach((mark) => {
     cells.forEach((cell, index) => {
-      if (cell.isProfanity || (cell.mark !== mark && cell.mark !== "both")) {
+      if (cell.mark !== mark && cell.mark !== "both") {
         return;
       }
       const row = Math.floor(index / COLUMN_COUNT);
@@ -291,60 +264,17 @@ function buildCorrectionRuns(cells: DiaryCell[]): CorrectionRun[] {
   return runs;
 }
 
-function drawPenPath(
-  context: CanvasRenderingContext2D,
-  points: ReadonlyArray<readonly [number, number]>,
-  lineWidth: number,
-) {
-  context.save();
-  context.lineCap = "round";
-  context.lineJoin = "round";
-  const passes = [
-    { alpha: 0.84, width: 0.74, offset: 0, color: "#c83f3a" },
-    { alpha: 0.3, width: 0.32, offset: 0.18, color: "#a92f2d" },
-    { alpha: 0.22, width: 0.2, offset: -0.16, color: "#e1695d" },
-  ];
-  for (const pass of passes) {
-    context.strokeStyle = pass.color;
-    context.globalAlpha = pass.alpha;
-    context.lineWidth = lineWidth * pass.width;
-    context.beginPath();
-    points.forEach(([pointX, pointY], index) => {
-      const offset = lineWidth * pass.offset;
-      if (index === 0) {
-        context.moveTo(pointX, pointY + offset);
-      } else {
-        context.lineTo(pointX, pointY + offset);
-      }
-    });
-    context.stroke();
-  }
-  context.restore();
-}
-
 function drawContent(
   context: CanvasRenderingContext2D,
   content: string,
   analysis: DiaryAnalysis | null,
-  profanityMosaicEnabled: boolean,
-  profanityUnderlineEnabled: boolean,
-  profanityTeacherNoteEnabled: boolean,
   markImages: Map<string, HTMLImageElement>,
 ) {
   const layout = getDiaryFrameLayout(content);
   const { x, y, width, height } = layout.content;
   const cellWidth = width / COLUMN_COUNT;
   const cellHeight = height / layout.contentRows;
-  const profanityEffectsEnabled =
-    profanityMosaicEnabled ||
-    profanityUnderlineEnabled ||
-    profanityTeacherNoteEnabled;
-  const cells = buildDiaryCells(
-    content,
-    analysis,
-    layout.contentRows,
-    profanityEffectsEnabled,
-  );
+  const cells = buildDiaryCells(content, analysis, layout.contentRows);
 
   context.font = CONTENT_FONT;
   context.fillStyle = TEXT_COLOR;
@@ -353,20 +283,6 @@ function drawContent(
     if (cell.text === "") return;
     const row = Math.floor(index / COLUMN_COUNT);
     const column = index % COLUMN_COUNT;
-    if (cell.isProfanity && profanityMosaicEnabled) {
-      const insetX = cellWidth * 0.12;
-      const insetY = cellHeight * 0.19;
-      drawTextMosaic(
-        context,
-        cell.text,
-        x + column * cellWidth + insetX,
-        y + row * cellHeight + insetY,
-        cellWidth - insetX * 2,
-        cellHeight - insetY * 2,
-        { fontFamily: DIARY_FONT_STACK, seed: index },
-      );
-      return;
-    }
     const centerX = x + (column + 0.5) * cellWidth;
     const baseline = y + (row + 0.5) * cellHeight + 18;
     const variation = handwritingVariation(cell.text, index, 1);
@@ -415,7 +331,6 @@ function drawContent(
       );
     }
   }
-
   const starPlacements =
     analysis === null
       ? []
@@ -424,10 +339,7 @@ function drawContent(
           analysis.starWords,
           COLUMN_COUNT,
           COLUMN_COUNT * layout.contentRows,
-        ).filter(({ row, column }) => {
-          const cell = cells[row * COLUMN_COUNT + column];
-          return cell !== undefined && !cell.isProfanity;
-        });
+        );
 
   for (const placement of starPlacements) {
     const starImage = markImages.get(
@@ -450,91 +362,6 @@ function drawContent(
     );
     context.drawImage(starImage, starX, starY, size, size);
   }
-
-  context.font = `700 22px ${TEACHER_COMMENT_FONT_STACK}`;
-  context.fillStyle = "#d24b42";
-  context.textBaseline = "alphabetic";
-  for (const run of buildProfanityCorrectionRuns(cells, COLUMN_COUNT)) {
-    const runX = x + run.startColumn * cellWidth;
-    const runY = y + run.row * cellHeight;
-    const runWidth = run.length * cellWidth;
-    if (profanityUnderlineEnabled) {
-      const markX = runX - cellWidth * 0.05;
-      const markWidth = runWidth + cellWidth * 0.1;
-      if (
-        run.decoration === "underline" ||
-        run.decoration === "double-underline"
-      ) {
-        const lineImage = markImages.get(
-          pickCorrectionMarkAsset(
-            "underline",
-            run.row,
-            run.startColumn,
-            run.length,
-          ),
-        );
-        if (lineImage !== undefined) {
-          const lineYs =
-            run.decoration === "double-underline" ? [0.32, 0.53] : [0.42];
-          lineYs.forEach((lineY) => {
-            context.drawImage(
-              lineImage,
-              markX,
-              runY + cellHeight * lineY,
-              markWidth,
-              cellHeight * 0.16,
-            );
-          });
-        }
-      } else if (run.decoration === "cross") {
-        const top = runY + cellHeight * 0.22;
-        const bottom = runY + cellHeight * 0.72;
-        drawPenPath(
-          context,
-          [
-            [markX, top],
-            [markX + markWidth * 0.48, runY + cellHeight * 0.45],
-            [markX + markWidth, bottom],
-          ],
-          cellHeight * 0.052,
-        );
-        drawPenPath(
-          context,
-          [
-            [markX, bottom],
-            [markX + markWidth * 0.52, runY + cellHeight * 0.43],
-            [markX + markWidth, top],
-          ],
-          cellHeight * 0.052,
-        );
-      } else {
-        drawPenPath(
-          context,
-          [
-            [markX + markWidth * 0.08, runY + cellHeight * 0.5],
-            [markX + markWidth * 0.2, runY + cellHeight * 0.59],
-            [markX + markWidth * 0.34, runY + cellHeight * 0.7],
-            [markX + markWidth * 0.62, runY + cellHeight * 0.44],
-            [markX + markWidth * 0.92, runY + cellHeight * 0.2],
-          ],
-          cellHeight * 0.058,
-        );
-      }
-    }
-
-    if (!profanityTeacherNoteEnabled || !run.showMessage) continue;
-    const measuredWidth = context.measureText(run.message).width;
-    const maxNoteX = Math.max(x, x + width - measuredWidth);
-    const noteX = Math.min(Math.max(x, runX), maxNoteX);
-    context.save();
-    context.translate(noteX, runY + cellHeight * 0.78);
-    context.rotate(
-      (((run.row + run.startColumn) % 2 === 0 ? -3 : 2) * Math.PI) / 180,
-    );
-    context.fillText(run.message, 0, 0);
-    context.restore();
-  }
-  context.textBaseline = "alphabetic";
 }
 
 function roundRectPath(
@@ -703,6 +530,11 @@ function drawFrameTemplate(
 export async function composeDiaryImage(
   input: DiaryImageInput,
 ): Promise<ComposedDiaryImage> {
+  const displayedContent = applyProfanityReplacements(
+    input.content,
+    input.analysis?.profanityReplacements ??
+      buildFallbackProfanityReplacements(input.content),
+  );
   const stampImagePromise =
     input.analysis === null
       ? Promise.resolve<HTMLImageElement | null>(null)
@@ -749,7 +581,10 @@ export async function composeDiaryImage(
     input.analysis === null
       ? [""]
       : wrapCommentToFrame(context, input.analysis.comment);
-  const frameLayout = getDiaryFrameLayout(input.content, commentLines.length);
+  const frameLayout = getDiaryFrameLayout(
+    displayedContent,
+    commentLines.length,
+  );
 
   canvas.height = frameLayout.height;
 
@@ -848,15 +683,7 @@ export async function composeDiaryImage(
   );
   context.restore();
 
-  drawContent(
-    context,
-    input.content,
-    input.analysis,
-    input.profanityMosaicEnabled,
-    input.profanityUnderlineEnabled,
-    input.profanityTeacherNoteEnabled,
-    markImages,
-  );
+  drawContent(context, displayedContent, input.analysis, markImages);
   drawComment(context, input.analysis, frameLayout, commentLines);
 
   if (stampImage !== null) {

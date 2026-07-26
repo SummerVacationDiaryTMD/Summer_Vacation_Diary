@@ -843,6 +843,8 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .photo-consent-modal {
+  --photo-consent-bezel: clamp(16px, 5vw, 24px);
+
   display: flex;
   flex-direction: column;
   width: min(calc(100vw - 24px), 448px) !important;
@@ -882,7 +884,7 @@ html:has(.diary-content-section textarea:focus) {
   display: flex;
   flex-direction: column;
   gap: clamp(14px, 4vw, 20px);
-  padding: clamp(16px, 5vw, 24px);
+  padding: var(--photo-consent-bezel);
 }
 
 .photo-consent-title {
@@ -979,7 +981,7 @@ html:has(.diary-content-section textarea:focus) {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 8px;
-  padding: 12px clamp(16px, 5vw, 24px) calc(12px + var(--app-safe-bottom));
+  padding: 12px var(--photo-consent-bezel) var(--photo-consent-bezel);
   border-top: 1px solid #e5e8eb;
   background: #ffffff;
 }
@@ -1231,6 +1233,8 @@ html:has(.diary-content-section textarea:focus) {
 /* --- Finished diary save/share sheet --- */
 
 .diary-share-modal {
+  --diary-share-bezel: clamp(16px, 5vw, 24px);
+
   display: flex;
   flex-direction: column;
   width: min(calc(100vw - 24px), 448px) !important;
@@ -1263,7 +1267,7 @@ html:has(.diary-content-section textarea:focus) {
   flex: 1 1 auto;
   min-height: 0;
   gap: 16px;
-  padding: clamp(16px, 5vw, 24px);
+  padding: var(--diary-share-bezel);
 }
 
 .diary-share-title {
@@ -1318,14 +1322,10 @@ html:has(.diary-content-section textarea:focus) {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px clamp(16px, 5vw, 24px) calc(14px + var(--app-safe-bottom));
+  padding: 12px var(--diary-share-bezel) var(--diary-share-bezel);
   border-top: 1px solid #e5e8eb;
   background: #ffffff;
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.04);
-}
-
-.diary-share-modal-android .diary-share-footer {
-  padding-bottom: 8px;
 }
 
 .diary-share-feedback {
@@ -1568,63 +1568,23 @@ html:has(.diary-content-section textarea:focus) {
   color: #16794e;
 }
 
-.profanity-correction-options {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 2px 24px 0;
-  padding: 0;
-  border: 0;
-}
-
-.profanity-correction-options legend {
-  margin-bottom: 7px;
-  padding: 0;
-  color: #6b7684;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.profanity-correction-option {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 11px;
-  min-width: 0;
-  padding: 10px 6px;
-  border: 1px solid #e4e9ed;
-  border-radius: 12px;
-  background: #f8fafb;
-  color: #333d4b;
-  cursor: pointer;
-}
-
-.profanity-correction-option input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
-.profanity-correction-option span {
-  overflow: hidden;
-  font-size: 14px;
-  font-weight: 700;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.profanity-correction-option:has(input:checked) {
-  border-color: #397196;
-  background: #eaf4fa;
-  color: #246184;
-  box-shadow: inset 0 0 0 1px #397196;
-}
-
-.profanity-correction-option:has(input:focus-visible) {
-  outline: 2px solid #397196;
-  outline-offset: 2px;
+.app-shell-write:has(.diary-content-section textarea:focus)
+  .diary-character-status {
+  position: fixed;
+  z-index: 60;
+  bottom: calc(8px + var(--app-safe-bottom));
+  left: 50%;
+  width: min(calc(100% - 40px), 440px);
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid rgba(80, 142, 181, 0.16);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(43, 89, 119, 0.16);
+  transform: translateX(-50%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .date-input {
@@ -1715,12 +1675,6 @@ html:has(.diary-content-section textarea:focus) {
 .preview-step .diary-card {
   width: min(100%, 44dvh);
   filter: drop-shadow(0 14px 24px rgba(61, 105, 132, 0.12));
-}
-
-.preview-profanity-controls {
-  width: min(calc(100% - 32px), 432px);
-  box-sizing: border-box;
-  margin: 0 auto 4px;
 }
 
 .analysis-loading-notice {
@@ -2045,14 +1999,6 @@ html:has(.diary-content-section textarea:focus) {
   transform-origin: center;
 }
 
-.diary-grid-character-mosaic {
-  width: 76%;
-  height: 62%;
-  border-radius: max(1px, 0.25cqw);
-  opacity: 0.96;
-  image-rendering: pixelated;
-}
-
 /* 날짜/날씨/제목을 글자 단위로 움직일 수 있게 하되 줄바꿈은 유지합니다.
    실제 크기/회전/위치는 handwriting.ts가 고정값으로 계산합니다. */
 .handwritten-character {
@@ -2102,134 +2048,6 @@ html:has(.diary-content-section textarea:focus) {
   background-size: 104% 104%;
   transform: translate(-48%, -34%);
 }
-
-.profanity-correction {
-  position: absolute;
-  z-index: 3;
-  overflow: visible;
-}
-
-.profanity-correction-line {
-  position: absolute;
-  top: 42%;
-  left: -5%;
-  width: 110%;
-  height: 16%;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100% 100%;
-  transform: rotate(-2deg);
-}
-
-.profanity-correction-line-double-underline {
-  top: 32%;
-  transform: rotate(-1deg);
-}
-
-.profanity-correction-line-double-second {
-  top: 53%;
-  transform: rotate(1deg);
-}
-
-.profanity-correction-cross {
-  position: absolute;
-  inset: 13% -5% 20%;
-  transform: rotate(-1deg);
-}
-
-.profanity-correction-cross::before,
-.profanity-correction-cross::after {
-  position: absolute;
-  top: 47%;
-  left: -1%;
-  width: 102%;
-  height: clamp(1.5px, 4%, 3px);
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    #c43d38 4%,
-    #d24b42 46%,
-    #bb3532 95%,
-    transparent 100%
-  );
-  box-shadow:
-    0 0.7px 0 rgba(178, 43, 39, 0.3),
-    0 -0.45px 0 rgba(231, 104, 91, 0.22);
-  content: "";
-  opacity: 0.86;
-  transform-origin: 48% center;
-}
-
-.profanity-correction-cross::before {
-  transform: translateY(-1px) rotate(23deg) skewX(2deg);
-}
-
-.profanity-correction-cross::after {
-  width: 99%;
-  transform: translate(1%, 1px) rotate(-26deg) skewX(-3deg);
-}
-
-.profanity-correction-check {
-  position: absolute;
-  inset: 8% 2% 17% 4%;
-  filter: drop-shadow(0 0.7px 0 rgba(178, 43, 39, 0.28));
-  transform: rotate(-3deg);
-}
-
-.profanity-correction-check::before,
-.profanity-correction-check::after {
-  position: absolute;
-  left: 9%;
-  height: clamp(1.5px, 4%, 3px);
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    #c33b37 7%,
-    #d24b42 56%,
-    #b93431 96%,
-    transparent 100%
-  );
-  content: "";
-  opacity: 0.88;
-  transform-origin: left center;
-}
-
-.profanity-correction-check::before {
-  top: 49%;
-  width: 36%;
-  transform: rotate(39deg) skewX(3deg);
-}
-
-.profanity-correction-check::after {
-  top: 68%;
-  left: 36%;
-  width: 62%;
-  transform: rotate(-42deg) skewX(-2deg);
-}
-
-.profanity-correction-note {
-  position: absolute;
-  top: 61%;
-  left: 0;
-  color: #d24b42;
-  font-family: "NanumDdarEGeEomMaGa", sans-serif;
-  font-size: clamp(7px, 2cqw, 10px);
-  font-weight: 700;
-  line-height: 1;
-  white-space: nowrap;
-  transform: rotate(-3deg);
-  transform-origin: left center;
-}
-
-.profanity-correction-note-right {
-  right: 0;
-  left: auto;
-  transform: rotate(2deg);
-  transform-origin: right center;
-}
-
 .diary-card-comment {
   position: absolute;
   z-index: 1;
@@ -2531,6 +2349,14 @@ mark.highlight-underline {
 }
 
 @media (max-height: 600px) {
+  .photo-consent-modal {
+    --photo-consent-bezel: 16px;
+  }
+
+  .diary-share-modal {
+    --diary-share-bezel: 16px;
+  }
+
   .onboarding-title {
     top: 8%;
   }
