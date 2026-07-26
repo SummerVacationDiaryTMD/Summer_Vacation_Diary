@@ -1568,25 +1568,6 @@ html:has(.diary-content-section textarea:focus) {
   color: #16794e;
 }
 
-.app-shell-write:has(.diary-content-section textarea:focus)
-  .diary-character-status {
-  position: fixed;
-  z-index: 60;
-  bottom: calc(8px + var(--app-safe-bottom));
-  left: 50%;
-  width: min(calc(100% - 40px), 440px);
-  min-height: 42px;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  border: 1px solid rgba(80, 142, 181, 0.16);
-  border-radius: 13px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 8px 24px rgba(43, 89, 119, 0.16);
-  transform: translateX(-50%);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
 .date-input {
   width: min(176px, calc(100% - 82px));
   margin-right: 8px;
