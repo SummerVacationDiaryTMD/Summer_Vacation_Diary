@@ -85,6 +85,14 @@ const DEBUG = ["1", "true", "on"].includes(
   (Deno.env.get("DIARY_AI_DEBUG") ?? "").trim().toLowerCase(),
 );
 
+// This is intentionally an Edge Function Secret, not a request header or a
+// VITE_* value. Browser environment variables are public, so trusting one here
+// would let any caller turn off the production cost guard. It must be enabled
+// separately from the client-side VITE_AI_TEST_MODE flag.
+const QUOTA_TEST_MODE = ["1", "true", "on"].includes(
+  (Deno.env.get("DIARY_AI_TEST_MODE") ?? "").trim().toLowerCase(),
+);
+
 /**
  * Stamps every line with a short per-request id and the elapsed time. Requests
  * overlap heavily here — one sketch runs 30-60 seconds — so without an id the
@@ -385,6 +393,19 @@ function buildSnapshot(
     resetAt: new Date(Date.parse(dayWindowStart) + DAY_MS).toISOString(),
     blocked: blockedReason(counts, decision),
     region,
+  };
+}
+
+/** A syntactically normal response for test mode; no identifiers or DB rows. */
+function testModeSnapshot(request: Request): QuotaSnapshot {
+  const { dayWindowStart } = windowStarts();
+  const emptyCounter = { used: 0, limit: 0, remaining: 0 };
+  return {
+    sketch: emptyCounter,
+    analyze: emptyCounter,
+    resetAt: new Date(Date.parse(dayWindowStart) + DAY_MS).toISOString(),
+    blocked: null,
+    region: requestRegion(request),
   };
 }
 
@@ -933,6 +954,10 @@ Deno.serve(async (request) => {
     // server misconfiguration that must not break the usage counters, and
     // answering a status request with invalid-key would be actively misleading.
     if (body?.action === "quota-status") {
+      if (QUOTA_TEST_MODE) {
+        log.info("quota-status ok — test mode (not counted)");
+        return responseJson({ quota: testModeSnapshot(request) });
+      }
       enforceStatusLimit(
         requireString(request.headers.get("x-diary-client-id"), "client-id"),
       );
@@ -959,13 +984,15 @@ Deno.serve(async (request) => {
     // Reserve before validating the payload: a junk request must still count
     // against the shared IP budget, or throwing garbage at this endpoint would
     // be a free way to probe it.
-    reservation = await reserveQuota(request, body.action, log);
+    const quota = QUOTA_TEST_MODE
+      ? testModeSnapshot(request)
+      : (reservation = await reserveQuota(request, body.action, log)).snapshot;
     const result =
       body.action === "analyze"
         ? await analyze(body.input, apiKey, log)
         : await sketch(body.photoDataUrl, apiKey, log);
     log.info(`${action} ok`);
-    return responseJson(withQuota(result, reservation.snapshot));
+    return responseJson(withQuota(result, quota));
   } catch (error) {
     // Classifying in one place covers every failure — including the ones that
     // are not FunctionErrors, like a bug in our own code — and lets the

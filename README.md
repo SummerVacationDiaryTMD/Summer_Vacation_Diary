@@ -154,9 +154,15 @@ VITE_AI_TEST_MODE=true
 
 `VITE_AI_TEST_MODE=true`이면 Supabase 설정이 있을 때 사진과 일기 분석만 실제로
 호출하고, 비용이 큰 그림 변환 모델과 로컬 색연필 필터는 모두 건너뛰어 원본 사진을
-사용합니다. Supabase 설정도 없으면 분석은 로컬 예시 결과로 대체됩니다. 실제 그림
-변환까지 확인할 때만 값을 `false`로 바꾸고 개발 서버를 다시 시작하거나 새로
-빌드하세요. 이 값은 기본적으로 `true`로 동작합니다.
+사용합니다. 이 모드에서는 앱의 사용량 표시와 사전 차단도 숨깁니다. Supabase 설정도
+없으면 분석은 로컬 예시 결과로 대체됩니다. 실제 그림 변환까지 확인할 때만 값을
+`false`로 바꾸고 개발 서버를 다시 시작하거나 새로 빌드하세요. 이 값은 기본적으로
+`true`로 동작합니다.
+
+실제 Edge Function의 차감까지 끄려면 Supabase **Edge Functions → Secrets**에
+`DIARY_AI_TEST_MODE=true`도 등록하세요. 이 값은 서버 Secret이므로 `VITE_*`로
+넣지 않습니다. 테스트가 끝나면 Secret을 `false`로 바꾸거나 삭제한 뒤 Function을
+다시 운영 설정으로 확인하세요.
 
 `VITE_*` 값은 클라이언트 번들에 포함됩니다. 따라서 `OPENAI_API_KEY`, Supabase
 service role key와 같은 비밀 값은 `.env`에 넣지 않고 Supabase Edge Function

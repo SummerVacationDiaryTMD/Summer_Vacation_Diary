@@ -43,13 +43,6 @@ export type AiQuotaView =
 
 const QUOTA_STATUS_TIMEOUT_MS = 10_000;
 
-const TEST_MODE_SKETCH: QuotaCounterView = {
-  used: 0,
-  limit: 0,
-  remaining: 0,
-  available: false,
-};
-
 function toView(counter: QuotaCounter): QuotaCounterView {
   return { ...counter, available: counter.remaining > 0 };
 }
@@ -76,7 +69,11 @@ function withPending(counter: QuotaCounter, pending: number): QuotaCounterView {
  * remains the authority either way.
  */
 export async function refreshAiQuota(): Promise<void> {
-  if (!isSupabaseConfigured) {
+  // The Edge Function does not consume or expose counters when its matching
+  // DIARY_AI_TEST_MODE Secret is enabled. Avoiding this request also prevents
+  // an old production function from needlessly reading a real quota while the
+  // local client is in test mode.
+  if (!isSupabaseConfigured || isAiTestMode) {
     return;
   }
   try {
@@ -117,10 +114,10 @@ export function useAiQuota(): AiQuotaView {
   }, [snapshot]);
 
   return useMemo<AiQuotaView>(() => {
-    if (!isSupabaseConfigured) {
-      // Mock mode runs both operations locally and for free, so a counter would
-      // be meaningless — and showing "0 left" would gate a flow that has no
-      // limit at all.
+    if (!isSupabaseConfigured || isAiTestMode) {
+      // Mock mode is free. Test mode is paired with the server-side
+      // DIARY_AI_TEST_MODE Secret when its quota bypass is needed; either way,
+      // the client-side display and preflight gate are not useful here.
       return { mode: "hidden" };
     }
     if (snapshot === null) {
@@ -128,13 +125,7 @@ export function useAiQuota(): AiQuotaView {
     }
     return {
       mode: "ready",
-      // Test mode never sends a sketch request — styleTransfer short-circuits to
-      // the original photo — so the server reports a full budget it will never
-      // spend, and no ticket is ever claimed. Overriding here keeps the store
-      // holding only what the server actually said, and 0/0 reads honestly.
-      sketch: isAiTestMode
-        ? TEST_MODE_SKETCH
-        : withPending(snapshot.sketch, pendingSketches),
+      sketch: withPending(snapshot.sketch, pendingSketches),
       // No ledger for analysis: `useDiaryAnalysis` already reuses the in-flight
       // promise and caches by input signature, and its round trip is seconds
       // rather than a minute, so the counter is never meaningfully stale.
