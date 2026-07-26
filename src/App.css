@@ -141,45 +141,45 @@ html:has(.diary-content-section textarea:focus) {
 
 /* Sky */
 .onboarding-decoration-sun {
-  top: 1%;
-  right: 2%;
-  width: 29%;
-  animation: onboarding-sun 7s ease-in-out -2s infinite alternate;
+  top: 2%;
+  right: 4%;
+  width: 30%;
+  animation: onboarding-sun 6.4s ease-in-out -2s infinite;
 }
 
 .onboarding-decoration-cloud-big {
-  top: 0;
-  left: 4%;
-  width: 40%;
-  animation: onboarding-cloud-right 13s ease-in-out -4s infinite alternate;
+  top: 1.5%;
+  left: 3%;
+  width: 34%;
+  animation: onboarding-cloud-right 12s ease-in-out -4s infinite;
 }
 
 .onboarding-decoration-cloud-small {
-  top: 27%;
-  right: 4%;
-  width: 25%;
-  animation: onboarding-cloud-left 11s ease-in-out -7s infinite alternate;
+  top: 28%;
+  right: 8%;
+  width: 18%;
+  animation: onboarding-cloud-left 9.5s ease-in-out -7s infinite;
 }
 
 .onboarding-decoration-seagull {
-  top: 28%;
-  left: 6%;
-  width: 15%;
-  animation: onboarding-flight 7s ease-in-out -3s infinite alternate;
+  top: 16%;
+  left: 7%;
+  width: 14%;
+  animation: onboarding-flight 6.6s ease-in-out -3s infinite;
 }
 
 .onboarding-decoration-seagull-two {
-  top: 18%;
+  top: 22%;
   right: 8%;
-  width: 12%;
-  animation: onboarding-flight-reverse 8s ease-in-out -5s infinite alternate;
+  width: 11%;
+  animation: onboarding-flight-reverse 7.6s ease-in-out -5s infinite;
 }
 
 /* Three softly moving rows: 나의 / 여름방학 / 일기 */
 .onboarding-title {
   position: absolute;
   z-index: 8;
-  top: 10%;
+  top: 11%;
   left: 50%;
   display: flex;
   width: min(76%, 350px);
@@ -228,63 +228,63 @@ html:has(.diary-content-section textarea:focus) {
 /* Sea */
 .onboarding-decoration-sailboat {
   z-index: 2;
-  top: 35%;
-  left: 6%;
+  top: 32%;
+  left: 7%;
   width: 22%;
-  animation: onboarding-sail 4.8s ease-in-out -1s infinite alternate;
+  animation: onboarding-sail 5.2s ease-in-out -1s infinite;
 }
 
 .onboarding-decoration-dolphin {
   z-index: 2;
   top: 40%;
-  right: 6%;
-  width: 25%;
+  right: 20%;
+  width: 19%;
   transform-origin: 50% 75%;
-  animation: onboarding-dolphin 4.6s ease-in-out -2.4s infinite alternate;
+  animation: onboarding-dolphin 5.6s ease-in-out -2.4s infinite;
 }
 
 /* Sand */
 .onboarding-decoration-palm-tree {
   z-index: 3;
   top: 46%;
-  left: 1%;
-  width: 25%;
+  left: 2%;
+  width: 26%;
   transform-origin: 48% 100%;
-  animation: onboarding-palm-sway 6.5s ease-in-out -2s infinite alternate;
+  animation: onboarding-palm-sway 5.8s ease-in-out -2s infinite;
 }
 
 .onboarding-decoration-girl {
   z-index: 6;
   bottom: var(--onboarding-content-bottom);
   left: 50%;
-  width: min(59%, 270px);
-  margin-left: calc(-1 * min(29.5%, 135px));
+  width: min(53%, 240px);
+  margin-left: calc(-1 * min(26.5%, 120px));
   transform-origin: 50% 100%;
-  animation: onboarding-girl 4.8s ease-in-out -1.5s infinite alternate;
+  animation: onboarding-girl 4.8s ease-in-out -1.5s infinite;
 }
 
 .onboarding-decoration-sandcastle {
   z-index: 4;
   bottom: calc(var(--onboarding-content-bottom) + 5px);
-  left: 0.5%;
-  width: 19.5%;
-  animation: onboarding-sandcastle 6s ease-in-out -3s infinite alternate;
+  left: 3%;
+  width: 20%;
+  animation: onboarding-sandcastle 5.5s ease-in-out -3s infinite;
 }
 
 .onboarding-decoration-beach-ball {
   z-index: 5;
-  right: 2%;
-  bottom: calc(var(--onboarding-content-bottom) + 135px);
+  right: 6%;
+  bottom: calc(var(--onboarding-content-bottom) + 128px);
   width: 16%;
-  animation: onboarding-ball 4.4s ease-in-out -2s infinite alternate;
+  animation: onboarding-ball 4.8s ease-in-out -2s infinite;
 }
 
 .onboarding-decoration-crab {
   z-index: 5;
-  right: 2%;
+  right: 3%;
   bottom: calc(var(--onboarding-content-bottom) + 12px);
-  width: 16%;
-  animation: onboarding-crab 5.2s steps(4, end) -2s infinite alternate;
+  width: 14%;
+  animation: onboarding-crab 5.2s steps(4, end) -2s infinite;
 }
 
 .onboarding-action-area {
@@ -306,47 +306,55 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 @keyframes onboarding-sun {
-  from {
-    transform: rotate(-2deg) scale(0.98);
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-3deg) scale(0.96);
   }
-  to {
-    transform: rotate(3deg) scale(1.025);
+  50% {
+    transform: translate3d(-3px, 5px, 0) rotate(4deg) scale(1.035);
   }
 }
 
 @keyframes onboarding-cloud-right {
-  from {
-    transform: translate3d(-10px, 0, 0);
+  0%,
+  100% {
+    transform: translate3d(-7px, 0, 0);
   }
-  to {
-    transform: translate3d(16px, 4px, 0);
+  50% {
+    transform: translate3d(11px, 5px, 0);
   }
 }
 
 @keyframes onboarding-cloud-left {
-  from {
-    transform: translate3d(14px, 0, 0);
+  0%,
+  100% {
+    transform: translate3d(7px, 0, 0);
   }
-  to {
-    transform: translate3d(-14px, 3px, 0);
+  50% {
+    transform: translate3d(-10px, 4px, 0);
   }
 }
 
 @keyframes onboarding-flight {
-  from {
-    transform: translate3d(-12px, 4px, 0) rotate(-2deg);
+  0%,
+  100% {
+    transform: translate3d(-5px, 3px, 0) rotate(-4deg);
   }
-  to {
-    transform: translate3d(15px, -4px, 0) rotate(2deg);
+  45% {
+    transform: translate3d(8px, -6px, 0) rotate(4deg);
+  }
+  70% {
+    transform: translate3d(3px, -2px, 0) rotate(-1deg);
   }
 }
 
 @keyframes onboarding-flight-reverse {
-  from {
-    transform: translate3d(10px, -3px, 0) rotate(2deg) scaleX(-1);
+  0%,
+  100% {
+    transform: translate3d(5px, -2px, 0) rotate(4deg) scaleX(-1);
   }
-  to {
-    transform: translate3d(-12px, 4px, 0) rotate(-2deg) scaleX(-1);
+  50% {
+    transform: translate3d(-8px, 5px, 0) rotate(-4deg) scaleX(-1);
   }
 }
 
@@ -360,65 +368,78 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 @keyframes onboarding-sail {
-  from {
-    transform: translate3d(-6px, 2px, 0) rotate(-2.5deg);
+  0%,
+  100% {
+    transform: translate3d(-3px, 1px, 0) rotate(-2deg);
   }
-  to {
-    transform: translate3d(8px, -3px, 0) rotate(2.5deg);
+  40% {
+    transform: translate3d(6px, -4px, 0) rotate(2.8deg);
+  }
+  70% {
+    transform: translate3d(3px, 2px, 0) rotate(-1deg);
   }
 }
 
 @keyframes onboarding-dolphin {
-  from {
-    transform: translate3d(-5px, 7px, 0) rotate(-5deg);
+  0%,
+  100% {
+    transform: translate3d(-3px, 6px, 0) rotate(-7deg);
   }
-  to {
-    transform: translate3d(7px, -8px, 0) rotate(6deg);
+  48% {
+    transform: translate3d(5px, -10px, 0) rotate(9deg);
+  }
+  70% {
+    transform: translate3d(7px, -2px, 0) rotate(3deg);
   }
 }
 
 @keyframes onboarding-palm-sway {
-  from {
-    transform: rotate(-1.2deg);
+  0%,
+  100% {
+    transform: rotate(-1.5deg);
   }
-  to {
-    transform: rotate(1.2deg);
+  50% {
+    transform: rotate(2deg);
   }
 }
 
 @keyframes onboarding-girl {
-  from {
-    transform: translate3d(0, 1px, 0) scale(0.995);
+  0%,
+  100% {
+    transform: translate3d(0, 1px, 0) rotate(-0.5deg) scale(0.99);
   }
-  to {
-    transform: translate3d(0, -3px, 0) scale(1.008);
+  50% {
+    transform: translate3d(0, -5px, 0) rotate(0.8deg) scale(1.015);
   }
 }
 
 @keyframes onboarding-sandcastle {
-  from {
-    transform: translate3d(0, 1px, 0) rotate(-0.5deg);
+  0%,
+  100% {
+    transform: translate3d(0, 1px, 0) rotate(-0.7deg);
   }
-  to {
-    transform: translate3d(0, -1px, 0) rotate(0.5deg);
+  50% {
+    transform: translate3d(2px, -2px, 0) rotate(0.8deg);
   }
 }
 
 @keyframes onboarding-ball {
-  from {
-    transform: translate3d(-6px, 4px, 0) rotate(-8deg);
+  0%,
+  100% {
+    transform: translate3d(-4px, 3px, 0) rotate(-8deg);
   }
-  to {
-    transform: translate3d(7px, -7px, 0) rotate(10deg);
+  50% {
+    transform: translate3d(5px, -8px, 0) rotate(14deg);
   }
 }
 
 @keyframes onboarding-crab {
-  from {
-    transform: translate3d(-8px, 0, 0) rotate(-1deg);
+  0%,
+  100% {
+    transform: translate3d(-5px, 0, 0) rotate(-1deg);
   }
-  to {
-    transform: translate3d(9px, -1px, 0) rotate(1deg);
+  50% {
+    transform: translate3d(6px, -2px, 0) rotate(1deg);
   }
 }
 
@@ -2510,6 +2531,32 @@ mark.highlight-underline {
 }
 
 @media (max-height: 600px) {
+  .onboarding-title {
+    top: 8%;
+  }
+
+  .onboarding-decoration-cloud-small,
+  .onboarding-decoration-seagull {
+    top: 35%;
+  }
+
+  .onboarding-decoration-seagull-two {
+    top: 31%;
+  }
+
+  .onboarding-decoration-sailboat,
+  .onboarding-decoration-dolphin {
+    top: 43%;
+  }
+
+  .onboarding-decoration-palm-tree {
+    top: 57%;
+  }
+
+  .onboarding-decoration-beach-ball {
+    bottom: calc(var(--onboarding-content-bottom) + 66px);
+  }
+
   .onboarding-action-area {
     padding-top: 48px;
     padding-bottom: calc(12px + var(--app-safe-bottom));
