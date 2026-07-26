@@ -5,6 +5,7 @@ import {
   TextField,
 } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
+import { useState } from "react";
 
 import {
   CONTENT_MAX_LENGTH,
@@ -27,13 +28,38 @@ interface WriteStepProps {
  * (or the app) never loses input — the draft hook persists it.
  */
 export function WriteStep({ draft, onChange }: WriteStepProps) {
+  const [titleLimitShakeCount, setTitleLimitShakeCount] = useState(0);
+  const [contentLimitShakeCount, setContentLimitShakeCount] = useState(0);
+  const titleLength = Array.from(draft.title).length;
+  const titleAtLimit = titleLength >= TITLE_MAX_LENGTH;
+  const titleStatus = titleAtLimit
+    ? "멋진 제목이 완성됐어요"
+    : `${TITLE_MAX_LENGTH - titleLength}자 더 적을 수 있어요`;
   const contentLength = Array.from(draft.content).length;
   const handleContentChange = (value: string) => {
     const singleLineContent = value.replace(/[\r\n]+/g, " ");
     const limitedContent = Array.from(singleLineContent)
       .slice(0, CONTENT_MAX_LENGTH)
       .join("");
+
+    if (
+      Array.from(limitedContent).length >= CONTENT_MAX_LENGTH &&
+      contentLength < CONTENT_MAX_LENGTH
+    ) {
+      setContentLimitShakeCount((count) => count + 1);
+    }
+
     onChange({ content: limitedContent });
+  };
+  const handleTitleChange = (value: string) => {
+    if (
+      Array.from(value).length >= TITLE_MAX_LENGTH &&
+      titleLength < TITLE_MAX_LENGTH
+    ) {
+      setTitleLimitShakeCount((count) => count + 1);
+    }
+
+    onChange({ title: value });
   };
   // Validate on trimmed length so whitespace padding can't satisfy the
   // 20-char minimum; the visible counter still shows the raw length.
@@ -53,7 +79,7 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
   return (
     <div className="step-body write-form">
       <div className="write-form-surface">
-        <section className="diary-form-section field-row field-row-column">
+        <section className="diary-form-section title-field-row field-row field-row-column">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -61,23 +87,41 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
           >
             제목
           </Paragraph>
-          <TextField
-            variant="line"
-            aria-label="제목"
-            placeholder="오늘의 제목을 지어주세요"
-            maxLength={TITLE_MAX_LENGTH}
-            value={draft.title}
-            hasError={titleBlank}
-            help={
-              titleBlank
-                ? "공백 말고 제목을 입력해 주세요"
-                : // maxLength cuts input silently; explain the limit once it's hit.
-                  draft.title.length >= TITLE_MAX_LENGTH
-                  ? `제목은 ${TITLE_MAX_LENGTH}자까지 적을 수 있어요`
-                  : undefined
+          <div
+            className={
+              titleLimitShakeCount > 0
+                ? `limit-reached-shake-${titleLimitShakeCount % 2}`
+                : undefined
             }
-            onChange={(event) => onChange({ title: event.target.value })}
-          />
+          >
+            <TextField
+              variant="line"
+              aria-label="제목"
+              aria-describedby="title-character-status"
+              placeholder="오늘의 제목을 지어주세요"
+              maxLength={TITLE_MAX_LENGTH}
+              value={draft.title}
+              hasError={titleBlank}
+              help={
+                titleBlank
+                  ? "공백 말고 제목을 입력해 주세요"
+                  : undefined
+              }
+              onChange={(event) => handleTitleChange(event.target.value)}
+            />
+          </div>
+          <div
+            id="title-character-status"
+            className={`diary-character-status${
+              titleAtLimit ? " diary-character-status-complete" : ""
+            }`}
+            aria-live="polite"
+          >
+            <span>{titleStatus}</span>
+            <strong>
+              {titleLength}/{TITLE_MAX_LENGTH}
+            </strong>
+          </div>
         </section>
 
         <section className="diary-form-section field-row date-field-row">
@@ -119,6 +163,7 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
             <SegmentedControl
               aria-label="날씨"
               alignment="fluid"
+              size="small"
               value={draft.weather}
               onChange={(value) => onChange({ weather: value as WeatherValue })}
             >
@@ -147,24 +192,32 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
           >
             일기
           </Paragraph>
-          <TextArea
-            variant="line"
-            aria-label="일기"
-            aria-describedby="diary-character-status"
-            placeholder={`오늘의 이야기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요`}
-            height={200}
-            maxLength={CONTENT_MAX_LENGTH}
-            value={draft.content}
-            hasError={contentTooShort}
-            enterKeyHint="done"
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                event.currentTarget.blur();
-              }
-            }}
-            onChange={(event) => handleContentChange(event.target.value)}
-          />
+          <div
+            className={
+              contentLimitShakeCount > 0
+                ? `limit-reached-shake-${contentLimitShakeCount % 2}`
+                : undefined
+            }
+          >
+            <TextArea
+              variant="line"
+              aria-label="일기"
+              aria-describedby="diary-character-status"
+              placeholder={`오늘의 이야기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요`}
+              height={200}
+              maxLength={CONTENT_MAX_LENGTH}
+              value={draft.content}
+              hasError={contentTooShort}
+              enterKeyHint="done"
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  event.currentTarget.blur();
+                }
+              }}
+              onChange={(event) => handleContentChange(event.target.value)}
+            />
+          </div>
           <div
             id="diary-character-status"
             className={`diary-character-status${
@@ -181,11 +234,6 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
               {contentLength}/{CONTENT_MAX_LENGTH}
             </strong>
           </div>
-
-          {/* Sibling of .diary-character-status, never a child of it. While the
-              textarea has focus, App.css lifts that div out of the flow into a
-              fixed bar above the keyboard; anything nested inside would travel
-              with it and the usage lines would end up floating over the diary. */}
           <AnalyzeQuotaNotice />
         </section>
       </div>
