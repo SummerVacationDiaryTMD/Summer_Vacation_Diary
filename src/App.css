@@ -1908,7 +1908,7 @@ html:has(.diary-content-section textarea:focus) {
   transform: scaleX(0.82);
 }
 .diary-card-header > span:nth-child(2) {
-  left: 24.7%;
+  left: 23.7%;
 }
 .diary-card-header > span:nth-child(2) strong,
 .diary-card-header > span:nth-child(3) strong {
@@ -1916,7 +1916,7 @@ html:has(.diary-content-section textarea:focus) {
   transform: scaleX(0.9);
 }
 .diary-card-header > span:nth-child(3) {
-  left: 37.4%;
+  left: 36.4%;
 }
 .diary-card-header > span:nth-child(4) {
   left: 52.5%;

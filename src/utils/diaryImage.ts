@@ -775,13 +775,13 @@ export async function composeDiaryImage(
     { text: year, left: 0.065, maxWidth: 125, seed: 0 },
     {
       text: String(Number(month)).padStart(2, "0"),
-      left: 0.247,
+      left: 0.237,
       maxWidth: 72,
       seed: 10,
     },
     {
       text: String(Number(day)).padStart(2, "0"),
-      left: 0.374,
+      left: 0.364,
       maxWidth: 72,
       seed: 20,
     },
