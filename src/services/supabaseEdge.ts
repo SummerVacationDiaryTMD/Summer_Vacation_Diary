@@ -11,7 +11,7 @@ const publishableKey = (
 
 // Cost-safe by default: test mode keeps the inexpensive analysis path but
 // skips image generation. Setting false explicitly enables both operations.
-const aiTestModeValue = (import.meta.env.VITE_AI_TEST_MODE ?? "true")
+const aiTestModeValue = (import.meta.env.VITE_AI_TEST_MODE ?? "false")
   .trim()
   .toLowerCase();
 
