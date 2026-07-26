@@ -110,6 +110,12 @@ export function PhotoUploadStep({
       return;
     }
 
+    // 이미 사진이 있으면 동의 모달을 띄우지 않음
+    if (photoDataUrl !== null) {
+      fileInputRef.current?.click();
+      return;
+    }
+
     setAgreed(false);
     setConsentOpen(true);
   };
