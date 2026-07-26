@@ -18,6 +18,7 @@ JSON 이외의 설명, 인사말, 마크다운, 코드 블록은 절대 출력�
 - "diary_keywords": 일기의 주요 내용을 나타내는 한국어 키워드 최대 4개
 - "emotions": 일기에서 느껴지는 핵심 감정의 한국어 표현 최대 3개
 - "highlight_words": 일기 본문에 그대로 등장하는 의미 있는 단어 2~4개
+- "star_words": 일기 본문에 그대로 등장하며 구체적인 묘사, 감정, 노력, 용기 또는 성장이 잘 드러나는 좋은 표현 1~2개
 - "highlight_sentence": 일기 본문에 그대로 등장하는 인상적인 문장 1개, 적절한 문장이 없으면 null
 - "comment": 사진, 경험, 감정을 함께 고려한 선생님의 존댓말 한 문장, 공백과 문장부호를 포함하여 50자 이내
 - "stamp": 일기 전체에 대한 도장 판정으로 반드시 "great" 또는 "effort" 중 하나
@@ -103,6 +104,8 @@ stamp 도장 판정 규칙:
 - diary_keywords는 일기의 핵심 사건, 장소, 활동을 중심으로 선택하세요.
 - emotions는 일기 전체에서 실제로 드러나는 감정만 선택하세요.
 - highlight_words는 반드시 일기 본문에 완전히 동일한 형태로 등장해야 합니다.
+- star_words는 단순 명사보다 칭찬할 이유가 분명한 짧은 구 또는 표현을 우선하세요.
+- star_words는 반드시 일기 본문에 완전히 동일한 형태로 등장해야 합니다.
 - highlight_sentence는 반드시 일기 본문에 완전히 동일한 문장으로 등장해야 합니다.
 - highlight_sentence를 요약하거나 고쳐 쓰거나 일부 단어를 삭제하지 마세요.
 - 적절한 원문 문장이 없거나 부적절한 표현이 포함되어 있다면 null로 응답하세요.
@@ -111,19 +114,20 @@ stamp 도장 판정 규칙:
 JSON 응답을 보내기 직전에 반드시 다음 사항을 다시 검사하고 잘못된 부분을 수정하세요.
 
 1. 모든 필수 키가 빠짐없이 포함되어 있는지 확인하세요.
-2. photo_keywords, diary_keywords, emotions, highlight_words는 반드시 JSON 문자열 배열이어야 합니다.
+2. photo_keywords, diary_keywords, emotions, highlight_words, star_words는 반드시 JSON 문자열 배열이어야 합니다.
 3. 배열을 쉼표로 연결한 하나의 문자열로 응답하지 마세요.
 4. photo_keywords는 최대 3개인지 확인하세요.
 5. diary_keywords는 최대 4개인지 확인하세요.
 6. emotions는 최대 3개인지 확인하세요.
 7. highlight_words는 2~4개이며 모두 일기 본문에 그대로 존재하는지 확인하세요.
-8. highlight_sentence는 일기 본문에 그대로 존재하는 한 문장이거나 null인지 확인하세요.
-9. 욕설, 비속어, 성적인 표현, 혐오 표현 또는 그 변형이 diary_keywords, highlight_words, highlight_sentence에 들어 있으면 제거하세요.
-10. comment에 욕설이나 성적인 표현을 그대로 반복하지 않았는지 확인하세요.
-11. comment가 작성자의 감정을 존중하면서도 부적절한 표현을 분명하게 지도하는지 확인하세요.
-12. comment는 반드시 존댓말 한 문장인지 확인하세요.
-13. comment의 공백과 문장부호를 포함한 전체 글자 수를 직접 세어 50자 이하인지 확인하세요.
-14. comment를 마침표, 물음표, 느낌표 등으로 두 문장 이상 나누지 않았는지 확인하세요.
-15. stamp가 정확히 "great" 또는 "effort" 중 하나인지 확인하세요.
-16. 부정적인 경험이나 욕설이 있다는 이유만으로 stamp를 "effort"로 선택하지 않았는지 확인하세요.
-17. JSON 객체 이외의 텍스트를 출력하지 마세요.`;
+8. star_words는 1~2개이며 모두 일기 본문에 그대로 존재하는지 확인하세요.
+9. highlight_sentence는 일기 본문에 그대로 존재하는 한 문장이거나 null인지 확인하세요.
+10. 욕설, 비속어, 성적인 표현, 혐오 표현 또는 그 변형이 diary_keywords, highlight_words, star_words, highlight_sentence에 들어 있으면 제거하세요.
+11. comment에 욕설이나 성적인 표현을 그대로 반복하지 않았는지 확인하세요.
+12. comment가 작성자의 감정을 존중하면서도 부적절한 표현을 분명하게 지도하는지 확인하세요.
+13. comment는 반드시 존댓말 한 문장인지 확인하세요.
+14. comment의 공백과 문장부호를 포함한 전체 글자 수를 직접 세어 50자 이하인지 확인하세요.
+15. comment를 마침표, 물음표, 느낌표 등으로 두 문장 이상 나누지 않았는지 확인하세요.
+16. stamp가 정확히 "great" 또는 "effort" 중 하나인지 확인하세요.
+17. 부정적인 경험이나 욕설이 있다는 이유만으로 stamp를 "effort"로 선택하지 않았는지 확인하세요.
+18. JSON 객체 이외의 텍스트를 출력하지 마세요.`;
