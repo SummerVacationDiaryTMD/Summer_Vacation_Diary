@@ -74,9 +74,9 @@ const CONTENT_FONT_SIZE = 54;
 const CONTENT_FONT = `400 ${CONTENT_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const COMMENT_LABEL_FONT = `700 18px ${SYSTEM_FONT_STACK}`;
 const COMMENT_FONT = `700 48.96px ${TEACHER_COMMENT_FONT_STACK}`;
-const AI_WATERMARK_FONT = `700 22px ${SYSTEM_FONT_STACK}`;
-// Kept in sync with .ai-content-watermark's 5% right inset (1058px × 5%).
-const AI_WATERMARK_RIGHT_INSET = 53;
+const AI_WATERMARK_FONT = `700 19px ${SYSTEM_FONT_STACK}`;
+// Kept in sync with .ai-content-watermark's 4.5% right inset.
+const AI_WATERMARK_RIGHT_INSET = 48;
 
 const TEXT_COLOR = "#333333";
 const COMMENT_COLOR = "#6b5e3f";
@@ -386,8 +386,8 @@ function drawAiContentWatermark(context: CanvasRenderingContext2D) {
   context.font = AI_WATERMARK_FONT;
   context.textBaseline = "middle";
 
-  const paddingX = 20;
-  const height = 42;
+  const paddingX = 14;
+  const height = 34;
   const width = context.measureText(AI_CONTENT_WATERMARK).width + paddingX * 2;
 
   const x = WIDTH - AI_WATERMARK_RIGHT_INSET - width;

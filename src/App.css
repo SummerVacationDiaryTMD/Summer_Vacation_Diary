@@ -1752,14 +1752,14 @@ html:has(.diary-content-section textarea:focus) {
   z-index: 3;
 
   top: 7.05%;
-  right: 5%;
+  right: 4.5%;
 
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
 
-  padding: max(2px, 0.5cqw) max(5px, 1.3cqw);
+  padding: max(1px, 0.35cqw) max(4px, 1cqw);
 
   border: max(1px, 0.2cqw) solid rgba(139, 106, 62, 0.45);
   border-radius: 999px;
@@ -1771,7 +1771,7 @@ html:has(.diary-content-section textarea:focus) {
   color: #6f4f29;
 
   font-family: "Pretendard", sans-serif;
-  font-size: clamp(6px, 2.2cqw, 9px);
+  font-size: clamp(6px, 1.9cqw, 8px);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.01em;
