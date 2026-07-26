@@ -7,7 +7,7 @@ import {
   useToast,
 } from "@toss/tds-mobile";
 import { colors } from "@toss/tds-colors";
-import { useRef, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 
 import familyDiaryPlaceholder from "../assets/family-diary-placeholder.jpg";
 
@@ -21,7 +21,12 @@ import {
 import { getCachedSketch, hashPhotoFile } from "../services/sketchCache";
 import { isAiTestMode, isSupabaseConfigured } from "../services/supabaseEdge";
 import { SketchQuotaNotice } from "./AiQuotaNotice";
-import { PhotoCropModal } from "./PhotoCropModal";
+
+const loadPhotoCropModal = () => import("./PhotoCropModal");
+const PhotoCropModal = lazy(async () => {
+  const module = await loadPhotoCropModal();
+  return { default: module.PhotoCropModal };
+});
 
 export interface PhotoSelection {
   dataUrl: string;
@@ -105,6 +110,11 @@ export function PhotoUploadStep({
   };
 
   const requestPhotoSelection = () => {
+    // Cropping is only needed after a valid photo selection. Start fetching its
+    // code from the user's tap so it is ready while the consent sheet or native
+    // image picker is open, without adding it to the initial app bundle.
+    void loadPhotoCropModal();
+
     // 이전 사진 처리가 진행 중이면 중복 선택을 막습니다.
     if (processing) {
       return;
@@ -249,17 +259,19 @@ export function PhotoUploadStep({
       />
 
       {cropSource !== null && (
-        <PhotoCropModal
-          imageDataUrl={cropSource}
-          onCancel={() => setCropSource(null)}
-          onConfirm={(croppedDataUrl) => {
-            setCropSource(null);
-            void commitPhoto(croppedDataUrl);
-          }}
-          onError={() => {
-            toast.openToast(IMAGE_ERROR_MESSAGES["load-failed"]);
-          }}
-        />
+        <Suspense fallback={null}>
+          <PhotoCropModal
+            imageDataUrl={cropSource}
+            onCancel={() => setCropSource(null)}
+            onConfirm={(croppedDataUrl) => {
+              setCropSource(null);
+              void commitPhoto(croppedDataUrl);
+            }}
+            onError={() => {
+              toast.openToast(IMAGE_ERROR_MESSAGES["load-failed"]);
+            }}
+          />
+        </Suspense>
       )}
 
       <Modal
