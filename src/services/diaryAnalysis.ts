@@ -2,11 +2,6 @@ import { QUOTA_RESET_NOTICE, weatherLabel } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import { containsProfanity } from "../utils/profanity";
 import {
-  applyProfanityReplacements,
-  buildFallbackProfanityReplacements,
-  type ProfanityReplacement,
-} from "../utils/profanityReplacement";
-import {
   EdgeFunctionError,
   invokeDiaryAi,
   isSupabaseConfigured,
@@ -45,8 +40,6 @@ export interface DiaryAnalysis {
   comment: string;
   /** The stamp displayed on the completed diary. */
   stamp: DiaryStamp;
-  /** LLM-generated, context-aware substitutions applied automatically. */
-  profanityReplacements: ProfanityReplacement[];
 }
 
 export type AnalysisErrorCode =
@@ -170,54 +163,27 @@ function capComment(comment: string): string {
   return `${characters.slice(0, 49).join("").trimEnd()}…`;
 }
 
-function parseProfanityReplacements(
-  value: unknown,
-  content: string,
-): ProfanityReplacement[] {
-  const replacements: ProfanityReplacement[] = [];
-  const seen = new Set<string>();
+const GENERIC_HIGHLIGHT_WORDS = new Set([
+  "너무",
+  "많이",
+  "정말",
+  "진짜",
+  "아주",
+  "매우",
+  "완전",
+  "되게",
+  "엄청",
+  "굉장히",
+  "조금",
+  "좀",
+  "더",
+  "가장",
+  "제일",
+  "계속",
+]);
 
-  if (Array.isArray(value)) {
-    for (const item of value.slice(0, 12)) {
-      if (typeof item !== "object" || item === null) continue;
-      const record = item as Record<string, unknown>;
-      if (
-        typeof record.original !== "string" ||
-        typeof record.replacement !== "string"
-      ) {
-        continue;
-      }
-
-      const original = record.original;
-      const replacement = record.replacement.trim();
-      const originalLength = Array.from(original).length;
-      if (
-        original === "" ||
-        replacement === "" ||
-        original === replacement ||
-        originalLength > 30 ||
-        Array.from(replacement).length > originalLength ||
-        !content.includes(original) ||
-        containsProfanity(replacement) ||
-        seen.has(original)
-      ) {
-        continue;
-      }
-      seen.add(original);
-      replacements.push({ original, replacement });
-    }
-  }
-
-  // A deployed older prompt or a missed model detection must not expose a
-  // locally known expression. LLM choices win; this only fills uncovered terms.
-  for (const fallback of buildFallbackProfanityReplacements(content)) {
-    if (!seen.has(fallback.original)) {
-      seen.add(fallback.original);
-      replacements.push(fallback);
-    }
-  }
-
-  return replacements;
+function isSpecificHighlightWord(word: string): boolean {
+  return !GENERIC_HIGHLIGHT_WORDS.has(word.trim());
 }
 
 // The model's JSON is untrusted input: every field is validated, and highlight
@@ -237,20 +203,14 @@ function parseAnalysis(parsed: unknown, content: string): DiaryAnalysis {
     throw new AnalysisError("invalid-response");
   }
 
-  const profanityReplacements = parseProfanityReplacements(
-    record.profanity_replacements,
-    content,
-  );
-  const displayedContent = applyProfanityReplacements(
-    content,
-    profanityReplacements,
-  );
-
   // Verbatim-filter BEFORE capping at 4: if the model pads the list with
   // paraphrased words, slicing first could throw away the valid ones.
   const highlightWords = toStringArray(record.highlight_words, 8)
     .filter(
-      (word) => displayedContent.includes(word) && !containsProfanity(word),
+      (word) =>
+        content.includes(word) &&
+        !containsProfanity(word) &&
+        isSpecificHighlightWord(word),
     )
     .slice(0, 4);
   const starWords = toStringArray(record.star_words, 4)
@@ -265,7 +225,7 @@ function parseAnalysis(parsed: unknown, content: string): DiaryAnalysis {
   const sentenceIsUsable =
     sentence !== "" &&
     sentence.length <= 100 &&
-    displayedContent.includes(sentence) &&
+    content.includes(sentence) &&
     !containsProfanity(sentence);
 
   return {
@@ -279,7 +239,6 @@ function parseAnalysis(parsed: unknown, content: string): DiaryAnalysis {
     starWords,
     comment: capComment(comment),
     stamp: toDiaryStamp(record.stamp),
-    profanityReplacements,
   };
 }
 
@@ -287,7 +246,6 @@ async function analyzeWithEdgeFunction(
   input: DiaryAnalysisInput,
 ): Promise<DiaryAnalysis> {
   try {
-    // AIDEV-NOTE: 원문은 분석에 그대로 보내고, 검증된 순화 표현은 PreviewStep/diaryImage의 표시 단계에서만 적용한다.
     const body = await invokeDiaryAi(
       {
         action: "analyze",
@@ -423,7 +381,7 @@ async function analyzeWithMock(
     photoKeywords: ["여름", "추억"],
     diaryKeywords: words.slice(0, 4),
     emotions: emotions.length > 0 ? emotions : ["행복", "여유"],
-    highlightWords: words.slice(0, 3),
+    highlightWords: words.filter(isSpecificHighlightWord).slice(0, 3),
     highlightSentence:
       highlightSentence !== null && !containsProfanity(highlightSentence)
         ? highlightSentence
@@ -431,6 +389,5 @@ async function analyzeWithMock(
     starWords: words.slice(0, 2),
     comment: MOCK_COMMENTS[input.content.length % MOCK_COMMENTS.length],
     stamp: mockStamp(input.content),
-    profanityReplacements: buildFallbackProfanityReplacements(input.content),
   };
 }

@@ -30,14 +30,8 @@ import {
   TITLE_HANDWRITING_STRENGTH,
 } from "../utils/handwriting";
 import { buildHighlightSegments } from "../utils/highlight";
-import {
-  buildStarPlacements,
-  pickStarMarkAsset,
-} from "../utils/starMarks";
-import {
-  applyProfanityReplacements,
-  buildFallbackProfanityReplacements,
-} from "../utils/profanityReplacement";
+import { buildStarPlacements, pickStarMarkAsset } from "../utils/starMarks";
+import { buildProfanityCheckRuns } from "../utils/profanityCheck";
 import { STAMP_ALT_TEXT, STAMP_IMAGE_URLS } from "../constants/stamp";
 
 interface PreviewStepProps {
@@ -165,6 +159,11 @@ function HighlightedContent({
           columnCount,
           columnCount * rowCount,
         );
+  const profanityCheckRuns = buildProfanityCheckRuns(
+    content,
+    columnCount,
+    columnCount * rowCount,
+  );
 
   const correctionRuns: Array<{
     mark: "circle" | "underline";
@@ -255,6 +254,18 @@ function HighlightedContent({
             }}
           />
         ))}
+        {profanityCheckRuns.map((run, index) => (
+          <span
+            key={`profanity-check-${index}`}
+            className="diary-profanity-check"
+            style={{
+              left: `${(run.startColumn / columnCount) * 100}%`,
+              top: `${(run.row / rowCount) * 100}%`,
+              width: `${(run.length / columnCount) * 100}%`,
+              height: `${100 / rowCount}%`,
+            }}
+          />
+        ))}
       </span>
     </>
   );
@@ -277,11 +288,6 @@ export function PreviewStep({
 }: PreviewStepProps) {
   const analysis =
     analysisState.status === "success" ? analysisState.analysis : null;
-  const displayedContent = applyProfanityReplacements(
-    draft.content,
-    analysis?.profanityReplacements ??
-      buildFallbackProfanityReplacements(draft.content),
-  );
 
   const sketchUrl =
     sketchState.status === "success" && !isAiTestMode
@@ -349,7 +355,7 @@ export function PreviewStep({
       : Math.max(1, Math.ceil(Array.from(analysis.comment).length / 16));
   const frameLayout =
     renderedPreview?.frameLayout ??
-    getDiaryFrameLayout(displayedContent, fallbackCommentLines);
+    getDiaryFrameLayout(draft.content, fallbackCommentLines);
 
   return (
     <div className="step-body preview-step">
@@ -489,10 +495,7 @@ export function PreviewStep({
               gridTemplateRows: `repeat(${frameLayout.contentRows}, minmax(0, 1fr))`,
             }}
           >
-            <HighlightedContent
-              content={displayedContent}
-              analysis={analysis}
-            />
+            <HighlightedContent content={draft.content} analysis={analysis} />
           </div>
 
           {/* Fixed colors throughout the card: it sits on a fixed paper
