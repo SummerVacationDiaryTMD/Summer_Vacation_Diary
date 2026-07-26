@@ -4,7 +4,7 @@
 @font-face {
   font-family: "NanumCoDingHeuiMang";
   src: url("/fonts/NanumCoDingHeuiMang.ttf") format("truetype");
-  font-display: swap;
+  font-display: fallback;
   font-style: normal;
   /* 실제 파일은 Regular 단일 굵기입니다. 다른 굵기는 브라우저가 합성합니다. */
   font-weight: 400;
@@ -13,7 +13,7 @@
 @font-face {
   font-family: "NanumDdarEGeEomMaGa";
   src: url("/fonts/NanumDdarEGeEomMaGa.ttf") format("truetype");
-  font-display: swap;
+  font-display: fallback;
   font-style: normal;
   font-weight: 400;
 }
