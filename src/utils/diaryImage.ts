@@ -21,10 +21,7 @@ import {
 } from "./handwriting";
 import { buildHighlightSegments } from "./highlight";
 import { ImageProcessError, loadImageFromDataUrl } from "./image";
-import {
-  applyProfanityReplacements,
-  buildFallbackProfanityReplacements,
-} from "./profanityReplacement";
+import { buildProfanityCheckRuns } from "./profanityCheck";
 import { STAMP_IMAGE_URLS } from "../constants/stamp";
 import {
   buildStarPlacements,
@@ -264,6 +261,29 @@ function buildCorrectionRuns(cells: DiaryCell[]): CorrectionRun[] {
   return runs;
 }
 
+function drawProfanityCheck(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+): void {
+  context.save();
+  context.beginPath();
+  context.moveTo(x + width * 0.08, y + height * 0.48);
+  context.lineTo(x + width * 0.32, y + height * 0.68);
+  context.lineTo(x + width * 0.92, y + height * 0.2);
+  context.strokeStyle = "#c33b37";
+  context.lineWidth = Math.max(2, height * 0.055);
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  context.shadowColor = "rgba(178, 43, 39, 0.28)";
+  context.shadowBlur = 1;
+  context.shadowOffsetY = 1;
+  context.stroke();
+  context.restore();
+}
+
 function drawContent(
   context: CanvasRenderingContext2D,
   content: string,
@@ -361,6 +381,20 @@ function drawContent(
       layout.height - size,
     );
     context.drawImage(starImage, starX, starY, size, size);
+  }
+
+  for (const run of buildProfanityCheckRuns(
+    content,
+    COLUMN_COUNT,
+    COLUMN_COUNT * layout.contentRows,
+  )) {
+    drawProfanityCheck(
+      context,
+      x + run.startColumn * cellWidth,
+      y + run.row * cellHeight,
+      run.length * cellWidth,
+      cellHeight,
+    );
   }
 }
 
@@ -530,11 +564,6 @@ function drawFrameTemplate(
 export async function composeDiaryImage(
   input: DiaryImageInput,
 ): Promise<ComposedDiaryImage> {
-  const displayedContent = applyProfanityReplacements(
-    input.content,
-    input.analysis?.profanityReplacements ??
-      buildFallbackProfanityReplacements(input.content),
-  );
   const stampImagePromise =
     input.analysis === null
       ? Promise.resolve<HTMLImageElement | null>(null)
@@ -581,10 +610,7 @@ export async function composeDiaryImage(
     input.analysis === null
       ? [""]
       : wrapCommentToFrame(context, input.analysis.comment);
-  const frameLayout = getDiaryFrameLayout(
-    displayedContent,
-    commentLines.length,
-  );
+  const frameLayout = getDiaryFrameLayout(input.content, commentLines.length);
 
   canvas.height = frameLayout.height;
 
@@ -683,7 +709,7 @@ export async function composeDiaryImage(
   );
   context.restore();
 
-  drawContent(context, displayedContent, input.analysis, markImages);
+  drawContent(context, input.content, input.analysis, markImages);
   drawComment(context, input.analysis, frameLayout, commentLines);
 
   if (stampImage !== null) {
