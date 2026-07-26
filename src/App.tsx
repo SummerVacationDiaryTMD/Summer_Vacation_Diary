@@ -164,6 +164,13 @@ function App() {
     };
   }, [showOnboarding]);
 
+  // quota-status never consumes a request. Start it while the onboarding is
+  // visible so the upload step can show the real remaining count immediately
+  // in the usual case, instead of beginning the network round trip on tap.
+  useEffect(() => {
+    void refreshAiQuota();
+  }, []);
+
   useEffect(() => {
     const applyInsets = (insets: {
       top: number;
@@ -261,10 +268,6 @@ function App() {
             type="button"
             onClick={() => {
               setShowOnboarding(false);
-              // Fetched here rather than on mount so a visitor who never
-              // starts a diary costs nothing, while the counter is still
-              // ready before the upload step that displays it.
-              void refreshAiQuota();
             }}
           >
             시작하기
