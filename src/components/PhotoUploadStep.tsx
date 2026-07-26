@@ -134,6 +134,7 @@ export function PhotoUploadStep({
 
     // 아직 동의하지 않았다면 체크박스 영역으로 이동합니다.
     if (!agreed) {
+      toast.openToast("필수 동의 항목을 확인해 주세요.");
       scrollToConsentCheck();
       return;
     }
@@ -409,7 +410,9 @@ export function PhotoUploadStep({
                 disabled={processing}
                 onClick={openPickerAfterConsent}
               >
-                동의하고 사진 선택
+                동의하고
+                <br />
+                사진 선택
               </Button>
             </div>
           </div>
