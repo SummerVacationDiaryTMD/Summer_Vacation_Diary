@@ -155,6 +155,9 @@ function App() {
     fileName: string;
   } | null>(null);
 
+  const [hasVisitedWrite, setHasVisitedWrite] = useState(false);
+  const [hasVisitedPreview, setHasVisitedPreview] = useState(false);
+
   useEffect(() => {
     const root = document.documentElement;
     root.toggleAttribute("data-onboarding-open", showOnboarding);
@@ -285,6 +288,8 @@ function App() {
       return;
     }
 
+    setHasVisitedWrite(true);
+
     // PhotoUploadStep already collects the required processing consent before
     // a photo can enter the draft, so another confirmation here would repeat
     // the same notice and interrupt the user a second time.
@@ -321,6 +326,8 @@ function App() {
       );
       return;
     }
+
+    setHasVisitedPreview(true);
 
     // Navigation is never gated on the budget: with no check the preview simply
     // shows the diary without a comment, and 완성하기 still works from there.
@@ -539,6 +546,10 @@ function App() {
           onStartNew={() => {
             setFinishedDiary(null);
             clearDraft();
+
+            setHasVisitedWrite(false);
+            setHasVisitedPreview(false);
+
             setStep("upload");
           }}
         />
@@ -552,7 +563,7 @@ function App() {
             aria-disabled={!canWrite}
             onClick={handleStartWriting}
           >
-            일기 쓰러 가기
+            {hasVisitedWrite ? "다시 일기 쓰러 가기" : "일기 쓰러 가기"}
           </Button>
         </AppBottomBar>
       )}
@@ -565,7 +576,7 @@ function App() {
             variant="weak"
             onClick={() => setStep("upload")}
           >
-            이전
+            사진 변경
           </Button>
 
           <Button
@@ -574,7 +585,7 @@ function App() {
             aria-disabled={!canPreview}
             onClick={handlePreview}
           >
-            검사 받기
+            {hasVisitedPreview ? "다시 검사 받기" : "검사 받기"}
           </Button>
         </AppBottomBar>
       )}
@@ -587,7 +598,7 @@ function App() {
             variant="weak"
             onClick={() => setStep("write")}
           >
-            수정하기
+            일기 수정
           </Button>
 
           <Button
@@ -596,7 +607,7 @@ function App() {
             disabled={saving}
             onClick={handleFinish}
           >
-            완성하기
+            일기 완성하기
           </Button>
         </AppBottomBar>
       )}

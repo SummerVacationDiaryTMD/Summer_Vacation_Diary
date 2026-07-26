@@ -981,7 +981,7 @@ html:has(.diary-content-section textarea:focus) {
   position: relative !important;
   min-height: 56px !important;
   box-sizing: border-box !important;
-  padding: 13px 22px !important;
+  padding: 13px 6px !important;
 
   border-width: 2px !important;
   border-style: solid !important;
@@ -2369,6 +2369,7 @@ mark.highlight-underline {
   box-sizing: border-box;
   background: #f6eee4;
   text-align: center;
+  transform: translateY(2px);
 }
 
 .comment-error {
