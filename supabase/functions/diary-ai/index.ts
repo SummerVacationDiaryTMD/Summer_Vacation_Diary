@@ -243,6 +243,8 @@ interface QuotaSnapshot {
   resetAt: string;
   blocked: null | "device" | "ip-burst" | "ip-daily" | "service";
   region: QuotaRegion;
+  /** Lets the client hide quota UI while the server deliberately bypasses it. */
+  testMode: boolean;
 }
 
 // Raw counters as the database returns them.
@@ -393,6 +395,7 @@ function buildSnapshot(
     resetAt: new Date(Date.parse(dayWindowStart) + DAY_MS).toISOString(),
     blocked: blockedReason(counts, decision),
     region,
+    testMode: false,
   };
 }
 
@@ -406,6 +409,7 @@ function testModeSnapshot(request: Request): QuotaSnapshot {
     resetAt: new Date(Date.parse(dayWindowStart) + DAY_MS).toISOString(),
     blocked: null,
     region: requestRegion(request),
+    testMode: true,
   };
 }
 

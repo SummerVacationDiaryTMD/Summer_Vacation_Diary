@@ -38,6 +38,8 @@ export interface QuotaSnapshot {
   resetAt: string;
   blocked: QuotaBlockedReason | null;
   region: QuotaRegion;
+  /** True only when the Edge Function's private test-mode Secret is enabled. */
+  testMode: boolean;
 }
 
 const BLOCKED_REASONS: readonly string[] = [
@@ -47,7 +49,45 @@ const BLOCKED_REASONS: readonly string[] = [
   "service",
 ];
 
-let snapshot: QuotaSnapshot | null = null;
+const QUOTA_SNAPSHOT_STORAGE_KEY = "summer-vacation-diary:quota:v1";
+
+function readStoredSnapshot(): QuotaSnapshot | null {
+  try {
+    const raw = localStorage.getItem(QUOTA_SNAPSHOT_STORAGE_KEY);
+    if (raw === null) {
+      return null;
+    }
+    // Reuse the response parser so persisted data is held to exactly the same
+    // shape as data arriving over the network.
+    const parsed = parseQuotaSnapshot({ quota: JSON.parse(raw) });
+    if (
+      parsed === null ||
+      parsed.testMode ||
+      Date.parse(parsed.resetAt) <= Date.now()
+    ) {
+      localStorage.removeItem(QUOTA_SNAPSHOT_STORAGE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function persistSnapshot(value: QuotaSnapshot): void {
+  try {
+    if (value.testMode) {
+      localStorage.removeItem(QUOTA_SNAPSHOT_STORAGE_KEY);
+      return;
+    }
+    localStorage.setItem(QUOTA_SNAPSHOT_STORAGE_KEY, JSON.stringify(value));
+  } catch {
+    // Storage is only a display cache. Private browsing and a full quota must
+    // never affect the actual server-backed request flow.
+  }
+}
+
+let snapshot: QuotaSnapshot | null = readStoredSnapshot();
 const listeners = new Set<() => void>();
 
 function emit(): void {
@@ -126,6 +166,9 @@ export function parseQuotaSnapshot(body: unknown): QuotaSnapshot | null {
     resetAt: record.resetAt,
     blocked: blocked as QuotaBlockedReason | null,
     region: parseRegion(record.region),
+    // Older Function deployments omit this field and must retain their normal
+    // quota behavior rather than accidentally hiding the counter.
+    testMode: record.testMode === true,
   };
 }
 
@@ -140,6 +183,7 @@ export function recordQuotaSnapshot(body: unknown): void {
     return;
   }
   snapshot = parsed;
+  persistSnapshot(parsed);
   emit();
 }
 
@@ -155,6 +199,11 @@ export function getQuotaSnapshot(): QuotaSnapshot | null {
 export function expireQuotaSnapshot(now: number): void {
   if (snapshot !== null && now >= Date.parse(snapshot.resetAt)) {
     snapshot = null;
+    try {
+      localStorage.removeItem(QUOTA_SNAPSHOT_STORAGE_KEY);
+    } catch {
+      // Same best-effort rule as persistence above.
+    }
     emit();
   }
 }

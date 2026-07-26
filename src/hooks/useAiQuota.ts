@@ -39,6 +39,8 @@ export type AiQuotaView =
       blocked: QuotaBlockedReason | null;
       region: QuotaRegion;
       resetAt: string;
+      /** Server-side test mode bypasses counters but remains visible in the UI. */
+      testMode: boolean;
     };
 
 const QUOTA_STATUS_TIMEOUT_MS = 10_000;
@@ -133,6 +135,7 @@ export function useAiQuota(): AiQuotaView {
       blocked: snapshot.blocked,
       region: snapshot.region,
       resetAt: snapshot.resetAt,
+      testMode: snapshot.testMode,
     };
   }, [snapshot, pendingSketches]);
 }
@@ -148,7 +151,7 @@ export function isActionSpent(
   view: AiQuotaView,
   action: "sketch" | "analyze",
 ): boolean {
-  return view.mode === "ready" && !view[action].available;
+  return view.mode === "ready" && !view.testMode && !view[action].available;
 }
 
 /**

@@ -19,7 +19,7 @@ function NoticeBox({ lines }: { lines: string[] }) {
 export function SketchQuotaNotice() {
   const quota = useAiQuota();
 
-  if (isAiTestMode && quota.mode !== "hidden") {
+  if (isAiTestMode) {
     return (
       <NoticeBox
         lines={[
@@ -40,7 +40,18 @@ export function SketchQuotaNotice() {
     );
   }
 
+  if (quota.mode === "ready" && quota.testMode) {
+    return (
+      <NoticeBox
+        lines={["테스트 모드 · 그림 그리기: 횟수 제한 없이 이용할 수 있어요."]}
+      />
+    );
+  }
+
   if (quota.mode !== "ready") {
+    if (quota.mode === "unknown") {
+      return <NoticeBox lines={["오늘의 그림 그리기 기회를 확인하고 있어요."]} />;
+    }
     return null;
   }
 
@@ -71,6 +82,14 @@ export function SketchQuotaNotice() {
 export function AnalyzeQuotaNotice() {
   const quota = useAiQuota();
 
+  if (isAiTestMode) {
+    return (
+      <NoticeBox
+        lines={["테스트 모드 · 일기 검사: 횟수 제한 없이 이용할 수 있어요."]}
+      />
+    );
+  }
+
   if (isRegionBlocked(quota)) {
     return (
       <NoticeBox
@@ -82,7 +101,18 @@ export function AnalyzeQuotaNotice() {
     );
   }
 
+  if (quota.mode === "ready" && quota.testMode) {
+    return (
+      <NoticeBox
+        lines={["테스트 모드 · 일기 검사: 횟수 제한 없이 이용할 수 있어요."]}
+      />
+    );
+  }
+
   if (quota.mode !== "ready") {
+    if (quota.mode === "unknown") {
+      return <NoticeBox lines={["오늘의 일기 검사 기회를 확인하고 있어요."]} />;
+    }
     return null;
   }
 
