@@ -34,6 +34,10 @@ import { buildHighlightSegments } from "../utils/highlight";
 import { drawTextMosaic } from "../utils/mosaic";
 import { findProfanityMatches } from "../utils/profanity";
 import { buildProfanityCorrectionRuns } from "../utils/profanityCorrection";
+import {
+  buildStarPlacements,
+  pickStarMarkAsset,
+} from "../utils/starMarks";
 import { STAMP_ALT_TEXT, STAMP_IMAGE_URLS } from "../constants/stamp";
 
 interface PreviewStepProps {
@@ -233,6 +237,18 @@ function HighlightedContent({
     });
   }
   const visibleCells = cells.slice(0, columnCount * rowCount);
+  const starPlacements =
+    analysis === null
+      ? []
+      : buildStarPlacements(
+          content,
+          analysis.starWords,
+          columnCount,
+          columnCount * rowCount,
+        ).filter(({ row, column }) => {
+          const cell = visibleCells[row * columnCount + column];
+          return cell !== undefined && !cell.isProfanity;
+        });
   const profanityRuns =
     profanityUnderlineEnabled || profanityTeacherNoteEnabled
       ? buildProfanityCorrectionRuns(visibleCells, columnCount)
@@ -311,6 +327,22 @@ function HighlightedContent({
                 run.row,
                 run.startColumn,
                 run.length,
+              )}")`,
+            }}
+          />
+        ))}
+        {starPlacements.map((placement, index) => (
+          <span
+            key={`star-${index}`}
+            className="diary-star-mark"
+            style={{
+              left: `${(placement.column / columnCount) * 100}%`,
+              top: `${(placement.row / rowCount) * 100}%`,
+              width: `${100 / columnCount}%`,
+              height: `${100 / rowCount}%`,
+              backgroundImage: `url("${pickStarMarkAsset(
+                placement.row,
+                placement.column,
               )}")`,
             }}
           />

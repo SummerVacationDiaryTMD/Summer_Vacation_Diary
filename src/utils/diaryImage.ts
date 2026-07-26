@@ -25,6 +25,11 @@ import { drawTextMosaic } from "./mosaic";
 import { findProfanityMatches } from "./profanity";
 import { buildProfanityCorrectionRuns } from "./profanityCorrection";
 import { STAMP_IMAGE_URLS } from "../constants/stamp";
+import {
+  buildStarPlacements,
+  pickStarMarkAsset,
+  STAR_MARK_URLS,
+} from "./starMarks";
 
 export interface DiaryImageInput {
   imageDataUrl: string;
@@ -411,6 +416,41 @@ function drawContent(
     }
   }
 
+  const starPlacements =
+    analysis === null
+      ? []
+      : buildStarPlacements(
+          content,
+          analysis.starWords,
+          COLUMN_COUNT,
+          COLUMN_COUNT * layout.contentRows,
+        ).filter(({ row, column }) => {
+          const cell = cells[row * COLUMN_COUNT + column];
+          return cell !== undefined && !cell.isProfanity;
+        });
+
+  for (const placement of starPlacements) {
+    const starImage = markImages.get(
+      pickStarMarkAsset(placement.row, placement.column),
+    );
+    if (starImage === undefined) continue;
+
+    const size = Math.min(cellWidth, cellHeight) * 0.84;
+    const cellX = x + placement.column * cellWidth;
+    const cellY = y + placement.row * cellHeight;
+    // Stars may cross manuscript cells and region lines, but the complete
+    // drawing must remain inside the exported 4:5 image.
+    const starX = Math.min(
+      Math.max(cellX - size * 0.28, 0),
+      layout.width - size,
+    );
+    const starY = Math.min(
+      Math.max(cellY - size * 0.22, 0),
+      layout.height - size,
+    );
+    context.drawImage(starImage, starX, starY, size, size);
+  }
+
   context.font = `700 22px ${TEACHER_COMMENT_FONT_STACK}`;
   context.fillStyle = "#d24b42";
   context.textBaseline = "alphabetic";
@@ -681,7 +721,7 @@ export async function composeDiaryImage(
   const markImages = new Map<string, HTMLImageElement>();
   if (input.analysis !== null) {
     await Promise.all(
-      CORRECTION_MARK_URLS.map(async (url) => {
+      [...CORRECTION_MARK_URLS, ...STAR_MARK_URLS].map(async (url) => {
         markImages.set(url, await loadImageFromDataUrl(url));
       }),
     );

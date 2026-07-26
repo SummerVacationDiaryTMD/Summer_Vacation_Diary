@@ -34,6 +34,8 @@ export interface DiaryAnalysis {
   highlightWords: string[];
   /** One verbatim sentence of the diary content, underlined in the preview. */
   highlightSentence: string | null;
+  /** Verbatim diary expressions praised with a star in the preview. */
+  starWords: string[];
   /** The teacher-style one-line comment. */
   comment: string;
   /** The stamp displayed on the completed diary. */
@@ -183,6 +185,9 @@ function parseAnalysis(parsed: unknown, content: string): DiaryAnalysis {
   const highlightWords = toStringArray(record.highlight_words, 8)
     .filter((word) => content.includes(word) && !containsProfanity(word))
     .slice(0, 4);
+  const starWords = toStringArray(record.star_words, 4)
+    .filter((word) => content.includes(word) && !containsProfanity(word))
+    .slice(0, 2);
   const sentence =
     typeof record.highlight_sentence === "string"
       ? record.highlight_sentence.trim()
@@ -203,6 +208,7 @@ function parseAnalysis(parsed: unknown, content: string): DiaryAnalysis {
     emotions: toStringArray(record.emotions, 3),
     highlightWords,
     highlightSentence: sentenceIsUsable ? sentence : null,
+    starWords,
     comment: capComment(comment),
     stamp: toDiaryStamp(record.stamp),
   };
@@ -353,6 +359,7 @@ async function analyzeWithMock(
       highlightSentence !== null && !containsProfanity(highlightSentence)
         ? highlightSentence
         : null,
+    starWords: words.slice(0, 2),
     comment: MOCK_COMMENTS[input.content.length % MOCK_COMMENTS.length],
     stamp: mockStamp(input.content),
   };

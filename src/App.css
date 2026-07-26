@@ -2013,6 +2013,18 @@ html:has(.diary-content-section textarea:focus) {
   background-position: left bottom 5%;
 }
 
+.diary-star-mark {
+  position: absolute;
+  z-index: 3;
+  box-sizing: border-box;
+  /* This layer may cross manuscript cells and printed region lines. The
+     outer .diary-template alone clips at the final 4:5 image boundary. */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 104% 104%;
+  transform: translate(-48%, -34%);
+}
+
 .profanity-correction {
   position: absolute;
   z-index: 3;
