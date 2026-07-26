@@ -565,7 +565,7 @@ function App() {
             variant="weak"
             onClick={() => setStep("upload")}
           >
-            이전
+            사진 변경
           </Button>
 
           <Button
@@ -587,7 +587,7 @@ function App() {
             variant="weak"
             onClick={() => setStep("write")}
           >
-            수정하기
+            일기 수정
           </Button>
 
           <Button
@@ -596,7 +596,7 @@ function App() {
             disabled={saving}
             onClick={handleFinish}
           >
-            완성하기
+            일기 완성하기
           </Button>
         </AppBottomBar>
       )}
