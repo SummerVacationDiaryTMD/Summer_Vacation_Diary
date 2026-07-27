@@ -22,6 +22,10 @@ import {
 import { buildHighlightSegments } from "./highlight";
 import { ImageProcessError, loadImageFromDataUrl } from "./image";
 import { buildProfanityCheckRuns } from "./profanityCheck";
+import {
+  pickProfanityMarkAsset,
+  PROFANITY_MARK_URLS,
+} from "./profanityMarks";
 import { STAMP_IMAGE_URLS } from "../constants/stamp";
 import {
   buildStarPlacements,
@@ -266,29 +270,6 @@ function buildCorrectionRuns(cells: DiaryCell[]): CorrectionRun[] {
   return runs;
 }
 
-function drawProfanityCheck(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-): void {
-  context.save();
-  context.beginPath();
-  context.moveTo(x + width * 0.08, y + height * 0.48);
-  context.lineTo(x + width * 0.32, y + height * 0.68);
-  context.lineTo(x + width * 0.92, y + height * 0.2);
-  context.strokeStyle = "#c33b37";
-  context.lineWidth = Math.max(2, height * 0.055);
-  context.lineCap = "round";
-  context.lineJoin = "round";
-  context.shadowColor = "rgba(178, 43, 39, 0.28)";
-  context.shadowBlur = 1;
-  context.shadowOffsetY = 1;
-  context.stroke();
-  context.restore();
-}
-
 function drawContent(
   context: CanvasRenderingContext2D,
   content: string,
@@ -393,8 +374,13 @@ function drawContent(
     COLUMN_COUNT,
     COLUMN_COUNT * layout.contentRows,
   )) {
-    drawProfanityCheck(
-      context,
+    const checkImage = markImages.get(
+      pickProfanityMarkAsset(run.row, run.startColumn, run.length),
+    );
+    if (checkImage === undefined) continue;
+
+    context.drawImage(
+      checkImage,
       x + run.startColumn * cellWidth,
       y + run.row * cellHeight,
       run.length * cellWidth,
@@ -557,13 +543,15 @@ export async function composeDiaryImage(
   // 미리 받아두는 이유: drawContent는 동기 함수라 그리는 도중에는
   // 로드를 기다릴 수 없기 때문입니다 (번들 내 로컬 파일이라 비용은 미미).
   const markImages = new Map<string, HTMLImageElement>();
+  const markUrls = [...PROFANITY_MARK_URLS];
   if (input.analysis !== null) {
-    await Promise.all(
-      [...CORRECTION_MARK_URLS, ...STAR_MARK_URLS].map(async (url) => {
-        markImages.set(url, await loadImageFromDataUrl(url));
-      }),
-    );
+    markUrls.push(...CORRECTION_MARK_URLS, ...STAR_MARK_URLS);
   }
+  await Promise.all(
+    markUrls.map(async (url) => {
+      markImages.set(url, await loadImageFromDataUrl(url));
+    }),
+  );
 
   try {
     await Promise.all([

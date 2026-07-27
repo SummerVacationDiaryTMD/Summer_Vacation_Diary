@@ -3,16 +3,16 @@
    그림일기 미리보기와 저장 이미지에 자동으로 적용됩니다. */
 @font-face {
   font-family: "NanumCoDingHeuiMang";
-  src: url("/fonts/NanumCoDingHeuiMang.woff") format("woff");
-  font-display: fallback;
+  src: url("/fonts/NanumCoDingHeuiMang.ttf") format("truetype");
+  font-display: swap;
   font-style: normal;
   font-weight: 400;
 }
 
 @font-face {
   font-family: "NanumDdarEGeEomMaGa";
-  src: url("/fonts/NanumDdarEGeEomMaGa.woff") format("woff");
-  font-display: fallback;
+  src: url("/fonts/NanumDdarEGeEomMaGa.ttf") format("truetype");
+  font-display: swap;
   font-style: normal;
   font-weight: 400;
 }
@@ -1694,7 +1694,7 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .analysis-loading-text {
-  font-family: "NanumDdarEGeEomMaGa", sans-serif !important;
+  font-family: "NanumCoDingHeuiMang", sans-serif !important;
   font-size: 16px !important;
   line-height: 1.35 !important;
   font-weight: 700 !important;
@@ -2060,40 +2060,10 @@ html:has(.diary-content-section textarea:focus) {
   position: absolute;
   z-index: 4;
   overflow: visible;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
   filter: drop-shadow(0 0.7px 0 rgba(178, 43, 39, 0.28));
-  transform: rotate(-3deg);
-}
-
-.diary-profanity-check::before,
-.diary-profanity-check::after {
-  position: absolute;
-  left: 9%;
-  height: clamp(1.5px, 4%, 3px);
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    #c33b37 7%,
-    #d24b42 56%,
-    #b93431 96%,
-    transparent 100%
-  );
-  content: "";
-  opacity: 0.88;
-  transform-origin: left center;
-}
-
-.diary-profanity-check::before {
-  top: 49%;
-  width: 36%;
-  transform: rotate(39deg) skewX(3deg);
-}
-
-.diary-profanity-check::after {
-  top: 68%;
-  left: 36%;
-  width: 62%;
-  transform: rotate(-42deg) skewX(-2deg);
 }
 
 .diary-card-comment {
@@ -2341,7 +2311,7 @@ mark.highlight-underline {
   justify-content: center;
   margin: 0;
   overflow: visible !important;
-  font-family: "NanumDdarEGeEomMaGa", sans-serif !important;
+  font-family: "NanumCoDingHeuiMang", sans-serif !important;
   font-size: clamp(8px, 2.56cqw, 12px) !important;
   line-height: 1.25;
   text-align: center;
