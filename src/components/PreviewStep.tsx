@@ -355,13 +355,9 @@ export function PreviewStep({
   const weekday = Number.isNaN(diaryDate.getTime())
     ? ""
     : new Intl.DateTimeFormat("ko-KR", { weekday: "short" }).format(diaryDate);
-  const fallbackCommentLines =
-    analysis === null
-      ? 1
-      : Math.max(1, Math.ceil(Array.from(analysis.comment).length / 16));
   const frameLayout =
     renderedPreview?.frameLayout ??
-    getDiaryFrameLayout(draft.content, fallbackCommentLines);
+    getDiaryFrameLayout(draft.content);
 
   return (
     <div className="step-body preview-step">

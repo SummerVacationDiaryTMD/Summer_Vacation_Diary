@@ -57,14 +57,18 @@ export function WriteStep({
     onChange({ content: limitedContent });
   };
   const handleTitleChange = (value: string) => {
+    const limitedTitle = Array.from(value)
+      .slice(0, TITLE_MAX_LENGTH)
+      .join("");
+
     if (
-      Array.from(value).length >= TITLE_MAX_LENGTH &&
+      Array.from(limitedTitle).length >= TITLE_MAX_LENGTH &&
       titleLength < TITLE_MAX_LENGTH
     ) {
       setTitleLimitShakeCount((count) => count + 1);
     }
 
-    onChange({ title: value });
+    onChange({ title: limitedTitle });
   };
   // Validate on trimmed length so whitespace padding can't satisfy the
   // 20-char minimum; the visible counter still shows the raw length.

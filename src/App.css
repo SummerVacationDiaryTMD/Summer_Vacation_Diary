@@ -2100,10 +2100,9 @@ html:has(.diary-content-section textarea:focus) {
   margin: 0;
   overflow: hidden !important;
 
-  font-size: 7.8624cqw !important;
+  font-size: 7.2cqw !important;
   font-family: "NanumDdarEGeEomMaGa", sans-serif !important;
   font-weight: 700 !important;
-  text-overflow: ellipsis;
   white-space: nowrap;
 
   transform: translateY(-3px);
