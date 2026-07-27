@@ -372,7 +372,7 @@ function App() {
       // Name only what is actually still generating (not a fixed "both"),
       // so the dialog never claims a piece that is already done.
       const pending = [
-        drawingLoading ? "색연필 그림" : null,
+        drawingLoading ? "크레파스 그림" : null,
         commentLoading ? "선생님 한마디" : null,
       ].filter((part): part is string => part !== null);
       const proceed = await openConfirm({

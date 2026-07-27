@@ -1,271 +1,240 @@
 # 나의 여름방학 일기
 
-<p align="center">
-  <img src="./docs/images/app-icon-600.png" width="180" alt="나의 여름방학 일기 앱 아이콘" />
-</p>
+사진 한 장과 짧은 글을 크레파스 그림일기로 완성해 저장하는 초등학생·가족용 Apps in Toss 미니앱입니다.
 
 <p align="center">
-  여름 사진 한 장과 짧은 글을 색연필 그림일기로 완성하는 Apps in Toss 미니앱
+  <img src="./docs/images/app-icon-600.png" width="160" alt="나의 여름방학 일기 앱 아이콘" />
 </p>
 
-`나의 여름방학 일기`는 방학 중 기억하고 싶은 사진을 고르고 글을 쓰면, 사진을
-색연필 그림으로 바꾸고 일기의 분위기와 내용을 살펴 선생님의 한마디와 첨삭 표시를
-더해 주는 그림일기 서비스입니다. 완성된 일기는 한 장의 이미지로 저장하거나
-친구에게 앱 링크로 공유할 수 있습니다.
+사진 선택과 일기 작성, 그림 변환, 선생님 첨삭, 결과물 저장까지 하나의 3단계 흐름으로 제공합니다.
 
-> Apps in Toss 바이브코딩 챌린지에 참여하는 6인 팀 프로젝트입니다.
-> 앱 ID는 `my-summer-story`이며, 사용자에게는 `나의 여름방학 일기`로
-> 표시합니다. 챌린지 규정에 따라 앱 이름에는 `AI`라는 단어를 사용하지 않습니다.
+[![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=white)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-5.7.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Vite](https://img.shields.io/badge/Vite-6.4.3-646CFF?logo=vite&logoColor=white)](https://vite.dev/) [![Apps in Toss](https://img.shields.io/badge/Apps_in_Toss-2.10.7-0064FF?logo=toss&logoColor=white)](https://developers-apps-in-toss.toss.im/) [![TDS Mobile](https://img.shields.io/badge/TDS_Mobile-2.5.0-0064FF?logo=toss&logoColor=white)](https://tossmini-docs.toss.im/tds-mobile/) [![React Easy Crop](https://img.shields.io/badge/React_Easy_Crop-6.2.3-61DAFB?logo=react&logoColor=white)](https://valentinh.github.io/react-easy-crop/) [![Supabase](https://img.shields.io/badge/Supabase-Edge_Functions_%26_PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 
-## 완성 예시
+## 동작 화면
 
-<p align="center">
-  <img src="./docs/images/finished-diary.jpg" width="520" alt="색연필 그림과 원고지, 선생님의 한마디가 담긴 완성 그림일기" />
-</p>
+아래 여덟 장은 시작부터 최종 이미지 저장까지의 핵심 흐름을 보여줍니다. 같은 기기와 화면 배율로 촬영한 세로 화면을 사용해 단계별 변화를 한눈에 비교할 수 있도록 구성했습니다.
 
-사진은 색연필 그림으로 변환되고, 11칸 × 5줄 원고지에는 손글씨 느낌과 함께
-중요한 단어의 동그라미, 문장의 물결 밑줄, 선생님의 한마디와 해시태그가 표시됩니다.
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <strong>1. 온보딩</strong><br /><br />
+      <img src="./docs/images/screenshots/01-onboarding.png" width="300" alt="나의 여름방학 일기 온보딩 화면" /><br /><br />
+      <sub>여름 바다 일러스트와 서비스 이름, 시작하기 버튼을 보여주는 첫 화면</sub>
+    </td>
+    <td align="center" width="50%">
+      <strong>2. 사진 업로드</strong><br /><br />
+      <img src="./docs/images/screenshots/02-photo-upload.png" width="300" alt="그림일기로 만들 사진을 업로드하는 화면" /><br /><br />
+      <sub>사진 형식·용량과 하루 그림 생성 횟수를 확인하고 사진 선택을 시작하는 화면</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <strong>3. 사진·일기 처리 동의</strong><br /><br />
+      <img src="./docs/images/screenshots/03-photo-consent.png" width="300" alt="사진과 일기 처리에 동의하는 화면" /><br /><br />
+      <sub>처리 정보·목적·전송 및 보관 내용을 확인하고 사진 선택에 필수 동의하는 화면</sub>
+    </td>
+    <td align="center" width="50%">
+      <strong>4. 그림일기 작성</strong><br /><br />
+      <img src="./docs/images/screenshots/04-write-diary.png" width="300" alt="제목과 날짜, 날씨, 일기를 작성하는 화면" /><br /><br />
+      <sub>제목·날짜·날씨와 20~65자 일기를 작성하고 검사 받기를 선택하는 화면</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <strong>5. 선생님 검사 진행</strong><br /><br />
+      <img src="./docs/images/screenshots/05-teacher-review.png" width="300" alt="선생님이 그림일기를 검사하는 동안 표시되는 화면" /><br /><br />
+      <sub>그림일기 미리보기에서 선생님 한마디와 첨삭 결과를 기다리는 처리 상태</sub>
+    </td>
+    <td align="center" width="50%">
+      <strong>6. 그림일기 미리보기</strong><br /><br />
+      <img src="./docs/images/screenshots/06-diary-preview.png" width="300" alt="크레파스 그림과 첨삭 결과가 반영된 그림일기 미리보기 화면" /><br /><br />
+      <sub>크레파스 그림, 원고지 본문, 첨삭 표시, 선생님 한마디와 도장이 모두 반영된 화면</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <strong>7. 완성 이미지 저장과 공유</strong><br /><br />
+      <img src="./docs/images/screenshots/07-complete-diary-modal.png" width="300" alt="완성된 그림일기를 저장하거나 공유하는 화면" /><br /><br />
+      <sub>완성 이미지를 확인하고 이미지 저장·앱 공유·새 일기 쓰기를 선택하는 모달</sub>
+    </td>
+    <td align="center" width="50%">
+      <strong>8. 최종 그림일기 JPEG</strong><br /><br />
+      <img src="./docs/images/screenshots/08-result.JPG" width="300" alt="사진과 일기, 첨삭 결과가 합성된 최종 그림일기 이미지" /><br /><br />
+      <sub>사진·본문·첨삭·한마디·도장이 한 장으로 합성되어 기기에 저장되는 최종 결과물</sub>
+    </td>
+  </tr>
+</table>
 
 ## 주요 기능
 
-### 1. 안전한 사진 선택
+| 기능             | 구현 내용                                                                       | 상태      |
+| ---------------- | ------------------------------------------------------------------------------- | --------- |
+| 사진 선택·자르기 | JPEG·PNG·WEBP 1장을 검사하고 3:2 영역을 1278×852 JPEG로 변환                    | 구현 완료 |
+| 정보 처리 동의   | 사진·일기, 기기 식별값·IP의 처리 목적과 전송·보관 방식을 사진 선택 전에 안내    | 구현 완료 |
+| 일기 작성        | 제목, 날짜, 날씨, 13×5 원고지 분량의 본문 입력                                  | 구현 완료 |
+| 사진 변환        | Supabase `diary-ai` 호출 또는 브라우저 Canvas 로컬 연필 필터 적용               | 구현 완료 |
+| 일기 검사        | 키워드·감정·첨삭 대상·별표·도장·선생님 한마디 표시                              | 구현 완료 |
+| 결과 이미지 생성 | 미리보기와 같은 1080×1350 그림일기를 Canvas에서 JPEG로 합성                     | 구현 완료 |
+| 저장·공유        | 토스에서는 기기 저장·공유 API, 브라우저에서는 다운로드·Web Share·링크 복사 사용 | 구현 완료 |
+| 일기 모아보기    | 여러 일기를 앱 안의 목록이나 앨범으로 보관                                      | 미구현    |
+| PDF·책 만들기    | 여러 일기를 PDF 또는 앨범으로 내보내기                                          | 미구현    |
 
-- JPG/JPEG, PNG, WEBP 형식의 10MB 이하 사진 1장을 선택할 수 있습니다.
-- 너무 작은 이미지와 지원하지 않는 파일은 업로드 전에 검사합니다.
-- 업로드한 사진은 최대 1280px, JPEG 품질 0.85로 줄여 저장 공간 사용량을 낮춥니다.
-- 외부 분석이 필요한 이유와 개인정보 주의사항을 먼저 안내하고, 사용자가 동의한
-  뒤에만 사진 선택을 진행합니다.
+세부 사전 조건, 예외 흐름, 권한과 근거 파일은 [기능 명세](./docs/functional-specification.md)에 정리되어 있습니다.
 
-<p align="center">
-  <img src="./docs/images/photo-consent.png" width="900" alt="사진 전송 및 분석 동의 화면" />
-</p>
+## 사용자 흐름
 
-### 2. 그림일기 작성과 자동 임시 저장
-
-- 제목, 날짜, 날씨, 일기 내용을 한 화면에서 작성합니다.
-- 날씨는 맑음, 구름 조금, 흐림, 비, 천둥번개 중에서 고를 수 있습니다.
-- 제목은 최대 30자, 일기는 20자 이상 55자 이하로 입력합니다.
-- 작성 중인 사진과 글은 브라우저의 `localStorage`에 자동 저장되어 앱을 나갔다
-  돌아와도 이어 쓸 수 있습니다.
-- 저장 공간이 부족하면 변환 이미지와 원본 사진을 차례로 제외하고, 작성한 글을
-  우선 보존합니다.
-
-### 3. 사진을 색연필 그림으로 변환
-
-- 사진 선택 단계를 마치면 글을 쓰는 동안 변환을 미리 시작해 대기 시간을 숨깁니다.
-- 미리보기에서 원본 사진과 색연필 그림을 한 번의 탭으로 비교할 수 있습니다.
-- 변환에 실패하면 원본 사진으로 계속 만들거나 사용자가 직접 다시 시도할 수 있습니다.
-- 테스트 모드에서는 원본 사진을 사용하며, 테스트 모드를 끈 상태에서 Supabase 설정이
-  없으면 로컬 색연필 필터가 같은 흐름을 대신합니다.
-
-### 4. 일기 분석과 선생님 첨삭
-
-- 사진·일기에서 키워드와 감정을 찾고, 40자 이내로 선생님의 한줄평을 만듭니다.
-- 중요한 단어에는 동그라미, 문장에는 물결 밑줄을 표시합니다.
-- 분석 결과가 실제 일기 문장에 존재하는지 검증해 잘못된 위치에 표시되는 것을
-  방지합니다.
-- 같은 입력의 결과와 진행 중 요청을 재사용하며, 이전 요청의 늦은 응답이 새로운
-  일기를 덮어쓰지 않도록 보호합니다.
-- 외부 서비스 오류, 시간 초과, 사용량 제한, 잔액 부족, 콘텐츠 제한 등을 구분해
-  사용자가 다음 행동을 알 수 있는 메시지를 보여 줍니다.
-
-### 5. 그림일기 미리보기와 이미지 완성
-
-- 실제 그림일기 프레임 위에 날짜, 날씨, 제목, 그림, 11 × 5 원고지, 한마디와
-  태그를 배치합니다.
-- 글자마다 크기·기울기·위치를 조금씩 달리해 손글씨 같은 질감을 표현합니다.
-- 화면 미리보기와 저장 결과가 같은 데이터와 레이아웃을 사용합니다.
-- 그림이나 한마디가 아직 만들어지는 중이거나 실패한 경우, 누락된 상태로 저장하기
-  전에 사용자에게 명확히 알립니다.
-- 외부 모델로 생성한 결과가 포함되면 완성 이미지에 생성 콘텐츠 안내를 표시합니다.
-
-### 6. 기기 저장과 공유
-
-- 완성된 그림일기를 JPEG 한 장으로 합성합니다.
-- 토스 앱 안에서는 `saveBase64Data`로 기기에 저장하고, 일반 브라우저에서는 파일
-  다운로드로 대체합니다.
-- 토스 공유 링크와 운영체제 공유창을 이용해 설치된 메신저·SNS로 앱 소개와 진입
-  링크를 전달합니다.
-- 공유 API가 없는 브라우저에서는 링크 복사로 대체합니다. 일기 이미지 자체를 공개
-  서버에 올리지는 않습니다.
-- 저장 후 계속 보거나, 임시 저장 내용을 지우고 새 일기를 시작할 수 있습니다.
-
-<p align="center">
-  <img src="./docs/images/save-and-share.png" width="900" alt="완성된 그림일기의 저장 및 공유 화면 예시" />
-</p>
-
-> 위 이미지는 개발 과정의 동작 예시입니다. 최신 화면에서는 하나의 `공유하기`
-> 버튼을 누른 뒤 기기에 설치된 메신저와 SNS를 운영체제 공유창에서 선택합니다.
-
-## 이용 흐름
-
-1. 사진 전송 및 분석 안내에 동의하고 여름 사진을 선택합니다.
-2. 날짜와 날씨를 고른 뒤 제목과 20~55자의 일기를 씁니다.
-3. 색연필 그림, 첨삭 표시, 선생님의 한마디가 담긴 미리보기를 확인합니다.
-4. 필요한 내용을 수정하거나 그림/분석을 다시 시도합니다.
-5. 완성된 그림일기를 이미지로 저장하고 앱 링크를 공유합니다.
-
-## 실행하기
-
-### 요구 사항
-
-- Node.js 및 npm
-- 실제 외부 변환·분석을 사용할 때는 Supabase 프로젝트와 OpenAI API 키
-- 토스 앱 동작을 확인할 때는 Apps in Toss 콘솔과 Sandbox 테스트 환경
-
-```bash
-npm install
-npm run dev        # granite dev: vite(5173) + 샌드박스 브리지(8081)
-npm run dev:web    # 브라우저 확인 전용 vite dev
+```mermaid
+flowchart LR
+    O["시작 화면"] --> U["사진 처리 동의"]
+    U --> C["사진 선택·3:2 자르기"]
+    C --> W["제목·날짜·날씨·일기 작성"]
+    W --> P["그림일기 미리보기"]
+    P --> F["JPEG 완성"]
+    F --> S["기기 저장"]
+    F --> H["앱 링크 공유"]
+    P --> W
+    W --> C
 ```
 
-개발 서버 주소(`http://localhost:5173`)를 일반 브라우저에서 열어도 전체 흐름을
-확인할 수 있습니다. 기본 테스트 모드에서는 원본 사진과 결정적인 로컬 분석 예시를
-사용하므로 API 키 없이 전체 흐름을 확인할 수 있습니다. 테스트 모드를 끈 상태에서
-Supabase 환경 변수가 없으면 사진 변환만 로컬 색연필 필터로 대체됩니다.
+사진 변환은 업로드 단계에서 작성 단계로 이동할 때 시작해 작성 시간과 처리 시간을 겹칩니다. 일기 검사는 `검사 받기`를 눌렀을 때 실행하며, 같은 입력의 진행 중 요청과 최근 결과를 재사용합니다.
 
-`npm run dev`가 실행 중이면 샌드박스 앱에서 `intoss://my-summer-story`
-스킴으로 로컬 개발 서버에 바로 접속할 수 있습니다. 개발 서버는 실행한 컴퓨터의
-LAN IP를 자동으로 감지하며 Vite 로그의 `Network` 주소에서 확인할 수 있습니다.
-iOS 실기기는 같은 Wi-Fi에 연결한 뒤 샌드박스의 Metro 서버 주소에 이 IP를
-입력합니다. VPN 등으로 잘못된 주소가 선택되면 직접 지정할 수 있습니다.
+## 입력 규칙
+
+| 항목        | 규칙                                     |
+| ----------- | ---------------------------------------- |
+| 사진        | JPEG/JPG, PNG, WEBP 1장                  |
+| 파일 크기   | 최대 10MB                                |
+| 이미지 크기 | 가로·세로 각각 최소 200px                |
+| 자르기 결과 | 3:2 비율, 1278×852 JPEG                  |
+| 제목        | 공백만 입력할 수 없음, 최대 15자         |
+| 일기        | 공백 제거 기준 최소 20자, 입력 최대 65자 |
+| 날짜        | 기기 로컬 날짜가 기본값                  |
+| 날씨        | 맑음, 구름 조금, 흐림, 비, 천둥번개      |
+
+## 실행 모드
+
+| 설정                                                     | 사진 처리                 | 일기 검사             |
+| -------------------------------------------------------- | ------------------------- | --------------------- |
+| Supabase 미설정, `VITE_AI_TEST_MODE` 미설정 또는 `false` | Canvas 로컬 연필 필터     | 결정적 로컬 예시 결과 |
+| Supabase 미설정, `VITE_AI_TEST_MODE=true`                | 원본 사진                 | 결정적 로컬 예시 결과 |
+| Supabase 설정, `VITE_AI_TEST_MODE=true`                  | 원본 사진                 | `diary-ai` 실제 분석  |
+| Supabase 설정, `VITE_AI_TEST_MODE=false`                 | `diary-ai` 실제 그림 생성 | `diary-ai` 실제 분석  |
+
+코드의 테스트 모드 기본값은 `false`이고, 비용을 줄이기 위한 [`.env.example`](./.env.example)은 `true`로 설정되어 있습니다.
+
+## 기술 스택
+
+| 구분          | 기술                                          | 역할                              |
+| ------------- | --------------------------------------------- | --------------------------------- |
+| UI            | React 18.3.1, TypeScript 5.7.3                | 화면과 상태 구현                  |
+| 디자인 시스템 | TDS Mobile 2.5.0, TDS Mobile AIT 2.5.0        | 토스 환경용 컴포넌트와 피드백 UI  |
+| 빌드·런타임   | Vite 6.4.3, Apps in Toss Web Framework 2.10.7 | 웹 번들, 샌드박스 브리지, 배포    |
+| 이미지 처리   | React Easy Crop 6.2.3, Canvas API             | 사진 자르기, 로컬 필터, 결과 합성 |
+| 외부 연동     | Supabase Edge Function                        | 사진 변환, 일기 분석, 사용량 조회 |
+| 로컬 저장     | Web Storage, Web Crypto                       | 작업 사본, 변환 캐시, 익명 식별값 |
+
+라우터, 전역 상태 라이브러리, 사용자 계정 인증, 일기 보관용 데이터베이스, 자동 테스트 프레임워크는 사용하지 않습니다. 서버 사용량 제한은 Supabase의 `diary_ai_rate_limits` 테이블에 집계합니다.
+
+## 빠른 시작
+
+### 요구 환경
+
+- Node.js `^18.0.0`, `^20.0.0` 또는 `>=22.0.0` — Vite의 지원 범위
+- npm — `package-lock.json` lockfile v3 사용
+
+### 설치와 브라우저 실행
 
 ```bash
-AIT_DEV_HOST=192.168.0.23 npm run dev
+git clone https://github.com/SummerVacationDiaryTMD/my-summer-story.git
+cd my-summer-story
+npm ci
+npm run dev:web
 ```
 
-iOS 시뮬레이터는 localhost로 바로 연결되고, Android는
-`adb reverse tcp:8081 tcp:8081`과
-`adb reverse tcp:5173 tcp:5173` 연결이 필요합니다.
+브라우저에서 `http://localhost:5173`을 엽니다. Supabase 설정이 없어도 동작하며, 토스 전용 저장·공유 기능은 브라우저 다운로드와 Web Share 또는 링크 복사로 대체됩니다.
 
-> SDK를 2.x로 내리면서 `package.json`의 `overrides` 블록은 제거했습니다.
-> 3.0.0-beta 프리릴리스가 TDS 패키지의 peer dependency 범위를 충족하지 못해
-> 필요했던 설정으로, 정식 릴리스인 2.10.7에서는 필요하지 않습니다.
+Apps in Toss 샌드박스, 실기기 호스트 설정, 실행 모드별 환경 구성은 [개발 환경 설정](./docs/setup.md)을 따르세요.
 
-## 외부 분석 연결하기
-
-루트의 `.env.example`을 `.env`로 복사하고 Supabase의 공개 설정만 입력합니다.
+## 환경 변수
 
 ```bash
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-VITE_AI_TEST_MODE=true
+cp .env.example .env
 ```
 
-`VITE_AI_TEST_MODE=true`이면 Supabase 설정이 있을 때 사진과 일기 분석만 실제로
-호출하고, 비용이 큰 그림 변환 모델과 로컬 색연필 필터는 모두 건너뛰어 원본 사진을
-사용합니다. 이 모드에서는 앱의 사용량 표시와 사전 차단도 숨깁니다. Supabase 설정도
-없으면 분석은 로컬 예시 결과로 대체됩니다. 실제 그림 변환까지 확인할 때만 값을
-`false`로 바꾸고 개발 서버를 다시 시작하거나 새로 빌드하세요. 이 값은 기본적으로
-`true`로 동작합니다.
+| 변수                            | 필수 여부 | 공개 범위       | 설명                                                |
+| ------------------------------- | --------- | --------------- | --------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | 선택      | 클라이언트 공개 | `diary-ai` Function이 있는 Supabase 프로젝트 URL    |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | 선택      | 클라이언트 공개 | Supabase publishable key                            |
+| `VITE_AI_TEST_MODE`             | 선택      | 클라이언트 공개 | `true`이면 그림 생성 요청을 생략하고 원본 사진 사용 |
+| `AIT_DEV_HOST`                  | 선택      | 개발 프로세스   | 샌드박스가 접속할 Vite 개발 서버 호스트 재정의      |
 
-실제 Edge Function의 차감까지 끄려면 Supabase **Edge Functions → Secrets**에
-`DIARY_AI_TEST_MODE=true`도 등록하세요. 이 값은 서버 Secret이므로 `VITE_*`로
-넣지 않습니다. 테스트가 끝나면 Secret을 `false`로 바꾸거나 삭제한 뒤 Function을
-다시 운영 설정으로 확인하세요.
+두 Supabase 변수는 함께 설정해야 합니다. 하나라도 비어 있으면 외부 요청을 보내지 않는 체험 모드로 동작합니다.
 
-`VITE_*` 값은 클라이언트 번들에 포함됩니다. 따라서 `OPENAI_API_KEY`, Supabase
-service role key와 같은 비밀 값은 `.env`에 넣지 않고 Supabase Edge Function
-Secret으로만 관리해야 합니다. 함수 배포, Secret 등록, 사용량 제한 설정은
-[`SUPABASE_EDGE_FUNCTION.md`](./SUPABASE_EDGE_FUNCTION.md)를 참고하세요.
+> `VITE_*` 값은 클라이언트 번들에 포함됩니다. OpenAI API 키나 Supabase secret/service-role key를 넣지 마세요. 이 저장소에는 `diary-ai` Edge Function 서버 소스가 없으므로 실제 모드는 별도로 배포된 호환 Function이 필요합니다.
 
-실제 요청 흐름은 다음과 같습니다.
+## 프로젝트 구조
 
 ```text
-사용자 기기 → Supabase Edge Function (diary-ai) → OpenAI
-             ↳ 기기 식별값·IP 기반 사용량 제한
+.
+├── public/                 # 폰트, 날씨, 도장, 온보딩, 일기 프레임 자산
+├── src/
+│   ├── components/         # 업로드, 작성, 미리보기, 자르기, 완료 모달
+│   ├── constants/          # 브랜드·입력·도장 규칙
+│   ├── hooks/              # 초안, 그림 변환, 분석, 사용량 상태
+│   ├── services/           # Edge Function, 저장·공유, 캐시 경계
+│   ├── utils/              # 이미지·Canvas·손글씨·첨삭 계산
+│   ├── App.tsx             # 3단계 화면 흐름과 완료 처리
+│   └── main.tsx            # React 진입점
+├── docs/                   # 개발·기능·API·설계 문서
+├── design/                 # 앱 로고와 디자인 철학
+├── granite.config.ts       # Apps in Toss SDK 2.x 설정
+└── package.json            # 명령과 의존성
 ```
 
-## 앱 아이콘 등록하기
+## 문서
 
-이 저장소에는 제공된 `LOGO.png`의 그림을 정사각형으로 재구성한 등록용 파일이
-있습니다.
+- [기능 명세](./docs/functional-specification.md) — 기능별 정상·예외 흐름, 상태와 코드 근거
+- [정보구조](./docs/information-architecture.md) — 화면, 모달, 이동 구조와 사용자 흐름
+- [API 명세](./docs/api-specification.md) — 클라이언트가 기대하는 `diary-ai` HTTP 계약
+- [ERD](./docs/erd.md) — Supabase 사용량 제한 테이블의 키·제약조건·보안 주의사항
+- [아키텍처](./docs/architecture.md) — 컴포넌트 경계, 데이터·비동기 흐름, 배포 구조
+- [개발 환경 설정](./docs/setup.md) — 브라우저·샌드박스 실행과 외부 서비스 설정
+- [배포](./docs/deployment.md) — 빌드 산출물, Apps in Toss 배포 조건과 확인 항목
+- [보안·데이터 처리](./docs/security.md) — 공개 설정, 로컬 데이터, 외부 전송과 제한
+- [손글씨 폰트 가이드](./docs/README.md) — 미리보기와 저장 이미지의 폰트 교체
+- [디자인 기준](./DESIGN.md) · [디자인 철학](./design/design-philosophy.md)
+- [초기 제품 기획서](./AI_weekly_picture_diary_2.md) — 구현과 충돌할 때는 현재 코드와 위 명세를 우선
+- [과거 아키텍처 설명](./explain.md) — 역사 문서이며 현재 구조와 다른 설명이 포함됨
 
-- 등록 파일: [`docs/images/app-icon-600.png`](./docs/images/app-icon-600.png)
-- 크기: 600 × 600px
-- 형식: PNG, 불투명 배경
-- 형태: 각진 정사각형(파일 자체에 둥근 모서리를 넣지 않음)
-
-등록 순서는 다음과 같습니다.
-
-1. [Apps in Toss 콘솔](https://apps-in-toss.toss.im/)에 접속해 워크스페이스와
-   미니앱을 선택합니다.
-2. 앱 정보의 **앱 로고** 항목에 `docs/images/app-icon-600.png`를 업로드합니다.
-3. 앱 ID는 현재 코드와 같은 `my-summer-story`, 표시 이름은
-   `나의 여름방학 일기`로 맞춥니다. 앱 ID는 등록 후 바꾸기 어려우므로 기존 앱이
-   있다면 새로 만들지 말고 현재 값을 확인합니다.
-4. Sandbox와 실제 토스 앱에서 작은 크기 및 라이트/다크 모드 표시를 확인합니다.
-
-현재 설치된 `@apps-in-toss/web-framework` 2.10.7의 설정(`granite.config.ts`)은
-`brand.icon` 키를 요구하지만, **아이콘 관리는 여전히 콘솔 업로드를 기준**으로
-합니다. `granite.config.ts`의 `icon`은 빈 placeholder로 두었고, 콘솔에 올린
-로고의 공개 URL을 확보하면 그 값으로 채워도 됩니다.
-
-- [공식 콘솔 앱 등록 가이드](https://developers-apps-in-toss.toss.im/prepare/console-workspace.html)
-- [공식 미니앱 브랜딩 가이드](https://developers-apps-in-toss.toss.im/design/miniapp-branding-guide.html)
-
-## 기술 구성
-
-| 영역      | 사용 기술                                                  |
-| --------- | ---------------------------------------------------------- |
-| UI        | React 18, TypeScript, TDS Mobile                           |
-| 빌드      | Vite 6, Apps in Toss Web Framework 2.x                     |
-| 실행 환경 | Toss WebView, 일반 모바일/데스크톱 브라우저                |
-| 상태 관리 | React state + 3단계 상태 머신 (`upload → write → preview`) |
-| 임시 저장 | 브라우저 `localStorage`                                    |
-| 서버 경계 | Supabase Edge Function (`diary-ai`)                        |
-| 외부 모델 | 사진 분석 및 색연필 변환 요청                              |
-| 결과 생성 | Canvas 기반 JPEG 합성                                      |
-
-주요 디렉터리는 다음과 같습니다.
-
-```text
-src/
-├── components/   # 사진 선택, 작성, 미리보기, 저장·공유 화면
-├── hooks/        # 초안 저장, 분석 요청 캐시, 그림 변환 상태
-├── services/     # Supabase, 분석, 변환, 저장, 공유 경계
-└── utils/        # 이미지 처리, 손글씨, 첨삭 표시, Canvas 합성
-supabase/
-├── functions/    # diary-ai Edge Function
-└── migrations/   # 사용량 제한용 데이터베이스 마이그레이션
-public/           # 그림일기 프레임과 글꼴
-docs/images/      # README 이미지와 앱 아이콘
-```
-
-## 품질 확인과 배포
+## 품질 확인
 
 ```bash
 npm run lint
 ./node_modules/.bin/tsc --noEmit -p tsconfig.app.json
 npm run build
+```
+
+`npm test` 스크립트와 자동 테스트 프레임워크는 없습니다. 수동 회귀 범위는 [기능 명세](./docs/functional-specification.md#수동-회귀-확인)의 체크리스트를 사용합니다.
+
+## 빌드와 배포
+
+```bash
+npm run build
 npm run deploy
 ```
 
-`npx tsc`는 다른 패키지를 잘못 실행할 수 있으므로 사용하지 않습니다. 별도 테스트
-프레임워크는 없으며, lint·typecheck·production build와 브라우저/Sandbox 수동
-테스트로 확인합니다. `npm run deploy`에는 Apps in Toss 콘솔 API 키가 필요합니다.
+`npm run deploy`는 Apps in Toss 콘솔에 등록된 `my-summer-story` 앱과 배포 권한이 필요합니다. 자세한 절차와 출시 전 확인 항목은 [배포 문서](./docs/deployment.md)에 있습니다.
 
-## 현재 남은 작업
+## 현재 제약
 
-- `참 잘했어요` 도장
-- 글꼴 세부 완성도 개선
-- 종이책 느낌의 페이지 넘김 효과
-- 여러 일기를 모아 보는 다이어리/앨범
-- PDF 또는 앨범 단위 저장
-- 앱 출시 전 실제 기기 저장 테스트와 콘솔 등록·검수
+- 앱을 열 때마다 새 일기로 시작하며, 저장된 작업 사본을 시작 화면에서 복원하지 않습니다.
+- 완성 이미지는 기기에 저장하고 앱 안에는 일기 목록을 보관하지 않습니다.
+- 공유 기능은 완성 이미지 파일이 아니라 앱 소개 문구와 미니앱 링크를 공유합니다.
+- 외부 분석·그림 생성은 이 저장소 밖에 배포된 호환 `diary-ai` Function에 의존합니다.
+- 서버의 정확한 사용량 제한 값과 데이터 보존 기간은 저장소 코드만으로 확인할 수 없습니다.
+- 사진 변환이나 분석이 실패해도 원본 사진과 작성한 글로 JPEG를 완성할 수 있습니다.
+- 저장소에 라이선스 파일이 없어 재사용 조건은 확인이 필요합니다.
 
-진행 상황은 [`TO_DO_LIST.md`](./TO_DO_LIST.md)에서 관리합니다.
+## 기여
 
-## 팀
-
-- 김준
-- 김태훈
-- 손제희
-- 이도연
-- 이돈민
-- 이승찬
-
-## 참고 링크
-
-- [Apps in Toss 개발자센터](https://developers-apps-in-toss.toss.im/)
-- [Apps in Toss 개발자 커뮤니티](https://techchat-apps-in-toss.toss.im/)
+변경은 목적이 분명한 브랜치와 `main` 대상 Pull Request로 관리합니다. PR 전에는 린트, 타입 검사, 빌드와 관련 수동 회귀 항목을 확인하세요. 공개 보안 신고 채널과 지원 채널은 저장소에 정의되어 있지 않습니다.

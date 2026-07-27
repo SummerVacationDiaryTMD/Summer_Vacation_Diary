@@ -345,11 +345,11 @@ export function PreviewStep({
   // exactly what happens when loading flips to success mid-visit.
   const sketchAnnouncement =
     sketchState.status === "loading"
-      ? "사진을 색연필 그림으로 바꾸고 있어요"
+      ? "사진을 크레파스 그림으로 바꾸고 있어요"
       : sketchState.status === "success"
         ? isAiTestMode
           ? "원본 사진으로 미리보기를 준비했어요"
-          : "색연필 그림이 완성됐어요"
+          : "크레파스 그림이 완성됐어요"
         : sketchState.status === "error"
           ? "그림 변환에 실패해서 원본 사진이 보여요"
           : "";
@@ -474,7 +474,7 @@ export function PreviewStep({
                 <img
                   src={showsSketch ? sketchUrl : draft.photoDataUrl}
                   alt={
-                    showsSketch ? "색연필 그림으로 바뀐 일기 사진" : "일기 사진"
+                    showsSketch ? "크레파스 그림으로 바뀐 일기 사진" : "일기 사진"
                   }
                 />
                 {sketchState.status === "loading" && (
@@ -483,7 +483,7 @@ export function PreviewStep({
                   // overlay too would announce it twice.
                   <div className="sketch-overlay" aria-hidden>
                     <span className="loading-blink">
-                      사진을 색연필 그림으로 바꾸고 있어요
+                      사진을 크레파스 그림으로 바꾸고 있어요
                     </span>
                   </div>
                 )}

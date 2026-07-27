@@ -1,5 +1,7 @@
 # 그림일기 손글씨 폰트
 
+[프로젝트 README로 돌아가기](../README.md) · [아키텍처](./architecture.md)
+
 현재 미리보기와 저장 이미지에 `NanumCoDingHeuiMang` 폰트를 사용합니다.
 
 ```text
@@ -22,3 +24,8 @@ public/fonts/NanumCoDingHeuiMang.ttf
 2. `src/App.css`의 `@font-face` 경로와 `font-family`를 바꿉니다.
 3. `src/utils/diaryImage.ts`의 `DIARY_FONT_FAMILY`를 같은 이름으로 바꿉니다.
 4. 개발 서버를 재시작하고 미리보기와 저장 이미지를 모두 확인합니다.
+
+## 관련 문서
+
+- [기능 명세](./functional-specification.md)
+- [디자인 기준](../DESIGN.md)
