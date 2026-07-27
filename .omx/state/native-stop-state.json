@@ -39,6 +39,16 @@
         "last_turn_id": "019f93a4-791e-7641-8d0b-571596882fc0",
         "last_thread_id": null
       }
+    },
+    "019fa1e5-a4d5-7532-bf8b-18849cce0242": {
+      "ordinary_no_progress_guard": {
+        "fingerprint": "ordinary|적용했습니다. 로딩 문구 폰트를 정확히 0.8배로 축소했습니다: `10~15px → 8~12px`.",
+        "first_seen_at": "2026-07-27T05:18:01.155Z",
+        "last_seen_at": "2026-07-27T05:18:01.155Z",
+        "repeat_count": 1,
+        "last_turn_id": "019fa201-9138-7972-ad4b-210ed152e4ca",
+        "last_thread_id": null
+      }
     }
   }
 }
