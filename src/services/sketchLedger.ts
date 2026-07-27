@@ -99,6 +99,24 @@ export function releaseSketchTicket(key: string): void {
   emit();
 }
 
+/**
+ * The user knowingly bought a second drawing for this photo ("다시 그리기"), so
+ * the photo stops counting as already paid for and may dispatch again.
+ *
+ * Only a SETTLED ticket is dropped. A still-pending one is the new drawing
+ * already on its way — the hook reuses that in-flight request rather than
+ * paying twice — and dropping it would hand back a count that is genuinely
+ * spent. Settled tickets add nothing to `pendingCount`, so forgetting one
+ * leaves the server-sourced number (which already includes that charge) alone.
+ */
+export function forgetSettledSketchTicket(key: string): void {
+  if (tickets.get(key) !== "settled") {
+    return;
+  }
+  tickets.delete(key);
+  emit();
+}
+
 /** True once this photo has spent its request, whether or not it finished. */
 export function hasSketchTicket(key: string | null): boolean {
   return key !== null && tickets.has(key);

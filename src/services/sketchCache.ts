@@ -115,6 +115,24 @@ export function getCachedSketch(key: string | null): string | null {
   return entry.sketchDataUrl;
 }
 
+/**
+ * Drops a drawing the user chose to replace, so the reuse dialog can never
+ * offer it again. Discarding on the choice rather than when the new drawing
+ * arrives is deliberate: keeping it would mean a failed redraw silently
+ * resurrects the picture the user just replaced.
+ */
+export function removeCachedSketch(key: string | null): void {
+  if (key === null) {
+    return;
+  }
+  const entries = readEntries();
+  const remaining = entries.filter((entry) => entry.key !== key);
+  if (remaining.length === entries.length) {
+    return;
+  }
+  writeEntries(remaining);
+}
+
 export function putCachedSketch(
   key: string | null,
   sketchDataUrl: string,

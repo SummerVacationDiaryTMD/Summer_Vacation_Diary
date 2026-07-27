@@ -34,12 +34,22 @@ export interface PhotoSelection {
   sourceHash: string | null;
   /** Set only when the user chose to reuse a previously drawn sketch. */
   reusedSketchDataUrl?: string;
+  /**
+   * Set only when the user chose 다시 그리기 over an existing drawing, which
+   * throws that drawing away — the caller has to clear every cache holding it,
+   * or the old picture comes straight back instead of a new one.
+   */
+  redraw?: true;
 }
 
 interface PhotoUploadStepProps {
   photoDataUrl: string | null;
   onPhotoChange: (selection: PhotoSelection) => void;
   showRecheckNotice?: boolean;
+  /** False when no request can reach the server today (budget spent, region). */
+  canRedraw: boolean;
+  /** True while a drawing for that source file is still on its way. */
+  isDrawingInProgress: (sourceHash: string | null) => boolean;
 }
 
 /**
@@ -54,6 +64,8 @@ export function PhotoUploadStep({
   photoDataUrl,
   onPhotoChange,
   showRecheckNotice = false,
+  canRedraw,
+  isDrawingInProgress,
 }: PhotoUploadStepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -70,13 +82,28 @@ export function PhotoUploadStep({
   const sourceHashRef = useRef<string | null>(null);
 
   const toast = useToast();
-  const { openConfirm } = useDialog();
+  const { openAlert, openConfirm } = useDialog();
 
   const commitPhoto = async (croppedDataUrl: string) => {
     const sourceHash = sourceHashRef.current;
     const cachedSketch = getCachedSketch(sourceHash);
     if (cachedSketch === null) {
       onPhotoChange({ dataUrl: croppedDataUrl, sourceHash });
+      return;
+    }
+
+    // With nothing left to spend, 다시 그리기 could only throw the drawing away
+    // and give nothing back, so the choice is not offered at all — the dialog's
+    // "1회 차감" promise has to be true whenever it is shown.
+    if (!canRedraw) {
+      toast.openToast(
+        "지금은 다시 그릴 수 없어서 이미 그린 그림을 사용했어요.",
+      );
+      onPhotoChange({
+        dataUrl: croppedDataUrl,
+        sourceHash,
+        reusedSketchDataUrl: cachedSketch,
+      });
       return;
     }
 
@@ -89,7 +116,7 @@ export function PhotoUploadStep({
     const reuse = await openConfirm({
       title: "이미 그린 그림이 있어요",
       description:
-        "기존 그림을 사용할까요? 다시 그리면 오늘 남은 횟수가 1회 차감돼요.",
+        "기존 그림을 사용할까요?\n다시 그리면 오늘 남은 횟수가 1회 차감돼요.",
       confirmButton: (
         <Button className="summer-diary-button summer-diary-button-primary">
           기존 그림 사용하기
@@ -106,8 +133,10 @@ export function PhotoUploadStep({
       dataUrl: croppedDataUrl,
       sourceHash,
       // Handing the sketch back with the photo is what skips the request: the
-      // sketch hook only runs when the draft has no drawing yet.
-      ...(reuse ? { reusedSketchDataUrl: cachedSketch } : {}),
+      // sketch hook only runs when the draft has no drawing yet. Redrawing is
+      // the opposite signal — the old drawing has to be discarded before the
+      // new request can even be made.
+      ...(reuse ? { reusedSketchDataUrl: cachedSketch } : { redraw: true }),
     });
   };
 
@@ -183,6 +212,24 @@ export function PhotoUploadStep({
       // Hashed before the crop so the key describes the photo the user picked,
       // not the rectangle they happened to drag.
       sourceHashRef.current = await hashPhotoFile(file);
+
+      // Re-picking a photo whose drawing is still on its way is not an error —
+      // the request is reused rather than repeated — but saying nothing reads
+      // as "my tap did nothing". Told here rather than after cropping so the
+      // user knows which photo the friend is on before doing that work.
+      if (isDrawingInProgress(sourceHashRef.current)) {
+        await openAlert({
+          title: "이 사진은 친구가 이미 그림을 그리고 있어요.",
+          description: "조금만 기다리면 그림이 완성돼요.",
+          alertButton: (
+            <Button className="summer-diary-button summer-diary-button-primary summer-diary-button-dialog">
+              확인
+            </Button>
+          ),
+          closeOnDimmerClick: false,
+        });
+      }
+
       setCropSource(await loadImageFileForCrop(file));
     } catch (error) {
       const code =
