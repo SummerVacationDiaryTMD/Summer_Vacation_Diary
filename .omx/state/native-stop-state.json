@@ -42,11 +42,11 @@
     },
     "019fa1e5-a4d5-7532-bf8b-18849cce0242": {
       "ordinary_no_progress_guard": {
-        "fingerprint": "ordinary|적용했습니다. 로딩 문구 폰트를 정확히 0.8배로 축소했습니다: `10~15px → 8~12px`.",
-        "first_seen_at": "2026-07-27T05:18:01.155Z",
-        "last_seen_at": "2026-07-27T05:18:01.155Z",
+        "fingerprint": "ordinary|채웠습니다. 사진/그림 영역을 오른쪽으로 2px 넓혀서 틈이 보이지 않게 했고, 미리보기·저장 이미지에 같이 적용됩니다. 타입체크도 통과했습니다.",
+        "first_seen_at": "2026-07-27T05:22:47.790Z",
+        "last_seen_at": "2026-07-27T05:22:47.790Z",
         "repeat_count": 1,
-        "last_turn_id": "019fa201-9138-7972-ad4b-210ed152e4ca",
+        "last_turn_id": "019fa205-efdd-71c1-99a1-50060bc52b03",
         "last_thread_id": null
       }
     }

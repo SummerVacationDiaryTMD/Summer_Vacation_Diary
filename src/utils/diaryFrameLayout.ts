@@ -32,7 +32,7 @@ export const DIARY_FRAME = {
   bottomSourceY: 1215,
   header: { x: 45, y: 20, width: 990, height: 70 },
   title: { x: 150, y: 90, width: 700, height: 55 },
-  photo: { x: 45, y: 155, width: 990, height: 660 },
+  photo: { x: 45, y: 155, width: 992, height: 660 },
   content: { x: 45, y: 835, width: 990 },
   comment: { x: 45, y: 1215, width: 990, height: 110 },
 } as const;
