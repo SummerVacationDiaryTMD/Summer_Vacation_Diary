@@ -42,11 +42,11 @@
     },
     "019fa1e5-a4d5-7532-bf8b-18849cce0242": {
       "ordinary_no_progress_guard": {
-        "fingerprint": "ordinary|채웠습니다. 사진/그림 영역을 오른쪽으로 2px 넓혀서 틈이 보이지 않게 했고, 미리보기·저장 이미지에 같이 적용됩니다. 타입체크도 통과했습니다.",
-        "first_seen_at": "2026-07-27T05:22:47.790Z",
-        "last_seen_at": "2026-07-27T05:22:47.790Z",
+        "fingerprint": "ordinary|맞아요. 전역 `loadingblink` 이름 충돌 가능성이 있었습니다. 앱 전용 애니메이션 이름으로 바꿔서, 이제 **크기 변화 없이 투명도만 1 ↔ 0.65로 깜빡입니다.**",
+        "first_seen_at": "2026-07-27T05:29:50.601Z",
+        "last_seen_at": "2026-07-27T05:29:50.601Z",
         "repeat_count": 1,
-        "last_turn_id": "019fa205-efdd-71c1-99a1-50060bc52b03",
+        "last_turn_id": "019fa20b-b548-7111-ab1a-65bdebcd558b",
         "last_thread_id": null
       }
     }
