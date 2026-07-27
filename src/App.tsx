@@ -139,7 +139,12 @@ function App() {
   // The drawing conversion starts when the user commits to writing (leaves
   // the upload step): its 30-60s latency then overlaps with typing time, and
   // an abandoned photo pick never spends an API call.
-  const { state: sketchState, retry: retrySketch } = useSketch(
+  const {
+    state: sketchState,
+    retry: retrySketch,
+    discardSketch,
+    isDrawingInProgress,
+  } = useSketch(
     draft,
     updateDraft,
     step !== "upload",
@@ -214,7 +219,7 @@ function App() {
       description:
         "그림 그리기와 일기 검사는 한국에서만 이용할 수 있어요. 사진 그대로 그림일기를 만드는 건 그대로 할 수 있어요.",
       alertButton: (
-        <Button className="summer-diary-button summer-diary-button-primary">
+        <Button className="summer-diary-button summer-diary-button-primary summer-diary-button-dialog">
           확인
         </Button>
       ),
@@ -519,8 +524,22 @@ function App() {
         <PhotoUploadStep
           photoDataUrl={draft.photoDataUrl}
           showRecheckNotice={showSketchQuotaNotice}
-          onPhotoChange={({ dataUrl, sourceHash, reusedSketchDataUrl }) => {
+          canRedraw={sketchAllowed}
+          isDrawingInProgress={isDrawingInProgress}
+          onPhotoChange={({
+            dataUrl,
+            sourceHash,
+            reusedSketchDataUrl,
+            redraw,
+          }) => {
             setPhotoSourceHash(sourceHash);
+            // 다시 그리기 means the previous drawing is gone for good. Clearing
+            // the draft below is not enough: the caches would hand it straight
+            // back and the ledger would still count this photo as paid for, so
+            // the new request could never go out.
+            if (redraw === true) {
+              discardSketch(dataUrl, sourceHash);
+            }
             // A sketch belongs to exactly one photo — replacing the photo
             // must drop the old drawing in the same state update, or the
             // preview could pair the new photo with the previous sketch. The
