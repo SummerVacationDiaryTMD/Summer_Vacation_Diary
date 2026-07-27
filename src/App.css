@@ -1677,7 +1677,6 @@ html:has(.diary-content-section textarea:focus) {
 
 .analysis-loading-text {
   font-family: "NanumDdarEGeEomMaGa", sans-serif !important;
-  /* 웹폰트가 아직 준비되지 않은 첫 프레임에서도 줄바꿈되지 않도록 여유를 둡니다. */
   font-size: 16px !important;
   line-height: 1.35 !important;
   font-weight: 700 !important;
