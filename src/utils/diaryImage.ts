@@ -369,11 +369,16 @@ function drawContent(
     context.drawImage(starImage, starX, starY, size, size);
   }
 
-  for (const run of buildProfanityCheckRuns(
-    content,
-    COLUMN_COUNT,
-    COLUMN_COUNT * layout.contentRows,
-  )) {
+  const profanityCheckRuns =
+    analysis === null
+      ? []
+      : buildProfanityCheckRuns(
+          content,
+          COLUMN_COUNT,
+          COLUMN_COUNT * layout.contentRows,
+        );
+
+  for (const run of profanityCheckRuns) {
     const checkImage = markImages.get(
       pickProfanityMarkAsset(run.row, run.startColumn, run.length),
     );
