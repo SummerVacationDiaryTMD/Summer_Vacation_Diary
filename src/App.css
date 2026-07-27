@@ -2324,7 +2324,7 @@ mark.highlight-underline {
   justify-content: center;
   margin: 0;
   overflow: visible !important;
-  font-size: clamp(10px, 3.2cqw, 15px) !important;
+  font-size: clamp(8px, 2.56cqw, 12px) !important;
   line-height: 1.25;
   text-align: center;
   white-space: normal;

@@ -72,7 +72,11 @@ const TITLE_FONT = `400 ${TITLE_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const CONTENT_FONT_SIZE = 54;
 const CONTENT_FONT = `400 ${CONTENT_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const COMMENT_LABEL_FONT = `700 18px ${SYSTEM_FONT_STACK}`;
-const COMMENT_FONT = `700 48.96px ${TEACHER_COMMENT_FONT_STACK}`;
+const COMMENT_FONT_SIZE = 48.96;
+const COMMENT_COMPACT_FONT_SIZE = 29.28;
+const commentFont = (size: number) =>
+  `700 ${size}px ${TEACHER_COMMENT_FONT_STACK}`;
+const COMMENT_FONT = commentFont(COMMENT_FONT_SIZE);
 const AI_WATERMARK_FONT = `700 19px ${SYSTEM_FONT_STACK}`;
 // Kept in sync with .ai-content-watermark's 4.5% right inset.
 const AI_WATERMARK_RIGHT_INSET = 48;
@@ -463,7 +467,7 @@ function drawComment(
   context: CanvasRenderingContext2D,
   analysis: DiaryAnalysis | null,
   layout: DiaryFrameLayout,
-  commentLines: string[],
+  commentLayout: TeacherCommentLayout,
 ) {
   if (analysis === null) return;
   const { x, y, width, height } = layout.comment;
@@ -478,12 +482,16 @@ function drawComment(
   context.fillStyle = LABEL_COLOR;
   context.fillText("선생님 한마디", x + paddingX, y + 27);
 
-  // 미리보기의 12px 한 줄 문장을 원본 템플릿 비율로 환산한 30px입니다.
-  context.font = COMMENT_FONT;
+  // 한 줄은 기존 크기를 유지하고, 두 줄일 때만 프레임 높이에 맞춰 줄입니다.
+  context.font = commentLayout.font;
   context.fillStyle = COMMENT_COLOR;
-  const commentLineHeight = DIARY_COMMENT.lineHeight;
-  commentLines.forEach((line, index) => {
-    context.fillText(line, x + paddingX, y + 82 + index * commentLineHeight);
+  const firstLineY = commentLayout.lines.length === 1 ? 82 : 65;
+  commentLayout.lines.forEach((line, index) => {
+    context.fillText(
+      line,
+      x + paddingX,
+      y + firstLineY + index * DIARY_COMMENT.lineHeight,
+    );
   });
 
   context.restore();
@@ -530,29 +538,55 @@ function drawStamp(
   context.restore();
 }
 
-function wrapCommentToFrame(
+interface TeacherCommentLayout {
+  font: string;
+  lines: string[];
+}
+
+function layoutComment(
   context: CanvasRenderingContext2D,
   comment: string,
-): string[] {
+): TeacherCommentLayout {
   const maxWidth = DIARY_FRAME.comment.width - DIARY_COMMENT.paddingX * 2;
-  const ellipsis = "…";
-  let fitted = "";
+  const text = comment.trim();
 
-  for (const character of Array.from(comment.trim())) {
-    const candidate = fitted + character;
-    if (fitted !== "" && context.measureText(candidate).width > maxWidth) {
-      while (
-        fitted !== "" &&
-        context.measureText(fitted + ellipsis).width > maxWidth
-      ) {
-        fitted = Array.from(fitted).slice(0, -1).join("");
-      }
-      return [`${fitted}${ellipsis}`];
-    }
-    fitted = candidate;
+  context.font = COMMENT_FONT;
+  if (context.measureText(text).width <= maxWidth) {
+    return { font: COMMENT_FONT, lines: [text] };
   }
 
-  return [fitted];
+  const font = commentFont(COMMENT_COMPACT_FONT_SIZE);
+  const characters = Array.from(text);
+  context.font = font;
+
+  const candidates = characters.slice(1).flatMap((_, index) => {
+    const splitAt = index + 1;
+    const left = characters.slice(0, splitAt).join("").trimEnd();
+    const right = characters.slice(splitAt).join("").trimStart();
+    const leftWidth = context.measureText(left).width;
+    const rightWidth = context.measureText(right).width;
+
+    if (leftWidth > maxWidth || rightWidth > maxWidth) return [];
+
+    const breaksAtSpace =
+      /\s/.test(characters[splitAt - 1]) ||
+      /\s/.test(characters[splitAt] ?? "");
+    return [
+      {
+        lines: [left, right],
+        breaksAtSpace,
+        balance: Math.abs(leftWidth - rightWidth),
+      },
+    ];
+  });
+
+  candidates.sort(
+    (a, b) =>
+      Number(b.breaksAtSpace) - Number(a.breaksAtSpace) ||
+      a.balance - b.balance,
+  );
+
+  return { font, lines: candidates[0]?.lines ?? [text] };
 }
 
 function drawFrameTemplate(
@@ -607,12 +641,14 @@ export async function composeDiaryImage(
   // 배경 프레임의 실제 한마디 칸(좌우 25px 안쪽)과 로드된 글꼴의
   // 측정 폭으로 줄을 나눕니다. 글자 수 추정은 여백이 남아도 조기
   // 줄바꿈될 수 있어 저장 이미지와 프레임 칸이 어긋납니다.
-  context.font = COMMENT_FONT;
-  const commentLines =
+  const commentLayout =
     input.analysis === null
-      ? [""]
-      : wrapCommentToFrame(context, input.analysis.comment);
-  const frameLayout = getDiaryFrameLayout(input.content, commentLines.length);
+      ? { font: COMMENT_FONT, lines: [""] }
+      : layoutComment(context, input.analysis.comment);
+  const frameLayout = getDiaryFrameLayout(
+    input.content,
+    commentLayout.lines.length,
+  );
 
   canvas.height = frameLayout.height;
 
@@ -714,7 +750,7 @@ export async function composeDiaryImage(
   context.restore();
 
   drawContent(context, input.content, input.analysis, markImages);
-  drawComment(context, input.analysis, frameLayout, commentLines);
+  drawComment(context, input.analysis, frameLayout, commentLayout);
 
   if (stampImage !== null) {
     drawStamp(context, stampImage, frameLayout);
