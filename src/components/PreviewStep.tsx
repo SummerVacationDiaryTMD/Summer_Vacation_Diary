@@ -372,7 +372,7 @@ export function PreviewStep({
           <Paragraph
             as="span"
             className="analysis-loading-text loading-blink"
-            typography="t4"
+            typography="t5"
             fontWeight="medium"
             color="#6b5e3f"
           >
