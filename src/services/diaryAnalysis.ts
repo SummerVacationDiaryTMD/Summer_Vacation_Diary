@@ -157,10 +157,10 @@ function toDiaryStamp(value: unknown): DiaryStamp {
 
 function capComment(comment: string): string {
   const characters = Array.from(comment);
-  if (characters.length <= 50) {
+  if (characters.length <= 40) {
     return comment;
   }
-  return `${characters.slice(0, 49).join("").trimEnd()}…`;
+  return `${characters.slice(0, 39).join("").trimEnd()}…`;
 }
 
 const GENERIC_HIGHLIGHT_WORDS = new Set([
