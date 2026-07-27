@@ -157,6 +157,8 @@ function App() {
 
   const [hasVisitedWrite, setHasVisitedWrite] = useState(false);
   const [hasVisitedPreview, setHasVisitedPreview] = useState(false);
+  const [showSketchQuotaNotice, setShowSketchQuotaNotice] = useState(false);
+  const [showAnalyzeQuotaNotice, setShowAnalyzeQuotaNotice] = useState(false);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -516,7 +518,7 @@ function App() {
       {step === "upload" && (
         <PhotoUploadStep
           photoDataUrl={draft.photoDataUrl}
-          showRecheckNotice={hasVisitedPreview}
+          showRecheckNotice={showSketchQuotaNotice}
           onPhotoChange={({ dataUrl, sourceHash, reusedSketchDataUrl }) => {
             setPhotoSourceHash(sourceHash);
             // A sketch belongs to exactly one photo — replacing the photo
@@ -535,7 +537,7 @@ function App() {
         <WriteStep
           draft={draft}
           onChange={updateDraft}
-          showRecheckNotice={hasVisitedPreview}
+          showRecheckNotice={showAnalyzeQuotaNotice}
         />
       )}
       {step === "preview" && (
@@ -560,6 +562,8 @@ function App() {
 
             setHasVisitedWrite(false);
             setHasVisitedPreview(false);
+            setShowSketchQuotaNotice(false);
+            setShowAnalyzeQuotaNotice(false);
 
             setStep("upload");
           }}
@@ -585,7 +589,10 @@ function App() {
             display="block"
             color="dark"
             variant="weak"
-            onClick={() => setStep("upload")}
+            onClick={() => {
+              setShowSketchQuotaNotice(true);
+              setStep("upload");
+            }}
           >
             사진 변경
           </Button>
@@ -607,7 +614,10 @@ function App() {
             display="block"
             color="dark"
             variant="weak"
-            onClick={() => setStep("write")}
+            onClick={() => {
+              setShowAnalyzeQuotaNotice(true);
+              setStep("write");
+            }}
           >
             일기 수정
           </Button>

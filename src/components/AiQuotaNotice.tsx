@@ -23,12 +23,6 @@ export function SketchQuotaNotice({
 }) {
   const quota = useAiQuota();
 
-  // 처음 사진을 고르는 동안에는 횟수 안내를 숨기고, 미리보기를 본 뒤
-  // 다시 사진을 바꾸러 온 경우에만 재생성 안내를 보여줍니다.
-  if (!showRecheckNotice) {
-    return null;
-  }
-
   if (isAiTestMode) {
     return (
       <NoticeBox
@@ -83,9 +77,11 @@ export function SketchQuotaNotice({
   return (
     <NoticeBox
       lines={[
-        `사진을 바꿔 다시 그리면 1회 차감돼요.`,
         `하루에 ${limit}번까지 그림을 그릴 수 있어요.`,
         `오늘 그림 그리기: ${used}/${limit}`,
+        ...(showRecheckNotice
+          ? ["사진을 바꿔 다시 그리면 1회 차감돼요."]
+          : []),
       ]}
     />
   );
@@ -97,12 +93,6 @@ export function AnalyzeQuotaNotice({
   showRecheckNotice?: boolean;
 }) {
   const quota = useAiQuota();
-
-  // 처음 일기를 쓰는 동안에는 검사 기회 안내를 숨기고, 미리보기를 본
-  // 뒤 다시 수정하러 온 경우에만 재검사 안내를 보여줍니다.
-  if (!showRecheckNotice) {
-    return null;
-  }
 
   if (isAiTestMode) {
     return (
@@ -153,7 +143,9 @@ export function AnalyzeQuotaNotice({
       lines={[
         `선생님은 하루에 ${limit}번까지 일기를 검사해 줘요.`,
         `오늘 일기 검사: ${used}/${limit}`,
-        `수정 후 다시 검사받으면 1회 차감돼요.`,
+        ...(showRecheckNotice
+          ? ["수정 후 다시 검사받으면 1회 차감돼요."]
+          : []),
       ]}
     />
   );
