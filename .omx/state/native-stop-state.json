@@ -42,11 +42,11 @@
     },
     "019fa1e5-a4d5-7532-bf8b-18849cce0242": {
       "ordinary_no_progress_guard": {
-        "fingerprint": "ordinary|맞아요. 전역 `loadingblink` 이름 충돌 가능성이 있었습니다. 앱 전용 애니메이션 이름으로 바꿔서, 이제 **크기 변화 없이 투명도만 1 ↔ 0.65로 깜빡입니다.**",
-        "first_seen_at": "2026-07-27T05:29:50.601Z",
-        "last_seen_at": "2026-07-27T05:29:50.601Z",
+        "fingerprint": "ordinary|프로젝트 최상단의 [index.html](c:\\users\\d\\desktop\\summer_vacation_diary\\index.html:19)입니다. 폰트 preload가 19번째 줄에 있어요.",
+        "first_seen_at": "2026-07-27T05:57:32.170Z",
+        "last_seen_at": "2026-07-27T05:57:32.170Z",
         "repeat_count": 1,
-        "last_turn_id": "019fa20b-b548-7111-ab1a-65bdebcd558b",
+        "last_turn_id": "019fa226-46d9-7012-808a-d0f9e08d39a2",
         "last_thread_id": null
       }
     }
