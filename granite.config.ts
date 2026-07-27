@@ -35,7 +35,7 @@ function resolveDevelopmentHost() {
 // the Toss sandbox app attach to the local dev server; every runtime API the
 // app uses (incl. saveBase64Data) exists in 2.10.7 with the same signature.
 export default defineConfig({
-  appName: "my-summer-story",
+  appName: "my-summer-diary",
 
   brand: {
     // Console registration must use the same Korean app name and appName above.
