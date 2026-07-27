@@ -291,9 +291,7 @@ function App() {
     setHasVisitedWrite(true);
 
     if (isActionSpent(quota, "sketch") && draft.sketchDataUrl === null) {
-      toast.openToast(
-        "오늘 그림 그리기 기회는 모두 썼지만, 사진으로 그림일기는 계속 만들 수 있어요.",
-      );
+      toast.openToast("오늘 사진을 그림으로 바꿀 기회는 다 사용했어요.");
     }
 
     // PhotoUploadStep already collects the required processing consent before
@@ -343,9 +341,7 @@ function App() {
       isActionSpent(quota, "analyze") &&
       analysisState.status !== "success"
     ) {
-      toast.openToast(
-        "오늘 일기 검사 기회는 모두 썼지만, 선생님 한마디 없이도 그림일기를 완성할 수 있어요.",
-      );
+      toast.openToast("오늘 일기 검사 기회는 다 사용했어요.");
     }
     setStep("preview");
   };
