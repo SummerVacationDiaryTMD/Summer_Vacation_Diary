@@ -43,7 +43,7 @@ interface PreviewStepProps {
   onSketchRetry: () => void;
 }
 
-const ANALYSIS_LOADING_MESSAGE = "“선생님이 일기를 검사하고 있어요”";
+const ANALYSIS_LOADING_MESSAGE = "선생님이 일기를 검사하고 있어요.";
 
 function frameRegionStyle(
   region: DiaryFrameRegion,
