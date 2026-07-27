@@ -64,8 +64,10 @@ const TEACHER_COMMENT_FONT_STACK = `${TEACHER_COMMENT_FONT_FAMILY}, ${SYSTEM_FON
 
 // 미리보기의 12/14/10px 등을 1058px 템플릿 원본 비율로 환산한 값입니다.
 const HEADER_FONT_SIZE = 54;
+const WEEKDAY_FONT_SIZE = 44;
 const TITLE_FONT_SIZE = 45;
 const HEADER_FONT = `400 ${HEADER_FONT_SIZE}px ${DIARY_FONT_STACK}`;
+const WEEKDAY_FONT = `400 ${WEEKDAY_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const TITLE_FONT = `400 ${TITLE_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const CONTENT_FONT_SIZE = 54;
 const CONTENT_FONT = `400 ${CONTENT_FONT_SIZE}px ${DIARY_FONT_STACK}`;
@@ -652,7 +654,8 @@ export async function composeDiaryImage(
   context.font = HEADER_FONT;
   context.fillStyle = "#222222";
   context.textAlign = "center";
-  for (const item of headerItems) {
+  for (const [index, item] of headerItems.entries()) {
+    context.font = index === 3 ? WEEKDAY_FONT : HEADER_FONT;
     drawFittedHandwrittenText(
       context,
       item.text,
@@ -665,7 +668,8 @@ export async function composeDiaryImage(
   // 4.6cqw in the DOM preview maps to about 49 source pixels at 1058px wide.
   // Keeping the export at the same source ratio makes both versions match.
   const weatherIconSize = 56;
-  const weatherIconX = headerX + headerWidth * 0.755;
+  // Keep the icon/text group clear of the printed "날씨:" label.
+  const weatherIconX = headerX + headerWidth * 0.79;
   context.drawImage(
     weatherIcon,
     weatherIconX,

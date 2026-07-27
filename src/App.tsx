@@ -520,6 +520,7 @@ function App() {
       {step === "upload" && (
         <PhotoUploadStep
           photoDataUrl={draft.photoDataUrl}
+          showRecheckNotice={hasVisitedPreview}
           onPhotoChange={({ dataUrl, sourceHash, reusedSketchDataUrl }) => {
             setPhotoSourceHash(sourceHash);
             // A sketch belongs to exactly one photo — replacing the photo
@@ -534,7 +535,13 @@ function App() {
           }}
         />
       )}
-      {step === "write" && <WriteStep draft={draft} onChange={updateDraft} />}
+      {step === "write" && (
+        <WriteStep
+          draft={draft}
+          onChange={updateDraft}
+          showRecheckNotice={hasVisitedPreview}
+        />
+      )}
       {step === "preview" && (
         <PreviewStep
           draft={draft}

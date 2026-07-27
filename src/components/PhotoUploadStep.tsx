@@ -39,6 +39,7 @@ export interface PhotoSelection {
 interface PhotoUploadStepProps {
   photoDataUrl: string | null;
   onPhotoChange: (selection: PhotoSelection) => void;
+  showRecheckNotice?: boolean;
 }
 
 /**
@@ -52,6 +53,7 @@ interface PhotoUploadStepProps {
 export function PhotoUploadStep({
   photoDataUrl,
   onPhotoChange,
+  showRecheckNotice = false,
 }: PhotoUploadStepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -245,10 +247,9 @@ export function PhotoUploadStep({
         </button>
       )}
 
-      {/* Outside the photo/no-photo branch on purpose: how many drawings are
-          left is exactly what someone needs to know *before* committing to a
-          photo, not after. */}
-      <SketchQuotaNotice />
+      {/* Keep the notice outside the photo/no-photo branch so it remains in the
+          same place when the user returns to replace an existing photo. */}
+      <SketchQuotaNotice showRecheckNotice={showRecheckNotice} />
 
       <input
         ref={fileInputRef}

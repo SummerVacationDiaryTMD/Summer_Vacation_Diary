@@ -20,6 +20,7 @@ import { AnalyzeQuotaNotice } from "./AiQuotaNotice";
 interface WriteStepProps {
   draft: DiaryDraft;
   onChange: (patch: Partial<DiaryDraft>) => void;
+  showRecheckNotice?: boolean;
 }
 
 /**
@@ -27,7 +28,11 @@ interface WriteStepProps {
  * All fields write straight into the shared draft, so leaving this screen
  * (or the app) never loses input — the draft hook persists it.
  */
-export function WriteStep({ draft, onChange }: WriteStepProps) {
+export function WriteStep({
+  draft,
+  onChange,
+  showRecheckNotice = false,
+}: WriteStepProps) {
   const [titleLimitShakeCount, setTitleLimitShakeCount] = useState(0);
   const [contentLimitShakeCount, setContentLimitShakeCount] = useState(0);
   const titleLength = Array.from(draft.title).length;
@@ -234,7 +239,7 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
               {contentLength}/{CONTENT_MAX_LENGTH}
             </strong>
           </div>
-          <AnalyzeQuotaNotice />
+          <AnalyzeQuotaNotice showRecheckNotice={showRecheckNotice} />
         </section>
       </div>
     </div>

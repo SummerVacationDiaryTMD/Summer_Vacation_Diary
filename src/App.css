@@ -1600,6 +1600,9 @@ html:has(.diary-content-section textarea:focus) {
   height: 44px;
   min-height: 44px;
   box-sizing: border-box;
+  /* 날씨 항목 안쪽의 아이콘 왼쪽·문구 오른쪽 여백을 줄입니다. */
+  padding-left: 8px !important;
+  padding-right: 8px !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   align-items: center !important;
@@ -1732,7 +1735,8 @@ html:has(.diary-content-section textarea:focus) {
   position: absolute;
   z-index: 3;
 
-  top: 7.05%;
+  /* Canvas export: TITLE.y + (TITLE.height - 34) / 2 = 100.5px. */
+  top: 7.44%;
   right: 4.5%;
 
   display: inline-flex;
@@ -1858,11 +1862,13 @@ html:has(.diary-content-section textarea:focus) {
 }
 .diary-card-header > span:nth-child(4) strong {
   display: inline-block;
-  transform: scaleX(0.72);
+  font-size: 0.82em;
+  transform: scaleX(0.88);
 }
 .diary-card-header > span:nth-child(5) {
-  left: 87%;
-  width: 25%;
+  /* Move the icon/text group away from the printed "날씨:" label. */
+  left: 89%;
+  width: 22%;
 }
 
 .diary-card-header strong {
@@ -1973,6 +1979,8 @@ html:has(.diary-content-section textarea:focus) {
   box-sizing: border-box;
   border: 0;
   line-height: 1;
+  /* 최종 캔버스 이미지의 제목 기준선과 맞춥니다. */
+  transform: translateY(-0.4cqw);
 }
 
 .diary-grid-character {
