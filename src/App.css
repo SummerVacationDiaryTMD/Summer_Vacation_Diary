@@ -2100,12 +2100,27 @@ html:has(.diary-content-section textarea:focus) {
   margin: 0;
   overflow: hidden !important;
 
-  font-size: 7.2cqw !important;
+  font-size: 4.45cqw !important;
   font-family: "NanumDdarEGeEomMaGa", sans-serif !important;
   font-weight: 700 !important;
   white-space: nowrap;
 
   transform: translateY(-3px);
+}
+
+.diary-card-comment-multiline {
+  display: block;
+}
+
+.diary-card-comment-multiline .diary-comment-label {
+  float: left;
+  margin: 1.6cqw 1.1cqw 0 0;
+}
+
+.diary-card-comment-multiline .diary-comment-text {
+  display: inline !important;
+  line-height: 1.04 !important;
+  white-space: normal;
 }
 
 .diary-stamp {

@@ -506,10 +506,15 @@ export function PreviewStep({
           {/* Fixed colors throughout the card: it sits on a fixed paper
             background (#fffdf5), and the AIT provider is light-only today. */}
           <div
-            className="diary-card-comment"
+            className={`diary-card-comment${
+              analysis !== null &&
+              Array.from(analysis.comment).length > 28
+                ? " diary-card-comment-multiline"
+                : ""
+            }`}
             style={frameRegionStyle(frameLayout.comment, frameLayout)}
           >
-            <div className="diary-comment-label">선생님 한마디</div>
+            <div className="diary-comment-label">선생님 한줄평</div>
 
             {analysisState.status === "loading" && (
               <div className="comment-loading" aria-hidden="true">
