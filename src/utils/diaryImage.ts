@@ -76,7 +76,7 @@ const TITLE_FONT = `400 ${TITLE_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const CONTENT_FONT_SIZE = 54;
 const CONTENT_FONT = `400 ${CONTENT_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const COMMENT_LABEL_FONT = `700 18px ${SYSTEM_FONT_STACK}`;
-const COMMENT_FONT_SIZE = 48.96;
+const COMMENT_FONT_SIZE = 48;
 const commentFont = (size: number) =>
   `700 ${size}px ${TEACHER_COMMENT_FONT_STACK}`;
 const COMMENT_FONT = commentFont(COMMENT_FONT_SIZE);
@@ -467,15 +467,47 @@ function drawComment(
   context.rect(x, y, width, height);
   context.clip();
 
+  const comment = analysis.comment.trim();
+  const contentWidth = width - paddingX * 2;
+
+  context.font = COMMENT_FONT;
+  if (context.measureText(comment).width <= contentWidth) {
+    context.font = COMMENT_LABEL_FONT;
+    context.fillStyle = LABEL_COLOR;
+    context.fillText("선생님 한줄평", x + paddingX, y + 27);
+
+    context.font = COMMENT_FONT;
+    context.fillStyle = COMMENT_COLOR;
+    context.fillText(comment, x + paddingX, y + 82);
+    context.restore();
+    return;
+  }
+
   context.font = COMMENT_LABEL_FONT;
   context.fillStyle = LABEL_COLOR;
-  context.fillText("선생님 한마디", x + paddingX, y + 27);
+  context.fillText("선생님 한줄평", x + paddingX, y + 43);
+  const labelWidth = context.measureText("선생님 한줄평").width;
 
-  // Supabase constrains the message to one-line length, so keep the existing
-  // font size and always draw the complete message on one line.
   context.font = COMMENT_FONT;
   context.fillStyle = COMMENT_COLOR;
-  context.fillText(analysis.comment.trim(), x + paddingX, y + 82);
+  const firstLineX = x + paddingX + labelWidth + 12;
+  const firstLineWidth = x + width - paddingX - firstLineX;
+  let firstLine = "";
+  let secondLine = "";
+
+  for (const character of Array.from(comment)) {
+    if (
+      secondLine === "" &&
+      context.measureText(firstLine + character).width <= firstLineWidth
+    ) {
+      firstLine += character;
+    } else {
+      secondLine += character;
+    }
+  }
+
+  context.fillText(firstLine.trimEnd(), firstLineX, y + 45);
+  context.fillText(secondLine.trimStart(), x + paddingX, y + 95);
 
   context.restore();
 }
