@@ -32,6 +32,7 @@ import {
 import { buildHighlightSegments } from "../utils/highlight";
 import { buildStarPlacements, pickStarMarkAsset } from "../utils/starMarks";
 import { buildProfanityCheckRuns } from "../utils/profanityCheck";
+import { pickProfanityMarkAsset } from "../utils/profanityMarks";
 import { STAMP_ALT_TEXT, STAMP_IMAGE_URLS } from "../constants/stamp";
 
 interface PreviewStepProps {
@@ -263,6 +264,11 @@ function HighlightedContent({
               top: `${(run.row / rowCount) * 100}%`,
               width: `${(run.length / columnCount) * 100}%`,
               height: `${100 / rowCount}%`,
+              backgroundImage: `url("${pickProfanityMarkAsset(
+                run.row,
+                run.startColumn,
+                run.length,
+              )}")`,
             }}
           />
         ))}
