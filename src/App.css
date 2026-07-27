@@ -1683,17 +1683,17 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .loading-blink {
-  animation: loadingBlink 0.8s ease-in-out infinite;
+  animation: diaryLoadingBlink 0.8s ease-in-out infinite;
 }
 
-@keyframes loadingBlink {
+@keyframes diaryLoadingBlink {
   0%,
   100% {
     opacity: 1;
   }
 
   50% {
-    opacity: 0;
+    opacity: 0.65;
   }
 }
 
