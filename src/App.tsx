@@ -241,7 +241,7 @@ function App() {
 
   if (showOnboarding) {
     return (
-      <main className="onboarding" aria-label="나의 여름방학일기 시작 화면">
+      <main className="onboarding" aria-label="나의 여름방학 일기 시작 화면">
         <div className="onboarding-scene">
           {ONBOARDING_DECORATIONS.map(({ name, file }) => (
             <img

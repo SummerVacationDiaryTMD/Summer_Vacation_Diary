@@ -218,7 +218,7 @@ interface DiaryDraft {
 
 | 파일 | 기능 |
 | --- | --- |
-| `.granite/app.json` | Granite용 앱 식별자와 권한 목록의 간단한 메타데이터다. 현재 `appName`은 `summer-vacation-diary`, 권한은 빈 배열이다. |
+| `.granite/app.json` | Granite용 앱 식별자와 권한 목록의 간단한 메타데이터다. 현재 `appName`은 `my-summer-story`, 권한은 빈 배열이다. |
 | `docs/skills/apps-in-toss.md` | 앱 등록, WebView API, 권한, 빌드·배포 등 Apps in Toss 개발자 문서를 로컬에 모아 둔 참고 자료다. |
 | `docs/skills/tds-mobile.md` | TDS Mobile 컴포넌트, 훅, 색상, 타이포그래피와 접근성 사용법을 모아 둔 참고 자료다. |
 | `public/picture-diary-frame.png` | 미리보기와 저장 이미지가 공통으로 사용하는 그림일기 프레임이다. |

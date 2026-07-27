@@ -4,8 +4,8 @@ import {
   share as shareThroughToss,
 } from "@apps-in-toss/web-framework";
 
-const APP_DEEP_LINK = "intoss://summer-vacation-diary";
-const SHARE_TITLE = "나의 여름방학일기";
+const APP_DEEP_LINK = "intoss://my-summer-story";
+const SHARE_TITLE = "나의 여름방학 일기";
 const SHARE_TEXT = "사진 한 장으로 나만의 여름방학 그림일기를 만들어 보세요!";
 
 export class DiaryShareError extends Error {
