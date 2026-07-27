@@ -160,11 +160,14 @@ function HighlightedContent({
           columnCount,
           columnCount * rowCount,
         );
-  const profanityCheckRuns = buildProfanityCheckRuns(
-    content,
-    columnCount,
-    columnCount * rowCount,
-  );
+  const profanityCheckRuns =
+    analysis === null
+      ? []
+      : buildProfanityCheckRuns(
+          content,
+          columnCount,
+          columnCount * rowCount,
+        );
 
   const correctionRuns: Array<{
     mark: "circle" | "underline";
