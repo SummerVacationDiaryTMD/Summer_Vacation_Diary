@@ -15,3 +15,7 @@ dist/
 
 # Editor/OS noise
 .DS_Store
+
+.idea/
+.omx/
+*.log
