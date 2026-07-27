@@ -16,7 +16,11 @@ function NoticeBox({ lines }: { lines: string[] }) {
   );
 }
 
-export function SketchQuotaNotice() {
+export function SketchQuotaNotice({
+  showRecheckNotice = false,
+}: {
+  showRecheckNotice?: boolean;
+}) {
   const quota = useAiQuota();
 
   if (isAiTestMode) {
@@ -50,7 +54,9 @@ export function SketchQuotaNotice() {
 
   if (quota.mode !== "ready") {
     if (quota.mode === "unknown") {
-      return <NoticeBox lines={["오늘의 그림 그리기 기회를 확인하고 있어요."]} />;
+      return (
+        <NoticeBox lines={["오늘의 그림 그리기 기회를 확인하고 있어요."]} />
+      );
     }
     return null;
   }
@@ -71,15 +77,21 @@ export function SketchQuotaNotice() {
   return (
     <NoticeBox
       lines={[
-        `"일기 쓰러 가기"를 누르면 AI친구가 그림을 그려줘요.`,
         `하루에 ${limit}번까지 그림을 그릴 수 있어요.`,
         `오늘 그림 그리기: ${used}/${limit}`,
+        ...(showRecheckNotice
+          ? ["사진을 바꿔 다시 그리면 1회 차감돼요."]
+          : []),
       ]}
     />
   );
 }
 
-export function AnalyzeQuotaNotice() {
+export function AnalyzeQuotaNotice({
+  showRecheckNotice = false,
+}: {
+  showRecheckNotice?: boolean;
+}) {
   const quota = useAiQuota();
 
   if (isAiTestMode) {
@@ -131,7 +143,9 @@ export function AnalyzeQuotaNotice() {
       lines={[
         `선생님은 하루에 ${limit}번까지 일기를 검사해 줘요.`,
         `오늘 일기 검사: ${used}/${limit}`,
-        "다시 검사받으면 검사 기회가 1번 더 사용돼요.",
+        ...(showRecheckNotice
+          ? ["수정 후 다시 검사받으면 1회 차감돼요."]
+          : []),
       ]}
     />
   );
