@@ -12,7 +12,7 @@
 
 @font-face {
   font-family: "NanumDdarEGeEomMaGa";
-  src: url("/fonts/NanumDdarEGeEomMaGa.ttf") format("truetype");
+  src: url("/fonts/NanumDdarEGeEomMaGa.woff") format("truetype");
   font-display: fallback;
   font-style: normal;
   font-weight: 400;
