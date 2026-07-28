@@ -1,5 +1,4 @@
 import {
-  Button,
   Checkbox,
   Modal,
   Paragraph,
@@ -20,6 +19,7 @@ import {
 } from "../utils/image";
 import { getCachedSketch, hashPhotoFile } from "../services/sketchCache";
 import { isAiTestMode, isSupabaseConfigured } from "../services/supabaseEdge";
+import { DiaryButton } from "./DiaryButton";
 import { SketchQuotaNotice } from "./AiQuotaNotice";
 
 const loadPhotoCropModal = () => import("./PhotoCropModal");
@@ -117,16 +117,8 @@ export function PhotoUploadStep({
       title: "이미 그린 그림이 있어요",
       description:
         "기존 그림을 사용할까요?\n다시 그리면 오늘 남은 횟수가 1회 차감돼요.",
-      confirmButton: (
-        <Button className="summer-diary-button summer-diary-button-primary">
-          기존 그림 사용하기
-        </Button>
-      ),
-      cancelButton: (
-        <Button className="summer-diary-button summer-diary-button-secondary">
-          다시 그리기
-        </Button>
-      ),
+      confirmButton: <DiaryButton>기존 그림 사용하기</DiaryButton>,
+      cancelButton: <DiaryButton tone="secondary">다시 그리기</DiaryButton>,
     });
 
     onPhotoChange({
@@ -221,11 +213,7 @@ export function PhotoUploadStep({
         await openAlert({
           title: "이 사진은 친구가 이미 그림을 그리고 있어요.",
           description: "조금만 기다리면 그림이 완성돼요.",
-          alertButton: (
-            <Button className="summer-diary-button summer-diary-button-primary summer-diary-button-dialog">
-              확인
-            </Button>
-          ),
+          alertButton: <DiaryButton placement="dialog">확인</DiaryButton>,
           closeOnDimmerClick: false,
         });
       }
@@ -242,7 +230,7 @@ export function PhotoUploadStep({
   };
 
   return (
-    <div className="step-body upload-step">
+    <div className="step-body">
       {photoDataUrl !== null ? (
         <div className="photo-selected">
           <img
@@ -251,17 +239,16 @@ export function PhotoUploadStep({
             alt="선택한 사진 미리보기"
           />
 
-          <Button
-            className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
-            variant="weak"
-            color="dark"
-            display="block"
+          <DiaryButton
+            tone="secondary"
+            stable
+            fullWidth
             size="medium"
             disabled={processing}
             onClick={requestPhotoSelection}
           >
             다른 사진 선택하기
-          </Button>
+          </DiaryButton>
         </div>
       ) : (
         <button
@@ -335,7 +322,7 @@ export function PhotoUploadStep({
         <Modal.Overlay />
 
         <Modal.Content
-          className="photo-consent-modal"
+          className="app-modal-panel"
           onOpenAutoFocus={(event) => {
             // 모달이 열릴 때 체크박스가 자동으로 포커스되면서
             // 아래로 스크롤되는 현상을 방지합니다.
@@ -351,12 +338,12 @@ export function PhotoUploadStep({
             }
           }}
         >
-          <div className="photo-consent-content">
+          <div className="app-modal-layout">
             <header className="photo-consent-header">
               <div className="photo-consent-heading-row">
                 <h2
                   ref={consentTitleRef}
-                  className="photo-consent-title"
+                  className="app-modal-title"
                   tabIndex={-1}
                 >
                   사진·일기 처리 동의
@@ -452,28 +439,26 @@ export function PhotoUploadStep({
               </div>
             </div>
 
-            <div className="photo-consent-actions">
-              <Button
-                className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
-                variant="weak"
-                color="dark"
-                display="block"
+            <div className="app-modal-footer photo-consent-actions">
+              <DiaryButton
+                tone="secondary"
+                stable
+                fullWidth
                 onClick={() => setConsentOpen(false)}
               >
                 닫기
-              </Button>
+              </DiaryButton>
 
-              <Button
-                className="app-stable-button-state summer-diary-button summer-diary-button-primary summer-diary-button-guide"
-                display="block"
+              <DiaryButton
+                placement="guide"
+                stable
+                fullWidth
                 aria-disabled={!agreed || processing}
                 disabled={processing}
                 onClick={openPickerAfterConsent}
               >
-                동의하고
-                <br />
-                사진 선택
-              </Button>
+                동의하고 사진 선택
+              </DiaryButton>
             </div>
           </div>
         </Modal.Content>

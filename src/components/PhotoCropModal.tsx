@@ -22,7 +22,7 @@ export function PhotoCropModal({
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [saving, setSaving] = useState(false);
-  
+
   useEffect(() => {
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
@@ -62,12 +62,18 @@ export function PhotoCropModal({
       aria-labelledby="photo-crop-title"
     >
       <header className="photo-crop-header">
-        <button type="button" onClick={onCancel} disabled={saving}>
+        <button
+          type="button"
+          className="photo-crop-action"
+          onClick={onCancel}
+          disabled={saving}
+        >
           취소
         </button>
         <strong id="photo-crop-title">사진 영역 선택</strong>
         <button
           type="button"
+          className="photo-crop-action"
           onClick={confirmCrop}
           disabled={croppedAreaPixels === null || saving}
         >

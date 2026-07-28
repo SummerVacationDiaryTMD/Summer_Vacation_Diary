@@ -1,4 +1,4 @@
-import { Button, Paragraph } from "@toss/tds-mobile";
+import { Paragraph } from "@toss/tds-mobile";
 import { useEffect, useState, type CSSProperties } from "react";
 
 import {
@@ -24,6 +24,7 @@ import {
   type DiaryFrameLayout,
   type DiaryFrameRegion,
 } from "../utils/diaryFrameLayout";
+import { diaryDateParts } from "../utils/diaryDate";
 import { pickCorrectionMarkAsset } from "../utils/correctionMarks";
 import {
   handwritingVariation,
@@ -34,6 +35,7 @@ import { buildStarPlacements, pickStarMarkAsset } from "../utils/starMarks";
 import { buildProfanityCheckRuns } from "../utils/profanityCheck";
 import { pickProfanityMarkAsset } from "../utils/profanityMarks";
 import { STAMP_ALT_TEXT, STAMP_IMAGE_URLS } from "../constants/stamp";
+import { DiaryButton } from "./DiaryButton";
 
 interface PreviewStepProps {
   draft: DiaryDraft;
@@ -54,6 +56,18 @@ function frameRegionStyle(
     top: `${(region.y / layout.height) * 100}%`,
     width: `${(region.width / layout.width) * 100}%`,
     height: `${(region.height / layout.height) * 100}%`,
+  };
+}
+
+function handwritingCharacterStyle(
+  variation: ReturnType<typeof handwritingVariation>,
+  varyScale = true,
+): CSSProperties {
+  return {
+    fontSize: `${varyScale ? variation.scale : 1}em`,
+    fontWeight: variation.fontWeight,
+    opacity: variation.opacity,
+    transform: `translate(${variation.offsetXEm}em, ${variation.offsetYEm}em) rotate(${variation.rotationDeg}deg)`,
   };
 }
 
@@ -80,13 +94,7 @@ function HandwrittenText({
       <span
         key={`${index}-${character}`}
         className="handwritten-character"
-        style={{
-          fontSize: `${varyScale ? variation.scale : 1}em`,
-          // 날짜/날씨/제목에도 글자별 굵기와 농도 차이를 적용합니다.
-          fontWeight: variation.fontWeight,
-          opacity: variation.opacity,
-          transform: `translate(${variation.offsetXEm}em, ${variation.offsetYEm}em) rotate(${variation.rotationDeg}deg)`,
-        }}
+        style={handwritingCharacterStyle(variation, varyScale)}
       >
         {character === " " ? "\u00a0" : character}
       </span>
@@ -206,13 +214,7 @@ function HighlightedContent({
           <span key={index} className="diary-grid-cell">
             <span
               className="diary-grid-character"
-              style={{
-                fontSize: `${variation.scale}em`,
-                // 본문에도 같은 굵기와 농도 변화를 적용합니다.
-                fontWeight: variation.fontWeight,
-                opacity: variation.opacity,
-                transform: `translate(${variation.offsetXEm}em, ${variation.offsetYEm}em) rotate(${variation.rotationDeg}deg)`,
-              }}
+              style={handwritingCharacterStyle(variation)}
             >
               {cell.text === " " ? "\u00a0" : cell.text}
             </span>
@@ -373,11 +375,7 @@ export function PreviewStep({
         : sketchState.status === "error"
           ? "그림 변환에 실패해서 원본 사진이 보여요"
           : "";
-  const [year = "", month = "", day = ""] = draft.date.split("-");
-  const diaryDate = new Date(`${draft.date}T00:00:00`);
-  const weekday = Number.isNaN(diaryDate.getTime())
-    ? ""
-    : new Intl.DateTimeFormat("ko-KR", { weekday: "short" }).format(diaryDate);
+  const { year, month, day, weekday } = diaryDateParts(draft.date);
   const frameLayout =
     renderedPreview?.frameLayout ?? getDiaryFrameLayout(draft.content);
 
@@ -432,20 +430,12 @@ export function PreviewStep({
             </span>
             <span>
               <strong>
-                <HandwrittenText
-                  text={String(Number(month)).padStart(2, "0")}
-                  seedOffset={10}
-                  strength={0.45}
-                />
+                <HandwrittenText text={month} seedOffset={10} strength={0.45} />
               </strong>
             </span>
             <span>
               <strong>
-                <HandwrittenText
-                  text={String(Number(day)).padStart(2, "0")}
-                  seedOffset={20}
-                  strength={0.45}
-                />
+                <HandwrittenText text={day} seedOffset={20} strength={0.45} />
               </strong>
             </span>
             <span>
@@ -630,15 +620,14 @@ export function PreviewStep({
             {/* Hidden once the daily budget is gone: the button would be an
                 invitation to press something that cannot succeed today. */}
             {analysisState.retryable && (
-              <Button
-                className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
+              <DiaryButton
+                tone="secondary"
+                stable
                 size="small"
-                variant="weak"
-                color="dark"
                 onClick={onRetry}
               >
                 한마디 다시 시도
-              </Button>
+              </DiaryButton>
             )}
           </div>
         )}
@@ -667,15 +656,14 @@ export function PreviewStep({
             )}
             <div className="sketch-error-actions">
               {sketchState.retryable && (
-                <Button
-                  className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
+                <DiaryButton
+                  tone="secondary"
+                  stable
                   size="small"
-                  variant="weak"
-                  color="dark"
                   onClick={onSketchRetry}
                 >
                   다시 시도
-                </Button>
+                </DiaryButton>
               )}
             </div>
           </div>

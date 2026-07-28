@@ -36,6 +36,53 @@ export class EdgeFunctionError extends Error {
   }
 }
 
+export type CommonDiaryAiErrorCode =
+  | "timeout"
+  | "network"
+  | "invalid-key"
+  | "rate-limited"
+  | "api-error"
+  | "invalid-response";
+
+export function isKnownErrorCode<T extends string>(
+  messages: Record<T, unknown>,
+  value: string | undefined,
+): value is T {
+  // Do not use `in`: it walks the prototype chain, so a malicious server code
+  // such as "toString" could be treated as one of our own error keys.
+  return (
+    value !== undefined && Object.prototype.hasOwnProperty.call(messages, value)
+  );
+}
+
+/**
+ * Converts transport failures into the error vocabulary shared by analysis
+ * and sketch generation, while preserving each action's recognised server
+ * codes (quota, region and content-policy failures).
+ */
+export function mapEdgeFunctionErrorCode<T extends string>(
+  error: EdgeFunctionError,
+  isActionCode: (value: string | undefined) => value is T,
+): CommonDiaryAiErrorCode | T {
+  if (
+    error.kind === "timeout" ||
+    error.kind === "network" ||
+    error.kind === "invalid-response"
+  ) {
+    return error.kind;
+  }
+  if (isActionCode(error.code)) {
+    return error.code;
+  }
+  if (error.status === 401 || error.status === 403) {
+    return "invalid-key";
+  }
+  if (error.status === 429) {
+    return "rate-limited";
+  }
+  return "api-error";
+}
+
 interface EdgeErrorBody {
   code?: unknown;
 }

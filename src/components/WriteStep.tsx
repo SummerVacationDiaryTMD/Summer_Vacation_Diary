@@ -1,8 +1,4 @@
-import {
-  Paragraph,
-  TextArea,
-  TextField,
-} from "@toss/tds-mobile";
+import { Paragraph, TextArea, TextField } from "@toss/tds-mobile";
 import { adaptive } from "@toss/tds-colors";
 import { useState } from "react";
 
@@ -55,9 +51,7 @@ export function WriteStep({
     onChange({ content: limitedContent });
   };
   const handleTitleChange = (value: string) => {
-    const limitedTitle = Array.from(value)
-      .slice(0, TITLE_MAX_LENGTH)
-      .join("");
+    const limitedTitle = Array.from(value).slice(0, TITLE_MAX_LENGTH).join("");
 
     if (
       Array.from(limitedTitle).length >= TITLE_MAX_LENGTH &&
@@ -84,9 +78,9 @@ export function WriteStep({
   const titleBlank = draft.title.length > 0 && draft.title.trim() === "";
 
   return (
-    <div className="step-body write-form diary-form">
+    <div className="step-body write-form">
       <div className="write-form-surface">
-        <section className="diary-form-section diary-form__section diary-form__section--title title-field-row field-row field-row-column">
+        <section className="diary-form-section diary-title-section">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -97,8 +91,8 @@ export function WriteStep({
           <div
             className={
               titleLimitShakeCount > 0
-                ? `diary-form__control limit-reached-shake-${titleLimitShakeCount % 2}`
-                : "diary-form__control"
+                ? `diary-field-control limit-reached-shake-${titleLimitShakeCount % 2}`
+                : "diary-field-control"
             }
           >
             <TextField
@@ -109,11 +103,7 @@ export function WriteStep({
               maxLength={TITLE_MAX_LENGTH}
               value={draft.title}
               hasError={titleBlank}
-              help={
-                titleBlank
-                  ? "공백 말고 제목을 입력해 주세요"
-                  : undefined
-              }
+              help={titleBlank ? "공백 말고 제목을 입력해 주세요" : undefined}
               onChange={(event) => handleTitleChange(event.target.value)}
             />
           </div>
@@ -131,7 +121,7 @@ export function WriteStep({
           </div>
         </section>
 
-        <section className="diary-form-section diary-form__section diary-form__section--date field-row field-row-column">
+        <section className="diary-form-section">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -158,7 +148,7 @@ export function WriteStep({
           </div>
         </section>
 
-        <section className="diary-form-section diary-form__section diary-form__section--weather field-row field-row-column">
+        <section className="diary-form-section">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -176,7 +166,9 @@ export function WriteStep({
                   className={`weather-option${isSelected ? " is-selected" : ""}`}
                   role="radio"
                   aria-checked={isSelected}
-                  onClick={() => onChange({ weather: option.value as WeatherValue })}
+                  onClick={() =>
+                    onChange({ weather: option.value as WeatherValue })
+                  }
                 >
                   {option.value !== "unknown" && (
                     <img
@@ -193,7 +185,7 @@ export function WriteStep({
           </div>
         </section>
 
-        <section className="diary-form-section diary-form__section diary-form__section--content diary-content-section field-row field-row-column">
+        <section className="diary-form-section diary-content-section">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -204,8 +196,8 @@ export function WriteStep({
           <div
             className={
               contentLimitShakeCount > 0
-                ? `diary-form__control limit-reached-shake-${contentLimitShakeCount % 2}`
-                : "diary-form__control"
+                ? `diary-field-control limit-reached-shake-${contentLimitShakeCount % 2}`
+                : "diary-field-control"
             }
           >
             <TextArea
@@ -213,7 +205,6 @@ export function WriteStep({
               aria-label="일기"
               aria-describedby="diary-character-status"
               placeholder={`오늘의 이야기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요`}
-              className="diary-form__textarea"
               height={128}
               maxLength={CONTENT_MAX_LENGTH}
               value={draft.content}
