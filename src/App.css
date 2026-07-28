@@ -1600,6 +1600,10 @@ html:has(.diary-content-section textarea:focus) {
   color: #16794e;
 }
 
+.diary-character-status-complete {
+  font-weight: 700;
+}
+
 .date-input-wrap {
   display: block;
   width: 100%;
@@ -1676,6 +1680,10 @@ html:has(.diary-content-section textarea:focus) {
   height: 28px;
   object-fit: contain;
   flex: 0 0 auto;
+}
+
+.weather-option.is-selected .weather-option-icon {
+  transform: scale(1.2);
 }
 
 /* Keep every control inside the same content column, including native date
