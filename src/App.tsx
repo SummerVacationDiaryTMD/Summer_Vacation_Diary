@@ -63,7 +63,7 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
 const STEP_PROGRESS: Record<Step, { current: number; label: string }> = {
   upload: { current: 1, label: "여름 한 장" },
   write: { current: 2, label: "오늘의 이야기" },
-  preview: { current: 3, label: "그림일기 완성" },
+  preview: { current: 3, label: "마지막 확인" },
 };
 
 const ONBOARDING_DECORATIONS = [
@@ -625,6 +625,7 @@ function App() {
             tone="secondary"
             stable
             fullWidth
+            disabled={saving}
             onClick={() => {
               setShowAnalyzeQuotaNotice(true);
               setStep("write");
@@ -637,9 +638,10 @@ function App() {
             stable
             fullWidth
             disabled={saving}
+            aria-busy={saving}
             onClick={handleFinish}
           >
-            일기 완성하기
+            {saving ? "완성 중…" : "일기 완성하기"}
           </DiaryButton>
         </AppBottomBar>
       )}
