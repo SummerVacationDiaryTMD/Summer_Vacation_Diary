@@ -410,6 +410,7 @@ export function PreviewStep({
             {
               aspectRatio: `${frameLayout.width} / ${frameLayout.height}`,
               "--stamp-delay": `${17450 + (analysis?.comment.length ?? 0) * 180}ms`,
+              "--preview-delay": `${18450 + (analysis?.comment.length ?? 0) * 180}ms`,
             } as CSSProperties
           }
         >
@@ -566,12 +567,6 @@ export function PreviewStep({
                 </Paragraph>
               </div>
             )}
-
-            {animatedAnalysis !== null && (
-              <span className="visually-hidden">
-                {animatedAnalysis.comment}
-              </span>
-            )}
           </div>
 
           {animatedAnalysis !== null && renderedPreview !== null && (
@@ -604,10 +599,17 @@ export function PreviewStep({
 
           {animatedAnalysis !== null && (
             <img
-              key={animatedAnalysis.stamp}
-              className={`diary-stamp diary-stamp-${animatedAnalysis.stamp}`}
+              className="diary-stamp"
               src={STAMP_IMAGE_URLS[animatedAnalysis.stamp]}
               alt={STAMP_ALT_TEXT[animatedAnalysis.stamp]}
+            />
+          )}
+
+          {renderedPreview !== null && analysisState.status === "success" && (
+            <img
+              className="diary-rendered-preview"
+              src={renderedPreview.dataUrl}
+              alt="저장될 그림일기 미리보기"
             />
           )}
         </div>
