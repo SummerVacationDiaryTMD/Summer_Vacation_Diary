@@ -143,8 +143,8 @@ flowchart LR
 ### 설치와 브라우저 실행
 
 ```bash
-git clone https://github.com/SummerVacationDiaryTMD/my-summer-story.git
-cd my-summer-story
+git clone https://github.com/SummerVacationDiaryTMD/summer-vacation-diary.git
+cd summer-vacation-diary
 npm ci
 npm run dev:web
 ```
@@ -217,7 +217,7 @@ npm run build
 npm run deploy
 ```
 
-`npm run deploy`는 Apps in Toss 콘솔에 등록된 `my-summer-story` 앱과 배포 권한이 필요합니다. 자세한 절차와 출시 전 확인 항목은 [배포 문서](./docs/deployment.md)에 있습니다.
+`npm run deploy`는 Apps in Toss 콘솔에 등록된 `summer-vacation-diary` 앱과 배포 권한이 필요합니다. 자세한 절차와 출시 전 확인 항목은 [배포 문서](./docs/deployment.md)에 있습니다.
 
 ## 현재 제약
 

@@ -200,7 +200,7 @@ flowchart LR
     Console --> WebView["Toss WebView 미니앱"]
     WebView -->|선택 설정| Edge["별도 Supabase diary-ai"]
     Browser["일반 브라우저 개발"] -->|npm run dev:web| Vite["Vite :5173"]
-    Sandbox["Toss 샌드박스"] -->|intoss://my-summer-diary| Bridge["granite dev :8081"]
+    Sandbox["Toss 샌드박스"] -->|intoss://summer-vacation-diary| Bridge["granite dev :8081"]
     Bridge --> Vite
 ```
 
