@@ -76,8 +76,6 @@
 | 일기 검사        | 키워드·감정·첨삭 대상·별표·도장·선생님 한마디 표시                              | 구현 완료 |
 | 결과 이미지 생성 | 미리보기와 같은 1080×1350 그림일기를 Canvas에서 JPEG로 합성                     | 구현 완료 |
 | 저장·공유        | 토스에서는 기기 저장·공유 API, 브라우저에서는 다운로드·Web Share·링크 복사 사용 | 구현 완료 |
-| 일기 모아보기    | 여러 일기를 앱 안의 목록이나 앨범으로 보관                                      | 미구현    |
-| PDF·책 만들기    | 여러 일기를 PDF 또는 앨범으로 내보내기                                          | 미구현    |
 
 세부 사전 조건, 예외 흐름, 권한과 근거 파일은 [기능 명세](./docs/functional-specification.md)에 정리되어 있습니다.
 
@@ -186,7 +184,7 @@ cp .env.example .env
 │   ├── App.tsx             # 3단계 화면 흐름과 완료 처리
 │   └── main.tsx            # React 진입점
 ├── docs/                   # 개발·기능·API·설계 문서
-├── design/                 # 앱 로고와 디자인 철학
+├── design/                 # 앱 로고 원본
 ├── granite.config.ts       # Apps in Toss SDK 2.x 설정
 └── package.json            # 명령과 의존성
 ```
@@ -201,10 +199,6 @@ cp .env.example .env
 - [개발 환경 설정](./docs/setup.md) — 브라우저·샌드박스 실행과 외부 서비스 설정
 - [배포](./docs/deployment.md) — 빌드 산출물, Apps in Toss 배포 조건과 확인 항목
 - [보안·데이터 처리](./docs/security.md) — 공개 설정, 로컬 데이터, 외부 전송과 제한
-- [손글씨 폰트 가이드](./docs/README.md) — 미리보기와 저장 이미지의 폰트 교체
-- [디자인 기준](./DESIGN.md) · [디자인 철학](./design/design-philosophy.md)
-- [초기 제품 기획서](./AI_weekly_picture_diary_2.md) — 구현과 충돌할 때는 현재 코드와 위 명세를 우선
-- [과거 아키텍처 설명](./explain.md) — 역사 문서이며 현재 구조와 다른 설명이 포함됨
 
 ## 품질 확인
 

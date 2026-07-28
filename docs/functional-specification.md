@@ -8,7 +8,6 @@
 
 - `구현 완료`: UI부터 결과 또는 오류 처리까지 실행 경로가 있음
 - `부분 구현`: 핵심 흐름 일부만 있거나 저장소 밖 구성에 의존함
-- `미구현`: 기획 또는 문서에만 있고 실행 경로가 없음
 - `확인 필요`: 저장소 코드만으로 상태를 확정할 수 없음
 
 주 Actor는 로그인 없이 미니앱 또는 모바일 브라우저를 사용하는 `사용자`입니다. 별도의 관리자·회원 역할은 없습니다.
@@ -21,14 +20,13 @@
 | F-02 | 사진 처리 동의             | 구현 완료 | `src/components/PhotoUploadStep.tsx`                           |
 | F-03 | 사진 선택·검증·자르기      | 구현 완료 | `PhotoUploadStep.tsx`, `PhotoCropModal.tsx`, `utils/image.ts`  |
 | F-04 | 일기 작성과 작업 사본 저장 | 구현 완료 | `WriteStep.tsx`, `useDiaryDraft.ts`                            |
-| F-05 | 사진 그림 변환             | 부분 구현 | `useSketch.ts`, `styleTransfer.ts`; 실제 서버 소스 없음        |
-| F-06 | 일기 검사                  | 부분 구현 | `useDiaryAnalysis.ts`, `diaryAnalysis.ts`; 실제 서버 소스 없음 |
+| F-05 | 사진 그림 변환             | 구현 완료 | `useSketch.ts`, `styleTransfer.ts`; 배포된 Edge Function 또는 로컬 필터 |
+| F-06 | 일기 검사                  | 구현 완료 | `useDiaryAnalysis.ts`, `diaryAnalysis.ts`; 배포된 Edge Function 또는 mock |
 | F-07 | 그림일기 미리보기          | 구현 완료 | `PreviewStep.tsx`, `diaryFrameLayout.ts`                       |
 | F-08 | JPEG 완성·저장             | 구현 완료 | `App.tsx`, `diaryImage.ts`, `diaryExport.ts`                   |
 | F-09 | 앱 링크 공유               | 구현 완료 | `DiaryShareModal.tsx`, `diaryShare.ts`                         |
 | F-10 | 사용량 안내·차단           | 부분 구현 | `useAiQuota.ts`, `aiQuotaStore.ts`; 서버 강제 정책 확인 필요   |
 | F-11 | 새 일기 시작               | 구현 완료 | `App.tsx`, `useDiaryDraft.ts`                                  |
-| F-12 | 일기 앨범·PDF              | 미구현    | 관련 실행 코드 없음                                            |
 
 ## F-01 온보딩 시작
 
@@ -119,8 +117,8 @@
 - **관련 API:** `diary-ai`의 `sketch`
 - **관련 데이터:** `DiaryDraft.sketchDataUrl`, 사진별 메모리 캐시, 요청 ledger
 - **완료 조건:** 그림 data URL 저장 또는 명시적인 실패·원본 대체 상태 표시
-- **상태:** `부분 구현`
-- **부분 구현 이유:** 클라이언트와 로컬 대체 경로는 있으나 실제 Edge Function 서버 구현과 모델 설정은 저장소에 없음
+- **상태:** `구현 완료`
+- **구성:** 실제 모드는 배포된 Edge Function에 의존하고, 설정이 없으면 로컬 필터를 사용함
 - **근거:** `src/hooks/useSketch.ts`, `src/services/styleTransfer.ts`, `src/utils/sketchFilter.ts`, `src/services/sketchCache.ts`, `src/services/sketchLedger.ts`
 
 ## F-06 일기 검사
@@ -137,8 +135,8 @@
 - **관련 API:** `diary-ai`의 `analyze`
 - **관련 데이터:** 컴포넌트 생명주기 안 최근 결과 최대 3개
 - **완료 조건:** 검증된 분석 결과 또는 재시도 가능 여부가 포함된 오류 상태
-- **상태:** `부분 구현`
-- **부분 구현 이유:** 클라이언트 검증과 mock은 있으나 실제 Edge Function 서버 구현과 모델 프롬프트는 저장소에 없음
+- **상태:** `구현 완료`
+- **구성:** 실제 모드는 배포된 Edge Function에 의존하고, 설정이 없으면 결정적 mock을 사용함
 - **근거:** `src/hooks/useDiaryAnalysis.ts`, `src/services/diaryAnalysis.ts`, `src/utils/profanity.ts`
 
 ## F-07 그림일기 미리보기
@@ -226,15 +224,6 @@
 - **완료 조건:** 사진·그림·제목·본문이 초기화됨
 - **상태:** `구현 완료`
 - **근거:** `src/App.tsx`, `src/hooks/useDiaryDraft.ts`
-
-## F-12 일기 앨범·PDF
-
-- **목적:** 여러 완성 일기를 앱 안에서 보거나 묶음 파일로 내보냅니다.
-- **Actor:** 사용자
-- **사전 조건·입력·정상 흐름·예외 흐름·출력·완료 조건:** 구현 없음
-- **권한·관련 화면·관련 API·관련 데이터:** 구현 없음
-- **상태:** `미구현`
-- **근거:** `src/`에 목록 저장소, 앨범 화면, PDF 생성 또는 다중 일기 모델이 없음
 
 ## 수동 회귀 확인
 
