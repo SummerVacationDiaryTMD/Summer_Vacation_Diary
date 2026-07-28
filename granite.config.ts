@@ -45,7 +45,6 @@ export default defineConfig({
     displayName: BRAND_DISPLAY_NAME,
     // Warm sandy beige inspired by the beach and summer vacation theme.
     primaryColor: BRAND_PRIMARY_COLOR,
-    // Artwork lives at design/app-icon.png, but this key wants the URL of the
     // console-uploaded copy — see BRAND_ICON_URL for why a repo path cannot
     // work here. Until that URL is filled in, the console upload remains the
     // single source of the icon.

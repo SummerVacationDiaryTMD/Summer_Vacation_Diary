@@ -3,7 +3,7 @@
 사진 한 장과 짧은 글을 크레파스 그림일기로 완성해 저장하는 초등학생·가족용 Apps in Toss 미니앱입니다.
 
 <p align="center">
-  <img src="./docs/images/app-icon-600.png" width="160" alt="나의 여름방학 일기 앱 아이콘" />
+  <img src="./public/branding/app-icon.png" width="160" alt="나의 여름방학 일기 앱 아이콘" />
 </p>
 
 사진 선택과 일기 작성, 그림 변환, 선생님 첨삭, 결과물 저장까지 하나의 3단계 흐름으로 제공합니다.
@@ -18,48 +18,48 @@
   <tr>
     <td align="center" width="50%">
       <strong>1. 온보딩</strong><br /><br />
-      <img src="./docs/images/screenshots/01-onboarding.png" width="300" alt="나의 여름방학 일기 온보딩 화면" /><br /><br />
+      <img src="./docs/screenshots/01-onboarding.png" width="300" alt="나의 여름방학 일기 온보딩 화면" /><br /><br />
       <sub>여름 바다 일러스트와 서비스 이름, 시작하기 버튼을 보여주는 첫 화면</sub>
     </td>
     <td align="center" width="50%">
       <strong>2. 사진 업로드</strong><br /><br />
-      <img src="./docs/images/screenshots/02-photo-upload.png" width="300" alt="그림일기로 만들 사진을 업로드하는 화면" /><br /><br />
+      <img src="./docs/screenshots/02-photo-upload.png" width="300" alt="그림일기로 만들 사진을 업로드하는 화면" /><br /><br />
       <sub>사진 형식·용량과 하루 그림 생성 횟수를 확인하고 사진 선택을 시작하는 화면</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
       <strong>3. 사진·일기 처리 동의</strong><br /><br />
-      <img src="./docs/images/screenshots/03-photo-consent.png" width="300" alt="사진과 일기 처리에 동의하는 화면" /><br /><br />
+      <img src="./docs/screenshots/03-photo-consent.png" width="300" alt="사진과 일기 처리에 동의하는 화면" /><br /><br />
       <sub>처리 정보·목적·전송 및 보관 내용을 확인하고 사진 선택에 필수 동의하는 화면</sub>
     </td>
     <td align="center" width="50%">
       <strong>4. 그림일기 작성</strong><br /><br />
-      <img src="./docs/images/screenshots/04-write-diary.png" width="300" alt="제목과 날짜, 날씨, 일기를 작성하는 화면" /><br /><br />
+      <img src="./docs/screenshots/04-write-diary.png" width="300" alt="제목과 날짜, 날씨, 일기를 작성하는 화면" /><br /><br />
       <sub>제목·날짜·날씨와 20~65자 일기를 작성하고 검사 받기를 선택하는 화면</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
       <strong>5. 선생님 검사 진행</strong><br /><br />
-      <img src="./docs/images/screenshots/05-teacher-review.png" width="300" alt="선생님이 그림일기를 검사하는 동안 표시되는 화면" /><br /><br />
+      <img src="./docs/screenshots/05-teacher-review.png" width="300" alt="선생님이 그림일기를 검사하는 동안 표시되는 화면" /><br /><br />
       <sub>그림일기 미리보기에서 선생님 한마디와 첨삭 결과를 기다리는 처리 상태</sub>
     </td>
     <td align="center" width="50%">
       <strong>6. 그림일기 미리보기</strong><br /><br />
-      <img src="./docs/images/screenshots/06-diary-preview.png" width="300" alt="크레파스 그림과 첨삭 결과가 반영된 그림일기 미리보기 화면" /><br /><br />
+      <img src="./docs/screenshots/06-diary-preview.png" width="300" alt="크레파스 그림과 첨삭 결과가 반영된 그림일기 미리보기 화면" /><br /><br />
       <sub>크레파스 그림, 원고지 본문, 첨삭 표시, 선생님 한마디와 도장이 모두 반영된 화면</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
       <strong>7. 완성 이미지 저장과 공유</strong><br /><br />
-      <img src="./docs/images/screenshots/07-complete-diary-modal.png" width="300" alt="완성된 그림일기를 저장하거나 공유하는 화면" /><br /><br />
+      <img src="./docs/screenshots/07-complete-diary-modal.png" width="300" alt="완성된 그림일기를 저장하거나 공유하는 화면" /><br /><br />
       <sub>완성 이미지를 확인하고 이미지 저장·앱 공유·새 일기 쓰기를 선택하는 모달</sub>
     </td>
     <td align="center" width="50%">
       <strong>8. 최종 그림일기 JPEG</strong><br /><br />
-      <img src="./docs/images/screenshots/08-result.JPG" width="300" alt="사진과 일기, 첨삭 결과가 합성된 최종 그림일기 이미지" /><br /><br />
+      <img src="./docs/screenshots/08-result.JPG" width="300" alt="사진과 일기, 첨삭 결과가 합성된 최종 그림일기 이미지" /><br /><br />
       <sub>사진·본문·첨삭·한마디·도장이 한 장으로 합성되어 기기에 저장되는 최종 결과물</sub>
     </td>
   </tr>
