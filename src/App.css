@@ -880,10 +880,16 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .photo-consent-scroll-body {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: clamp(14px, 4vw, 20px);
-  padding: var(--photo-consent-bezel);
+  padding: 14px var(--photo-consent-bezel) var(--photo-consent-bezel);
+}
+
+.photo-consent-header {
+  flex: 0 0 auto;
+  padding: var(--photo-consent-bezel) var(--photo-consent-bezel) 16px;
 }
 
 .photo-consent-title {
