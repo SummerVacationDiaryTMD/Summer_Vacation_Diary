@@ -26,6 +26,7 @@ import { isSketchAiConnected } from "./services/styleTransfer";
 // deep links yet, so a router would add dependency weight without benefit.
 // If stage 2+ needs shareable URLs, this maps 1:1 onto routes later.
 type Step = "upload" | "write" | "preview";
+type AiAction = "sketch" | "analyze";
 
 interface DiaryConfirmOptions {
   title: string;
@@ -97,6 +98,11 @@ const ONBOARDING_TITLE_LINES = [
     { name: "gi", file: "title-gi.png" },
   ],
 ] as const;
+
+const INITIAL_RECHECK_NOTICE_VISIBILITY: Record<AiAction, boolean> = {
+  sketch: false,
+  analyze: false,
+};
 
 function AppBottomBar({
   children,
@@ -182,8 +188,13 @@ function App() {
 
   const [hasVisitedWrite, setHasVisitedWrite] = useState(false);
   const [hasVisitedPreview, setHasVisitedPreview] = useState(false);
-  const [showSketchQuotaNotice, setShowSketchQuotaNotice] = useState(false);
-  const [showAnalyzeQuotaNotice, setShowAnalyzeQuotaNotice] = useState(false);
+  const [recheckNoticeVisible, setRecheckNoticeVisible] = useState(
+    INITIAL_RECHECK_NOTICE_VISIBILITY,
+  );
+
+  const setRecheckNotice = (action: AiAction, visible: boolean) => {
+    setRecheckNoticeVisible((current) => ({ ...current, [action]: visible }));
+  };
 
   useEffect(() => {
     const root = document.documentElement;
@@ -515,7 +526,7 @@ function App() {
       {step === "upload" && (
         <PhotoUploadStep
           photoDataUrl={draft.photoDataUrl}
-          showRecheckNotice={showSketchQuotaNotice}
+          showRecheckNotice={recheckNoticeVisible.sketch}
           canRedraw={sketchAllowed}
           isDrawingInProgress={isDrawingInProgress}
           onPhotoChange={({
@@ -548,7 +559,7 @@ function App() {
         <WriteStep
           draft={draft}
           onChange={updateDraft}
-          showRecheckNotice={showAnalyzeQuotaNotice}
+          showRecheckNotice={recheckNoticeVisible.analyze}
         />
       )}
       {step === "preview" && (
@@ -573,8 +584,7 @@ function App() {
 
             setHasVisitedWrite(false);
             setHasVisitedPreview(false);
-            setShowSketchQuotaNotice(false);
-            setShowAnalyzeQuotaNotice(false);
+            setRecheckNoticeVisible(INITIAL_RECHECK_NOTICE_VISIBILITY);
 
             setStep("upload");
           }}
@@ -601,7 +611,7 @@ function App() {
             stable
             fullWidth
             onClick={() => {
-              setShowSketchQuotaNotice(true);
+              setRecheckNotice("sketch", true);
               setStep("upload");
             }}
           >
@@ -626,7 +636,7 @@ function App() {
             stable
             fullWidth
             onClick={() => {
-              setShowAnalyzeQuotaNotice(true);
+              setRecheckNotice("analyze", true);
               setStep("write");
             }}
           >

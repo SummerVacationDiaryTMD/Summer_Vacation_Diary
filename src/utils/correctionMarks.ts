@@ -11,6 +11,8 @@ import line1 from "../assets/handwrites/processed/line1.png";
 import line2 from "../assets/handwrites/processed/line2.png";
 import line3 from "../assets/handwrites/processed/line3.png";
 
+import { pickPositionedAsset } from "./positionedAsset";
+
 const CIRCLE_MARKS = [circle1, circle2, circle3, circle4, circle5];
 const LINE_MARKS = [line1, line2, line3];
 
@@ -30,5 +32,5 @@ export function pickCorrectionMarkAsset(
   length: number,
 ): string {
   const pool = mark === "circle" ? CIRCLE_MARKS : LINE_MARKS;
-  return pool[(row * 31 + startColumn * 7 + length) % pool.length];
+  return pickPositionedAsset(pool, row, startColumn, length);
 }

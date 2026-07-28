@@ -1,5 +1,4 @@
 import { Paragraph, TextArea, TextField } from "@toss/tds-mobile";
-import { adaptive } from "@toss/tds-colors";
 import { useState } from "react";
 
 import {
@@ -17,6 +16,10 @@ interface WriteStepProps {
   onChange: (patch: Partial<DiaryDraft>) => void;
   showRecheckNotice?: boolean;
 }
+
+// The form sits on a permanently cream sheet, so an adaptive token here would
+// resolve to a near-white ink in dark mode. Fixed, like the date input's color.
+const LABEL_INK = "#6B5E3F";
 
 /**
  * Step 2: title, diary text, date and weather.
@@ -84,7 +87,7 @@ export function WriteStep({
           <Paragraph
             className="form-section-label"
             typography="t7"
-            color={adaptive.grey600}
+            color={LABEL_INK}
           >
             제목
           </Paragraph>
@@ -125,7 +128,7 @@ export function WriteStep({
           <Paragraph
             className="form-section-label"
             typography="t7"
-            color={adaptive.grey600}
+            color={LABEL_INK}
           >
             날짜
           </Paragraph>
@@ -137,6 +140,18 @@ export function WriteStep({
               type="date"
               aria-label="일기 날짜"
               value={draft.date}
+              // Without this only the calendar glyph opens the picker — tapping
+              // the date text does nothing, which reads as a dead button.
+              // showPicker is Chrome 99+/Safari 16+ and throws if it is not
+              // user-activated or unsupported, so a failure just leaves the
+              // native behaviour in place.
+              onClick={(event) => {
+                try {
+                  event.currentTarget.showPicker();
+                } catch {
+                  // Older WebView: the indicator still works.
+                }
+              }}
               onChange={(event) => {
                 // Some browsers emit an empty string while the picker is being
                 // cleared; keep the previous date instead of storing an invalid one.
@@ -152,7 +167,7 @@ export function WriteStep({
           <Paragraph
             className="form-section-label"
             typography="t7"
-            color={adaptive.grey600}
+            color={LABEL_INK}
           >
             날씨
           </Paragraph>
@@ -178,7 +193,7 @@ export function WriteStep({
                       aria-hidden="true"
                     />
                   )}
-                  <span>{option.label}</span>
+                  <span className="weather-option-label">{option.label}</span>
                 </button>
               );
             })}
@@ -189,7 +204,7 @@ export function WriteStep({
           <Paragraph
             className="form-section-label"
             typography="t7"
-            color={adaptive.grey600}
+            color={LABEL_INK}
           >
             일기
           </Paragraph>
@@ -200,12 +215,15 @@ export function WriteStep({
                 : "diary-field-control"
             }
           >
+            {/* height is four 32px ruled bands plus padding. The CSS min/max
+                height are !important and win regardless, but an off-grid
+                number here would read as the intended size and invite a "fix". */}
             <TextArea
               variant="line"
               aria-label="일기"
               aria-describedby="diary-character-status"
               placeholder={`오늘의 이야기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요`}
-              height={128}
+              height={142}
               maxLength={CONTENT_MAX_LENGTH}
               value={draft.content}
               hasError={contentTooShort}
