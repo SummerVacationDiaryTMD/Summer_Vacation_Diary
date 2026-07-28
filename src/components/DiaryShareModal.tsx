@@ -1,5 +1,5 @@
 import { Modal } from "@toss/tds-mobile";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { DiaryExportError, exportDiaryImage } from "../services/diaryExport";
 import { DiaryShareError, shareDiaryAppLink } from "../services/diaryShare";
@@ -28,6 +28,7 @@ export function DiaryShareModal({
 }: DiaryShareModalProps) {
   const [busyAction, setBusyAction] = useState<ShareAction | null>(null);
   const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
+  const completionTitleRef = useRef<HTMLHeadingElement>(null);
 
   const run = async (action: ShareAction) => {
     if (busyAction !== null) {
@@ -59,15 +60,52 @@ export function DiaryShareModal({
     <Modal open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <Modal.Overlay />
 
-      <Modal.Content className="app-modal-panel">
+      <Modal.Content
+        className="app-modal-panel"
+        aria-labelledby="diary-completion-title"
+        aria-describedby="diary-completion-description"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          completionTitleRef.current?.focus({ preventScroll: true });
+        }}
+      >
         <div className="app-modal-layout">
-          <div className="diary-share-body">
-            <div>
-              <h2 className="app-modal-title">그림일기가 완성됐어요</h2>
+          <div className="diary-share-body modal-scroll-body">
+            <div className="diary-completion-header">
+              <div className="diary-completion-badge-wrap" aria-hidden="true">
+                <span className="diary-completion-spark diary-completion-spark-one" />
+                <span className="diary-completion-spark diary-completion-spark-two" />
+                <span className="diary-completion-spark diary-completion-spark-three" />
 
-              <p className="diary-share-description">
-                완성 이미지를 저장하거나 친구에게 앱을 알려주세요.
-              </p>
+                <span className="diary-completion-badge">
+                  <svg
+                    className="diary-completion-check"
+                    viewBox="0 0 48 48"
+                    focusable="false"
+                  >
+                    <path d="M11 25.5 20 34l17-19" />
+                  </svg>
+                </span>
+              </div>
+
+              <div className="diary-completion-copy">
+                <h2
+                  ref={completionTitleRef}
+                  id="diary-completion-title"
+                  className="app-modal-title diary-completion-title"
+                  tabIndex={-1}
+                >
+                  그림일기가 완성됐어요!
+                </h2>
+
+                <p
+                  id="diary-completion-description"
+                  className="diary-share-description"
+                >
+                  완성 이미지를 만들었어요. 기기에 보관하려면 ‘이미지
+                  저장하기’를 눌러주세요.
+                </p>
+              </div>
             </div>
 
             <div className="diary-share-preview-wrap">
