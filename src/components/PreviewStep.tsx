@@ -380,10 +380,6 @@ export function PreviewStep({
     : new Intl.DateTimeFormat("ko-KR", { weekday: "short" }).format(diaryDate);
   const frameLayout =
     renderedPreview?.frameLayout ?? getDiaryFrameLayout(draft.content);
-  const commentLines =
-    renderedPreview?.commentLines ??
-    (analysis === null ? [] : [analysis.comment]);
-  const animatedComment = commentLines.join("\n");
 
   return (
     <div className="step-body preview-step">
@@ -416,7 +412,6 @@ export function PreviewStep({
             {
               aspectRatio: `${frameLayout.width} / ${frameLayout.height}`,
               "--stamp-delay": `${17450 + (analysis?.comment.length ?? 0) * 180}ms`,
-              "--preview-delay": `${18450 + (analysis?.comment.length ?? 0) * 180}ms`,
             } as CSSProperties
           }
         >
@@ -538,9 +533,7 @@ export function PreviewStep({
           {/* Fixed colors throughout the card: it sits on a fixed paper
             background (#fffdf5), and the AIT provider is light-only today. */}
           <div
-            className={`diary-card-comment${
-              commentLines.length > 1 ? " diary-card-comment-multiline" : ""
-            }`}
+            className="diary-card-comment"
             style={frameRegionStyle(frameLayout.comment, frameLayout)}
           >
             <div className="diary-comment-label">선생님 한줄평</div>
@@ -597,8 +590,11 @@ export function PreviewStep({
               style={
                 {
                   ...frameRegionStyle(frameLayout.comment, frameLayout),
-                  "--comment-write-duration": `${Math.max(animatedComment.length, 1) * 180}ms`,
-                  "--comment-write-steps": Math.max(animatedComment.length, 1),
+                  "--comment-write-duration": `${Math.max(animatedAnalysis.comment.length, 1) * 180}ms`,
+                  "--comment-write-steps": Math.max(
+                    animatedAnalysis.comment.length,
+                    1,
+                  ),
                 } as CSSProperties
               }
               aria-hidden="true"
@@ -622,14 +618,6 @@ export function PreviewStep({
               className={`diary-stamp diary-stamp-${animatedAnalysis.stamp}`}
               src={STAMP_IMAGE_URLS[animatedAnalysis.stamp]}
               alt={STAMP_ALT_TEXT[animatedAnalysis.stamp]}
-            />
-          )}
-
-          {renderedPreview !== null && analysisState.status === "success" && (
-            <img
-              className="diary-rendered-preview"
-              src={renderedPreview.dataUrl}
-              alt="저장될 그림일기 미리보기"
             />
           )}
         </div>
