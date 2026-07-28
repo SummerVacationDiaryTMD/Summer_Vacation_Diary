@@ -112,7 +112,7 @@ DDL에서 명시적으로 생성한 보조 index는 없습니다.
 | RLS·policy                         | 확인 필요           |
 | RPC·trigger·quota 차감 로직        | 확인 필요           |
 | 보존·삭제 정책                     | 확인 필요           |
-| migration version 관리             | 저장소에는 미구현   |
+| migration version 관리             | 현재 저장소에는 원본 파일 없음 |
 
 ## 관련 문서
 
