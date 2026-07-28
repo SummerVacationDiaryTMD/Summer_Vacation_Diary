@@ -1,6 +1,8 @@
 import star1 from "../assets/handwrites/processed/star.png";
 import star2 from "../assets/handwrites/processed/star2.png";
 
+import { pickPositionedAsset } from "./positionedAsset";
+
 const STAR_MARKS = [star1, star2];
 
 /** Star URLs that must be preloaded before the canvas export is drawn. */
@@ -16,7 +18,7 @@ export interface StarPlacement {
  * ensuring the DOM preview and canvas export always choose the same asset.
  */
 export function pickStarMarkAsset(row: number, column: number): string {
-  return STAR_MARKS[(row * 31 + column * 7) % STAR_MARKS.length];
+  return pickPositionedAsset(STAR_MARKS, row, column);
 }
 
 function findCharacters(
