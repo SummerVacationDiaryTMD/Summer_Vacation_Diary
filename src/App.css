@@ -722,7 +722,8 @@ html:has(.diary-content-section textarea:focus) {
   justify-content: center;
   gap: 4px;
   width: 100%;
-  height: clamp(200px, 42dvh, 320px);
+  aspect-ratio: 3 / 2;
+  height: auto;
   min-height: 0;
   padding: 0;
   overflow: hidden;
@@ -2412,10 +2413,6 @@ html:has(.diary-content-section textarea:focus) {
   .diary-share-body {
     gap: 12px;
     padding: 14px 16px;
-  }
-
-  .photo-placeholder {
-    height: 210px;
   }
 
   .diary-share-body {

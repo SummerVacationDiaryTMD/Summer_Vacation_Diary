@@ -251,34 +251,37 @@ export function PhotoUploadStep({
           </DiaryButton>
         </div>
       ) : (
-        <button
-          type="button"
-          className="photo-placeholder"
-          onClick={requestPhotoSelection}
-          disabled={processing}
-        >
-          <img
-            className="photo-placeholder-image"
-            src={familyDiaryPlaceholder}
-            alt=""
-            aria-hidden
-          />
+        <div className="photo-selected">
+          <button
+            type="button"
+            className="photo-placeholder"
+            onClick={requestPhotoSelection}
+            disabled={processing}
+          >
+            <img
+              className="photo-placeholder-image"
+              src={familyDiaryPlaceholder}
+              alt=""
+              aria-hidden
+            />
 
-          <span className="photo-placeholder-copy">
-            <Paragraph
-              as="span"
-              typography="t5"
-              fontWeight="semibold"
-              color={colors.grey800}
-            >
-              여름 사진 올리기
-            </Paragraph>
+            <span className="photo-placeholder-copy">
+              <Paragraph as="span" typography="t7" color={colors.grey600}>
+                JPG · PNG · WEBP, 10MB 이하 사진 1장
+              </Paragraph>
+            </span>
+          </button>
 
-            <Paragraph as="span" typography="t7" color={colors.grey600}>
-              JPG · PNG · WEBP, 10MB 이하 사진 1장
-            </Paragraph>
-          </span>
-        </button>
+          <DiaryButton
+            stable
+            fullWidth
+            size="medium"
+            disabled={processing}
+            onClick={requestPhotoSelection}
+          >
+            여름 사진을 선택하세요
+          </DiaryButton>
+        </div>
       )}
 
       {/* Keep the notice outside the photo/no-photo branch so it remains in the
