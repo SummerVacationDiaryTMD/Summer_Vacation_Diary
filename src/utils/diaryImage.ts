@@ -566,11 +566,15 @@ export async function composeDiaryImage(
     input.analysis === null
       ? Promise.resolve<HTMLImageElement | null>(null)
       : loadImageFromDataUrl(STAMP_IMAGE_URLS[input.analysis.stamp]);
+  const weatherIconPromise =
+    input.weather === "unknown"
+      ? Promise.resolve<HTMLImageElement | null>(null)
+      : loadImageFromDataUrl(weatherIconUrl(input.weather));
 
   const [image, template, weatherIcon, stampImage] = await Promise.all([
     loadImageFromDataUrl(input.imageDataUrl),
     loadImageFromDataUrl(TEMPLATE_URL),
-    loadImageFromDataUrl(weatherIconUrl(input.weather)),
+    weatherIconPromise,
     stampImagePromise,
   ]);
 
@@ -656,24 +660,25 @@ export async function composeDiaryImage(
   const weatherIconSize = 56;
   // Keep the icon/text group clear of the printed "날씨:" label.
   const weatherIconX = headerX + headerWidth * 0.79;
-  context.drawImage(
-    weatherIcon,
-    weatherIconX,
-    headerY + (headerHeight - weatherIconSize) / 2,
-    weatherIconSize,
-    weatherIconSize,
-  );
-  const weatherText = weatherLabel(input.weather);
-  const weatherTextLeft = weatherIconX + weatherIconSize + 10;
-  const weatherTextRight = headerX + headerWidth - 8;
-  drawFittedHandwrittenText(
-    context,
-    weatherText,
-    (weatherTextLeft + weatherTextRight) / 2,
-    headerBaseline,
-    weatherTextRight - weatherTextLeft,
-    40,
-  );
+  if (weatherIcon !== null) {
+    context.drawImage(
+      weatherIcon,
+      weatherIconX,
+      headerY + (headerHeight - weatherIconSize) / 2,
+      weatherIconSize,
+      weatherIconSize,
+    );
+    const weatherTextLeft = weatherIconX + weatherIconSize + 10;
+    const weatherTextRight = headerX + headerWidth - 8;
+    drawFittedHandwrittenText(
+      context,
+      weatherLabel(input.weather),
+      (weatherTextLeft + weatherTextRight) / 2,
+      headerBaseline,
+      weatherTextRight - weatherTextLeft,
+      40,
+    );
+  }
   context.textAlign = "start";
 
   const titleX = TITLE.x;
