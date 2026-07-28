@@ -163,11 +163,7 @@ function HighlightedContent({
   const profanityCheckRuns =
     analysis === null
       ? []
-      : buildProfanityCheckRuns(
-          content,
-          columnCount,
-          columnCount * rowCount,
-        );
+      : buildProfanityCheckRuns(content, columnCount, columnCount * rowCount);
 
   const correctionRuns: Array<{
     mark: "circle" | "underline";
@@ -228,51 +224,74 @@ function HighlightedContent({
           <span
             key={index}
             className={`diary-correction diary-correction-${run.mark}`}
-            style={{
-              left: `${(run.startColumn / columnCount) * 100}%`,
-              top: `${(run.row / rowCount) * 100}%`,
-              width: `${(run.length / columnCount) * 100}%`,
-              height: `${100 / rowCount}%`,
-              backgroundImage: `url("${pickCorrectionMarkAsset(
-                run.mark,
-                run.row,
-                run.startColumn,
-                run.length,
-              )}")`,
-            }}
+            style={
+              {
+                "--mark-delay":
+                  run.mark === "underline"
+                    ? `${
+                        correctionRuns
+                          .slice(0, index)
+                          .filter(({ mark }) => mark === "underline").length *
+                        950
+                      }ms`
+                    : `${
+                        5200 +
+                        correctionRuns
+                          .slice(0, index)
+                          .filter(({ mark }) => mark === "circle").length *
+                          1450
+                      }ms`,
+                left: `${(run.startColumn / columnCount) * 100}%`,
+                top: `${(run.row / rowCount) * 100}%`,
+                width: `${(run.length / columnCount) * 100}%`,
+                height: `${100 / rowCount}%`,
+                backgroundImage: `url("${pickCorrectionMarkAsset(
+                  run.mark,
+                  run.row,
+                  run.startColumn,
+                  run.length,
+                )}")`,
+              } as CSSProperties
+            }
           />
         ))}
         {starPlacements.map((placement, index) => (
           <span
             key={`star-${index}`}
             className="diary-star-mark"
-            style={{
-              left: `${(placement.column / columnCount) * 100}%`,
-              top: `${(placement.row / rowCount) * 100}%`,
-              width: `${100 / columnCount}%`,
-              height: `${100 / rowCount}%`,
-              backgroundImage: `url("${pickStarMarkAsset(
-                placement.row,
-                placement.column,
-              )}")`,
-            }}
+            style={
+              {
+                "--mark-delay": `${13600 + index * 1600}ms`,
+                left: `${(placement.column / columnCount) * 100}%`,
+                top: `${(placement.row / rowCount) * 100}%`,
+                width: `${100 / columnCount}%`,
+                height: `${100 / rowCount}%`,
+                backgroundImage: `url("${pickStarMarkAsset(
+                  placement.row,
+                  placement.column,
+                )}")`,
+              } as CSSProperties
+            }
           />
         ))}
         {profanityCheckRuns.map((run, index) => (
           <span
             key={`profanity-check-${index}`}
             className="diary-profanity-check"
-            style={{
-              left: `${(run.startColumn / columnCount) * 100}%`,
-              top: `${(run.row / rowCount) * 100}%`,
-              width: `${(run.length / columnCount) * 100}%`,
-              height: `${100 / rowCount}%`,
-              backgroundImage: `url("${pickProfanityMarkAsset(
-                run.row,
-                run.startColumn,
-                run.length,
-              )}")`,
-            }}
+            style={
+              {
+                "--mark-delay": "0ms",
+                left: `${(run.startColumn / columnCount) * 100}%`,
+                top: `${(run.row / rowCount) * 100}%`,
+                width: `${(run.length / columnCount) * 100}%`,
+                height: `${100 / rowCount}%`,
+                backgroundImage: `url("${pickProfanityMarkAsset(
+                  run.row,
+                  run.startColumn,
+                  run.length,
+                )}")`,
+              } as CSSProperties
+            }
           />
         ))}
       </span>
@@ -308,6 +327,7 @@ export function PreviewStep({
     (isAiConnected && analysisState.status === "success");
   const [renderedPreview, setRenderedPreview] =
     useState<ComposedDiaryImage | null>(null);
+  const animatedAnalysis = renderedPreview === null ? null : analysis;
 
   useEffect(() => {
     const imageDataUrl = draft.sketchDataUrl ?? draft.photoDataUrl;
@@ -359,8 +379,11 @@ export function PreviewStep({
     ? ""
     : new Intl.DateTimeFormat("ko-KR", { weekday: "short" }).format(diaryDate);
   const frameLayout =
-    renderedPreview?.frameLayout ??
-    getDiaryFrameLayout(draft.content);
+    renderedPreview?.frameLayout ?? getDiaryFrameLayout(draft.content);
+  const commentLines =
+    renderedPreview?.commentLines ??
+    (analysis === null ? [] : [analysis.comment]);
+  const animatedComment = commentLines.join("\n");
 
   return (
     <div className="step-body preview-step">
@@ -389,9 +412,13 @@ export function PreviewStep({
       <div className="diary-card">
         <div
           className="diary-template"
-          style={{
-            aspectRatio: `${frameLayout.width} / ${frameLayout.height}`,
-          }}
+          style={
+            {
+              aspectRatio: `${frameLayout.width} / ${frameLayout.height}`,
+              "--stamp-delay": `${17450 + (analysis?.comment.length ?? 0) * 180}ms`,
+              "--preview-delay": `${18450 + (analysis?.comment.length ?? 0) * 180}ms`,
+            } as CSSProperties
+          }
         >
           <DiaryFrameBackground layout={frameLayout} />
 
@@ -474,7 +501,9 @@ export function PreviewStep({
                 <img
                   src={showsSketch ? sketchUrl : draft.photoDataUrl}
                   alt={
-                    showsSketch ? "크레파스 그림으로 바뀐 일기 사진" : "일기 사진"
+                    showsSketch
+                      ? "크레파스 그림으로 바뀐 일기 사진"
+                      : "일기 사진"
                   }
                 />
                 {sketchState.status === "loading" && (
@@ -500,17 +529,17 @@ export function PreviewStep({
               gridTemplateRows: `repeat(${frameLayout.contentRows}, minmax(0, 1fr))`,
             }}
           >
-            <HighlightedContent content={draft.content} analysis={analysis} />
+            <HighlightedContent
+              content={draft.content}
+              analysis={animatedAnalysis}
+            />
           </div>
 
           {/* Fixed colors throughout the card: it sits on a fixed paper
             background (#fffdf5), and the AIT provider is light-only today. */}
           <div
             className={`diary-card-comment${
-              analysis !== null &&
-              Array.from(analysis.comment).length > 28
-                ? " diary-card-comment-multiline"
-                : ""
+              commentLines.length > 1 ? " diary-card-comment-multiline" : ""
             }`}
             style={frameRegionStyle(frameLayout.comment, frameLayout)}
           >
@@ -555,24 +584,44 @@ export function PreviewStep({
               </div>
             )}
 
-            {analysis !== null && (
-              <Paragraph
-                className="diary-comment-text"
-                typography="t5"
-                fontWeight="medium"
-                color="#6b5e3f"
-              >
-                {analysis.comment}
-              </Paragraph>
+            {animatedAnalysis !== null && (
+              <span className="visually-hidden">
+                {animatedAnalysis.comment}
+              </span>
             )}
           </div>
 
-          {analysis !== null && (
+          {animatedAnalysis !== null && renderedPreview !== null && (
+            <div
+              className="diary-rendered-comment"
+              style={
+                {
+                  ...frameRegionStyle(frameLayout.comment, frameLayout),
+                  "--comment-write-duration": `${Math.max(animatedComment.length, 1) * 180}ms`,
+                  "--comment-write-steps": Math.max(animatedComment.length, 1),
+                } as CSSProperties
+              }
+              aria-hidden="true"
+            >
+              <img
+                src={renderedPreview.dataUrl}
+                alt=""
+                style={{
+                  left: `${(-frameLayout.comment.x / frameLayout.comment.width) * 100}%`,
+                  top: `${(-frameLayout.comment.y / frameLayout.comment.height) * 100}%`,
+                  width: `${(frameLayout.width / frameLayout.comment.width) * 100}%`,
+                  height: `${(frameLayout.height / frameLayout.comment.height) * 100}%`,
+                }}
+              />
+            </div>
+          )}
+
+          {animatedAnalysis !== null && (
             <img
-              key={analysis.stamp}
-              className={`diary-stamp diary-stamp-${analysis.stamp}`}
-              src={STAMP_IMAGE_URLS[analysis.stamp]}
-              alt={STAMP_ALT_TEXT[analysis.stamp]}
+              key={animatedAnalysis.stamp}
+              className={`diary-stamp diary-stamp-${animatedAnalysis.stamp}`}
+              src={STAMP_IMAGE_URLS[animatedAnalysis.stamp]}
+              alt={STAMP_ALT_TEXT[animatedAnalysis.stamp]}
             />
           )}
 
