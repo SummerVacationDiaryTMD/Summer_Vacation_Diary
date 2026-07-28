@@ -44,7 +44,6 @@ export interface DiaryImageInput {
 export interface ComposedDiaryImage {
   dataUrl: string;
   frameLayout: DiaryFrameLayout;
-  commentLines: string[];
 }
 
 // The export and preview both use diaryFrameLayout's source-pixel coordinates,
@@ -455,8 +454,8 @@ function drawComment(
   context: CanvasRenderingContext2D,
   analysis: DiaryAnalysis | null,
   layout: DiaryFrameLayout,
-): string[] {
-  if (analysis === null) return [];
+) {
+  if (analysis === null) return;
   const { x, y, width, height } = layout.comment;
   const paddingX = DIARY_COMMENT.paddingX;
 
@@ -478,7 +477,7 @@ function drawComment(
     context.fillStyle = COMMENT_COLOR;
     context.fillText(comment, x + paddingX, y + 82);
     context.restore();
-    return [comment];
+    return;
   }
 
   context.font = COMMENT_LABEL_FONT;
@@ -504,12 +503,10 @@ function drawComment(
     }
   }
 
-  const lines = [firstLine.trimEnd(), secondLine.trimStart()];
-  context.fillText(lines[0], firstLineX, y + 45);
-  context.fillText(lines[1], x + paddingX, y + 95);
+  context.fillText(firstLine.trimEnd(), firstLineX, y + 45);
+  context.fillText(secondLine.trimStart(), x + paddingX, y + 95);
 
   context.restore();
-  return lines;
 }
 function drawStamp(
   context: CanvasRenderingContext2D,
@@ -706,7 +703,7 @@ export async function composeDiaryImage(
   context.restore();
 
   drawContent(context, input.content, input.analysis, markImages);
-  const commentLines = drawComment(context, input.analysis, frameLayout);
+  drawComment(context, input.analysis, frameLayout);
 
   if (stampImage !== null) {
     drawStamp(context, stampImage, frameLayout);
@@ -719,6 +716,5 @@ export async function composeDiaryImage(
   return {
     dataUrl: canvas.toDataURL("image/jpeg", 0.92),
     frameLayout,
-    commentLines,
   };
 }

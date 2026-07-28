@@ -1729,23 +1729,6 @@ html:has(.diary-content-section textarea:focus) {
   overflow: hidden;
 }
 
-.diary-rendered-preview {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: none;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
-  animation: diary-rendered-preview-appear 300ms var(--preview-delay, 8s) both;
-}
-
-@keyframes diary-rendered-preview-appear {
-  from {
-    opacity: 0;
-  }
-}
-
 .diary-frame-background {
   position: absolute;
   inset: 0;
@@ -2183,23 +2166,6 @@ html:has(.diary-content-section textarea:focus) {
   }
 }
 
-.diary-card-comment-multiline {
-  display: block;
-}
-
-.diary-card-comment-multiline .diary-comment-label {
-  float: left;
-  margin: 1.6cqw 1.1cqw 0 0;
-}
-
-.diary-card-comment-multiline .diary-comment-text {
-  display: inline !important;
-  line-height: 1.04 !important;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-all;
-}
-
 .diary-stamp {
   position: absolute;
 
@@ -2251,8 +2217,7 @@ html:has(.diary-content-section textarea:focus) {
   .diary-correction,
   .diary-star-mark,
   .diary-profanity-check,
-  .diary-rendered-comment,
-  .diary-rendered-preview {
+  .diary-rendered-comment {
     animation: none;
     opacity: 1;
     clip-path: none;
