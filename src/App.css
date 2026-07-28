@@ -1428,6 +1428,8 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .write-form-surface {
+  --diary-form-inset: 18px;
+
   overflow: hidden;
   border: 1px solid rgba(101, 146, 174, 0.16);
   border-radius: 20px;
@@ -1443,41 +1445,53 @@ html:has(.diary-content-section textarea:focus) {
   min-width: 0;
   box-sizing: border-box;
   margin: 0;
-  padding: 14px 16px;
+  padding: 14px var(--diary-form-inset);
   overflow: hidden;
   border: 0;
   border-radius: 0;
   background: transparent;
 }
 
+/* The write screen is divided into compact, independently scannable fields. */
+.diary-form__section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 10px;
+  padding-block: 14px;
+}
+
+.diary-form__section--title {
+  gap: 4px;
+}
+
+.field-row.diary-form__section--title {
+  gap: 6px;
+}
+
 .write-form-surface .diary-form-section {
-  padding-right: 0;
-  padding-left: 0;
+  padding-right: var(--diary-form-inset);
+  padding-left: var(--diary-form-inset);
 }
 
 .diary-form-section:not(:last-child)::after {
   content: "";
   position: absolute;
-  right: 24px;
+  right: var(--diary-form-inset);
   bottom: 0;
-  left: 24px;
+  left: var(--diary-form-inset);
   height: 1px;
-  background: #edf0f2;
-}
-
-.title-field-row::after {
-  display: none;
+  background: #e1e7eb;
 }
 
 .title-field-row .diary-character-status {
-  margin-bottom: -16px;
+  margin-top: 0;
 }
 
 .field-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  min-width: 0;
+  gap: 10px;
   padding: 14px 16px;
 }
 
@@ -1487,9 +1501,17 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .diary-form-section .form-section-label {
-  margin-left: 24px !important;
+  margin: 0 !important;
   color: #397196 !important;
+  font-size: 19px !important;
+  line-height: 1.4 !important;
   font-weight: 700 !important;
+}
+
+.diary-form-section .form-section-label * {
+  color: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
 }
 
 .diary-content-section {
@@ -1499,11 +1521,37 @@ html:has(.diary-content-section textarea:focus) {
 .diary-content-section textarea {
   font-family: "NanumCoDingHeuiMang", sans-serif !important;
   letter-spacing: 0.1em !important;
+  min-height: 128px !important;
+  max-height: 160px !important;
+  box-sizing: border-box !important;
+  resize: vertical !important;
+  white-space: pre-wrap;
+}
+
+.diary-form__control > div > div {
+  width: 100% !important;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  box-sizing: border-box;
+}
+
+.diary-form__section--title .diary-form__control > div {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+.diary-content-section .diary-form__control > div {
+  padding-bottom: 4px !important;
 }
 
 .write-form-surface input[aria-label="제목"] {
+  width: 100% !important;
   font-family: "NanumCoDingHeuiMang", sans-serif !important;
   letter-spacing: 0.1em !important;
+}
+
+.diary-content-section textarea {
+  width: 100% !important;
 }
 
 .diary-content-section textarea::placeholder {
@@ -1565,8 +1613,8 @@ html:has(.diary-content-section textarea:focus) {
   justify-content: space-between;
   gap: 12px;
   min-height: 18px;
-  margin: -12px 0 0;
-  padding: 0 24px;
+  margin: 0;
+  padding: 0;
   color: #6b7684;
   font-size: 13px;
   line-height: 1.4;
@@ -1592,56 +1640,75 @@ html:has(.diary-content-section textarea:focus) {
   color: #16794e;
 }
 
-.date-input {
-  width: min(176px, calc(100% - 82px));
-  margin-right: 8px;
-}
-
-.weather-scroll-region {
-  display: flex;
-  align-items: center;
+.date-input-wrap {
+  display: block;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
   margin: 0;
-  padding: 0 1px 1px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-x: contain;
-  scroll-padding-inline: 16px;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
+  border: 1px solid #e5e8eb;
+  border-radius: 8px;
+  background-color: #ffffff;
 }
 
-.weather-scroll-region [role="radiogroup"] {
-  display: flex;
-  align-items: stretch;
-  width: max-content;
-  min-width: 100%;
-}
-
-.weather-scroll-region [role="radio"] {
-  display: flex !important;
-  height: 44px;
-  min-height: 44px;
-  box-sizing: border-box;
-  /* 날씨 항목 안쪽의 아이콘 왼쪽·문구 오른쪽 여백을 줄입니다. */
-  padding-left: 8px !important;
-  padding-right: 8px !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  align-items: center !important;
-  justify-content: center !important;
+.weather-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .weather-option {
-  display: flex;
+  display: inline-flex;
   width: 100%;
-  min-height: 32px;
+  min-width: 0;
+  min-height: 48px;
+  box-sizing: border-box;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  line-height: 1;
-  white-space: nowrap;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid #dfe5e9;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #4f5d6b;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: normal;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.weather-option:hover {
+  border-color: #78b5d3;
+  background: #f5fbfe;
+}
+
+.weather-option:focus-visible {
+  outline: 3px solid rgba(57, 113, 150, 0.28);
+  outline-offset: 2px;
+}
+
+.weather-option.is-selected {
+  border-color: #397196;
+  background: #eaf6fb;
+  color: #245a7b;
+  box-shadow: inset 0 0 0 1px #397196;
+}
+
+.weather-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .weather-option-icon {
@@ -1651,16 +1718,39 @@ html:has(.diary-content-section textarea:focus) {
   flex: 0 0 auto;
 }
 
-.date-input {
-  min-width: 0;
+/* Keep every control inside the same content column, including native date
+   inputs whose intrinsic width is larger on mobile Safari. */
+.diary-form__section > * {
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
+  margin-inline: 0;
   box-sizing: border-box;
+}
+
+.diary-form__section > .form-section-label {
+  width: 100%;
+  font-size: 19px !important;
+}
+
+.date-input {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  box-sizing: border-box;
+  margin: 0;
   font: inherit;
   font-size: 15px;
   padding: 8px 12px;
-  border: 1px solid #e5e8eb;
-  border-radius: 8px;
-  background-color: #ffffff;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  -webkit-appearance: none;
+  appearance: none;
   /* Background is fixed white, so the text color must be fixed too —
      `inherit` would pick up a near-white adaptive color in dark mode. */
   color: #333d4b;
@@ -2426,9 +2516,10 @@ mark.highlight-underline {
 }
 
 .diary-content-section .ai-quota-notice {
-  align-self: center;
-  width: calc(100% - 16px);
+  align-self: stretch;
+  width: 100%;
   box-sizing: border-box;
+  margin-top: 8px;
 }
 
 @media (max-width: 359px) {

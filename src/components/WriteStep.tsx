@@ -1,6 +1,5 @@
 import {
   Paragraph,
-  SegmentedControl,
   TextArea,
   TextField,
 } from "@toss/tds-mobile";
@@ -42,8 +41,7 @@ export function WriteStep({
     : `${TITLE_MAX_LENGTH - titleLength}자 더 적을 수 있어요`;
   const contentLength = Array.from(draft.content).length;
   const handleContentChange = (value: string) => {
-    const singleLineContent = value.replace(/[\r\n]+/g, " ");
-    const limitedContent = Array.from(singleLineContent)
+    const limitedContent = Array.from(value)
       .slice(0, CONTENT_MAX_LENGTH)
       .join("");
 
@@ -86,9 +84,9 @@ export function WriteStep({
   const titleBlank = draft.title.length > 0 && draft.title.trim() === "";
 
   return (
-    <div className="step-body write-form">
+    <div className="step-body write-form diary-form">
       <div className="write-form-surface">
-        <section className="diary-form-section title-field-row field-row field-row-column">
+        <section className="diary-form-section diary-form__section diary-form__section--title title-field-row field-row field-row-column">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -99,8 +97,8 @@ export function WriteStep({
           <div
             className={
               titleLimitShakeCount > 0
-                ? `limit-reached-shake-${titleLimitShakeCount % 2}`
-                : undefined
+                ? `diary-form__control limit-reached-shake-${titleLimitShakeCount % 2}`
+                : "diary-form__control"
             }
           >
             <TextField
@@ -133,7 +131,7 @@ export function WriteStep({
           </div>
         </section>
 
-        <section className="diary-form-section field-row date-field-row">
+        <section className="diary-form-section diary-form__section diary-form__section--date field-row field-row-column">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -143,22 +141,24 @@ export function WriteStep({
           </Paragraph>
           {/* Native date input: the OS date picker on mobile beats any custom
               calendar for effort-to-quality, and TDS has no date picker widget. */}
-          <input
-            className="date-input"
-            type="date"
-            aria-label="일기 날짜"
-            value={draft.date}
-            onChange={(event) => {
-              // Some browsers emit an empty string while the picker is being
-              // cleared; keep the previous date instead of storing an invalid one.
-              if (event.target.value !== "") {
-                onChange({ date: event.target.value });
-              }
-            }}
-          />
+          <div className="date-input-wrap">
+            <input
+              className="date-input"
+              type="date"
+              aria-label="일기 날짜"
+              value={draft.date}
+              onChange={(event) => {
+                // Some browsers emit an empty string while the picker is being
+                // cleared; keep the previous date instead of storing an invalid one.
+                if (event.target.value !== "") {
+                  onChange({ date: event.target.value });
+                }
+              }}
+            />
+          </div>
         </section>
 
-        <section className="diary-form-section field-row field-row-column">
+        <section className="diary-form-section diary-form__section diary-form__section--weather field-row field-row-column">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -166,34 +166,34 @@ export function WriteStep({
           >
             날씨
           </Paragraph>
-          {/* aria-label goes on the control itself so the name lands on the
-              radiogroup element SegmentedControl renders, not on a wrapper. */}
-          <div className="weather-scroll-region">
-            <SegmentedControl
-              aria-label="날씨"
-              alignment="fluid"
-              size="small"
-              value={draft.weather}
-              onChange={(value) => onChange({ weather: value as WeatherValue })}
-            >
-              {WEATHER_OPTIONS.map((option) => (
-                <SegmentedControl.Item key={option.value} value={option.value}>
-                  <span className="weather-option">
+          <div className="weather-options" role="radiogroup" aria-label="날씨">
+            {WEATHER_OPTIONS.map((option) => {
+              const isSelected = draft.weather === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`weather-option${isSelected ? " is-selected" : ""}`}
+                  role="radio"
+                  aria-checked={isSelected}
+                  onClick={() => onChange({ weather: option.value as WeatherValue })}
+                >
+                  {option.value !== "unknown" && (
                     <img
                       className="weather-option-icon"
                       src={option.iconUrl}
                       alt=""
                       aria-hidden="true"
                     />
-                    <span>{option.label}</span>
-                  </span>
-                </SegmentedControl.Item>
-              ))}
-            </SegmentedControl>
+                  )}
+                  <span>{option.label}</span>
+                </button>
+              );
+            })}
           </div>
         </section>
 
-        <section className="diary-form-section diary-content-section field-row field-row-column">
+        <section className="diary-form-section diary-form__section diary-form__section--content diary-content-section field-row field-row-column">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -204,8 +204,8 @@ export function WriteStep({
           <div
             className={
               contentLimitShakeCount > 0
-                ? `limit-reached-shake-${contentLimitShakeCount % 2}`
-                : undefined
+                ? `diary-form__control limit-reached-shake-${contentLimitShakeCount % 2}`
+                : "diary-form__control"
             }
           >
             <TextArea
@@ -213,17 +213,11 @@ export function WriteStep({
               aria-label="일기"
               aria-describedby="diary-character-status"
               placeholder={`오늘의 이야기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요`}
-              height={200}
+              className="diary-form__textarea"
+              height={128}
               maxLength={CONTENT_MAX_LENGTH}
               value={draft.content}
               hasError={contentTooShort}
-              enterKeyHint="done"
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  event.currentTarget.blur();
-                }
-              }}
               onChange={(event) => handleContentChange(event.target.value)}
             />
           </div>
