@@ -352,28 +352,28 @@ export function PhotoUploadStep({
           }}
         >
           <div className="photo-consent-content">
+            <header className="photo-consent-header">
+              <div className="photo-consent-heading-row">
+                <h2
+                  ref={consentTitleRef}
+                  className="photo-consent-title"
+                  tabIndex={-1}
+                >
+                  사진·일기 처리 동의
+                </h2>
+
+                <span className="photo-consent-required">필수</span>
+              </div>
+
+              <p className="photo-consent-description">
+                그림일기 제작에 필요한 정보 처리 내용을 확인해 주세요.
+              </p>
+            </header>
+
             <div
               ref={consentScrollRef}
               className="modal-scroll-body photo-consent-scroll-body"
             >
-              <header>
-                <div className="photo-consent-heading-row">
-                  <h2
-                    ref={consentTitleRef}
-                    className="photo-consent-title"
-                    tabIndex={-1}
-                  >
-                    사진·일기 처리 동의
-                  </h2>
-
-                  <span className="photo-consent-required">필수</span>
-                </div>
-
-                <p className="photo-consent-description">
-                  그림일기 제작에 필요한 정보 처리 내용을 확인해 주세요.
-                </p>
-              </header>
-
               <div className="photo-consent-details">
                 <section className="photo-consent-section">
                   <h3>처리하는 정보</h3>
@@ -388,8 +388,8 @@ export function PhotoUploadStep({
                   <h3>이용 목적</h3>
 
                   <p>
-                    사진을 크레파스 그림으로 바꾸고 일기를 분석해 한마디와 첨삭을
-                    만들며, 반복 요청과 서비스 남용을 막는 데만 사용해요.
+                    사진을 크레파스 그림으로 바꾸고 일기를 분석해 한마디와
+                    첨삭을 만들며, 반복 요청과 서비스 남용을 막는 데만 사용해요.
                   </p>
                 </section>
 
