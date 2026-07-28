@@ -30,7 +30,7 @@ npm run format
 
 ## 동작 원칙
 
-- 앱 이름은 `my-summer-diary`를 유지하고 표시 이름은 `나의 여름방학 일기`를 사용합니다.
+- 앱 이름은 `summer-vacation-diary`를 유지하고 표시 이름은 `나의 여름방학 일기`를 사용합니다.
 - Supabase 환경변수가 없으면 로컬 mock·필터로 체험할 수 있습니다.
 - Supabase 환경변수가 있으면 배포된 `diary-ai` Edge Function을 사용합니다. 서버 원본은 이 저장소에 보관하지 않습니다.
 - 사진과 일기는 동의 모달을 거친 뒤에만 외부 분석 경로로 전송합니다.

@@ -8,7 +8,7 @@
 
 | 설정          | 값                        | 근거                                   |
 | ------------- | ------------------------- | -------------------------------------- |
-| appName       | `my-summer-diary`         | `granite.config.ts`                    |
+| appName       | `summer-vacation-diary`   | `granite.config.ts`                    |
 | 표시 이름     | `나의 여름방학 일기`      | `src/constants/brand.ts`               |
 | build command | `vite build`              | `granite.config.ts#web.commands.build` |
 | output        | `dist`                    | `granite.config.ts#outdir`             |
@@ -38,7 +38,7 @@ npm run deploy
 
 이 명령은 `ait deploy`를 실행합니다. 다음 외부 조건이 필요합니다.
 
-- Apps in Toss 콘솔에 `my-summer-diary` 등록
+- Apps in Toss 콘솔에 `summer-vacation-diary` 등록
 - 콘솔 표시 이름 `나의 여름방학 일기`
 - 배포 권한과 콘솔 API key
 - 콘솔에 업로드한 앱 아이콘
@@ -70,7 +70,7 @@ npm run deploy
 
 ## 출시 전 체크리스트
 
-- [ ] 앱 이름에 금지된 단어가 포함되지 않고 `appName`이 `my-summer-diary`다.
+- [ ] 앱 이름에 금지된 단어가 포함되지 않고 `appName`이 `summer-vacation-diary`다.
 - [ ] 콘솔 표시 이름과 `BRAND_DISPLAY_NAME`이 `나의 여름방학 일기`로 일치한다.
 - [ ] 콘솔 아이콘이 현재 앱 아이콘과 일치한다.
 - [ ] `VITE_*` bundle에 비밀값이 없다.

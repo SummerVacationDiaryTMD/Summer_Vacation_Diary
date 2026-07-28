@@ -17,8 +17,8 @@
 ## 설치
 
 ```bash
-git clone https://github.com/SummerVacationDiaryTMD/my-summer-story.git
-cd my-summer-story
+git clone https://github.com/SummerVacationDiaryTMD/summer-vacation-diary.git
+cd summer-vacation-diary
 npm ci
 ```
 
@@ -126,7 +126,7 @@ npm run dev
 - Vite 개발 서버: `5173`
 - 샌드박스 bridge: `8081`
 - Vite bind: `0.0.0.0`
-- 진입 deep link: `intoss://my-summer-diary`
+- 진입 deep link: `intoss://summer-vacation-diary`
 
 샌드박스 앱에서 위 deep link를 엽니다. 콘솔에 같은 `appName`이 등록되어 있고 Toss 비즈니스 로그인이 가능한 환경이 필요합니다.
 
