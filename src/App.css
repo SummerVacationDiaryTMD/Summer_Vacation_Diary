@@ -669,26 +669,21 @@ html:has(.diary-content-section textarea:focus) {
 .app-bottom-bar {
   position: fixed;
   z-index: 50;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  width: min(100%, 480px);
+  right: max(16px, var(--app-safe-right));
+  bottom: calc(16px + var(--app-safe-bottom));
+  left: max(16px, var(--app-safe-left));
+  width: auto;
+  max-width: 440px;
   box-sizing: border-box;
   margin: 0 auto;
-  padding: 10px max(20px, calc(16px + var(--app-safe-right)))
-    calc(16px + var(--app-safe-bottom))
-    max(20px, calc(16px + var(--app-safe-left)));
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 253, 247, 0),
-    rgba(255, 253, 247, 0.96) 20px,
-    #fffdf7 100%
-  );
+  padding: 0;
+  background: transparent;
   pointer-events: none;
 }
 
 .app-bottom-bar-content {
   pointer-events: auto;
+  filter: drop-shadow(0 10px 16px rgba(67, 78, 76, 0.16));
 }
 
 .app-bottom-bar-content-double {
@@ -703,7 +698,7 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .app-shell-android .app-bottom-bar {
-  padding-bottom: 8px;
+  bottom: 12px;
 }
 
 /* --- Photo upload step --- */
@@ -731,9 +726,12 @@ html:has(.diary-content-section textarea:focus) {
 
 .photo-placeholder-image {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: -4px;
+  display: block;
+  width: calc(100% + 8px);
+  max-width: none;
+  height: calc(100% + 8px);
+  max-inline-size: none;
   object-fit: cover;
 }
 
