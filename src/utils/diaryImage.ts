@@ -15,6 +15,7 @@ import {
   getDiaryFrameLayout,
   type DiaryFrameLayout,
 } from "./diaryFrameLayout";
+import { diaryDateParts } from "./diaryDate";
 import {
   handwritingVariation,
   TITLE_HANDWRITING_STRENGTH,
@@ -613,11 +614,7 @@ export async function composeDiaryImage(
   drawFrameTemplate(context, template, frameLayout);
   drawCoverImage(context, image, PHOTO.x, PHOTO.y, PHOTO.width, PHOTO.height);
 
-  const [year = "", month = "", day = ""] = input.date.split("-");
-  const diaryDate = new Date(`${input.date}T00:00:00`);
-  const weekday = Number.isNaN(diaryDate.getTime())
-    ? ""
-    : new Intl.DateTimeFormat("ko-KR", { weekday: "short" }).format(diaryDate);
+  const { year, month, day, weekday } = diaryDateParts(input.date);
   const headerX = HEADER.x;
   const headerY = HEADER.y;
   const headerWidth = HEADER.width;
@@ -626,13 +623,13 @@ export async function composeDiaryImage(
   const headerItems = [
     { text: year, left: 0.065, maxWidth: 125, seed: 0 },
     {
-      text: String(Number(month)).padStart(2, "0"),
+      text: month,
       left: 0.237,
       maxWidth: 72,
       seed: 10,
     },
     {
-      text: String(Number(day)).padStart(2, "0"),
+      text: day,
       left: 0.364,
       maxWidth: 72,
       seed: 20,

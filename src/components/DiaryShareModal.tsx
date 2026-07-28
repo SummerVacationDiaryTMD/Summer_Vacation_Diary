@@ -1,8 +1,9 @@
-import { Button, Modal } from "@toss/tds-mobile";
+import { Modal } from "@toss/tds-mobile";
 import { useState } from "react";
 
 import { DiaryExportError, exportDiaryImage } from "../services/diaryExport";
 import { DiaryShareError, shareDiaryAppLink } from "../services/diaryShare";
+import { DiaryButton } from "./DiaryButton";
 
 interface DiaryShareModalProps {
   open: boolean;
@@ -58,11 +59,11 @@ export function DiaryShareModal({
     <Modal open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
       <Modal.Overlay />
 
-      <Modal.Content className="diary-share-modal">
-        <div className="diary-share-content">
+      <Modal.Content className="app-modal-panel">
+        <div className="app-modal-layout">
           <div className="diary-share-body">
             <div>
-              <h2 className="diary-share-title">그림일기가 완성됐어요</h2>
+              <h2 className="app-modal-title">그림일기가 완성됐어요</h2>
 
               <p className="diary-share-description">
                 완성 이미지를 저장하거나 친구에게 앱을 알려주세요.
@@ -82,29 +83,28 @@ export function DiaryShareModal({
             </p>
           </div>
 
-          <div className="diary-share-footer">
+          <div className="app-modal-footer diary-share-footer">
             <div className="diary-share-primary-actions">
-              <Button
-                className="app-stable-button-state summer-diary-button summer-diary-button-primary"
-                display="block"
+              <DiaryButton
+                stable
+                fullWidth
                 disabled={busyAction !== null && busyAction !== "save"}
                 aria-busy={busyAction === "save"}
                 onClick={() => void run("save")}
               >
                 이미지 저장하기
-              </Button>
+              </DiaryButton>
 
-              <Button
-                className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
-                display="block"
+              <DiaryButton
+                tone="secondary"
+                stable
+                fullWidth
                 disabled={busyAction !== null && busyAction !== "share"}
-                variant="weak"
-                color="dark"
                 aria-busy={busyAction === "share"}
                 onClick={() => void run("share")}
               >
                 앱 공유하기
-              </Button>
+              </DiaryButton>
             </div>
 
             {feedback !== null && (

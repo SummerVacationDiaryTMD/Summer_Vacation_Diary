@@ -5,6 +5,8 @@ import {
   EdgeFunctionError,
   invokeDiaryAi,
   isSupabaseConfigured,
+  isKnownErrorCode,
+  mapEdgeFunctionErrorCode,
 } from "./supabaseEdge";
 
 // ---------------------------------------------------------------------------
@@ -107,14 +109,7 @@ export function isAnalysisErrorRetryable(error: unknown): boolean {
 function isAnalysisErrorCode(
   value: string | undefined,
 ): value is AnalysisErrorCode {
-  // An own-property check rather than `in`: `in` walks the prototype chain, so
-  // a server code of "toString" would resolve to a function where a message
-  // belongs. hasOwnProperty.call instead of Object.hasOwn because the latter is
-  // ES2022 and the target here is ES2020.
-  return (
-    value !== undefined &&
-    Object.prototype.hasOwnProperty.call(ANALYSIS_ERROR_MESSAGES, value)
-  );
+  return isKnownErrorCode(ANALYSIS_ERROR_MESSAGES, value);
 }
 
 // Analysis remains available in test mode. Only the costly image-generation
@@ -264,27 +259,9 @@ async function analyzeWithEdgeFunction(
       throw error;
     }
     if (error instanceof EdgeFunctionError) {
-      if (error.kind === "timeout") {
-        throw new AnalysisError("timeout");
-      }
-      if (error.kind === "network") {
-        throw new AnalysisError("network");
-      }
-      if (error.kind === "invalid-response") {
-        throw new AnalysisError("invalid-response");
-      }
-      // Pass a recognised server code straight through. This has to come before
-      // the status checks below: the quota codes all arrive as 429, and a
-      // status-first chain would flatten them into "rate-limited".
-      if (isAnalysisErrorCode(error.code)) {
-        throw new AnalysisError(error.code);
-      }
-      if (error.status === 401 || error.status === 403) {
-        throw new AnalysisError("invalid-key");
-      }
-      if (error.status === 429) {
-        throw new AnalysisError("rate-limited");
-      }
+      throw new AnalysisError(
+        mapEdgeFunctionErrorCode(error, isAnalysisErrorCode),
+      );
     }
     throw new AnalysisError("api-error");
   }

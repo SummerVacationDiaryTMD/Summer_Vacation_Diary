@@ -9,7 +9,9 @@ import {
   EdgeFunctionError,
   invokeDiaryAi,
   isAiTestMode,
+  isKnownErrorCode,
   isSupabaseConfigured,
+  mapEdgeFunctionErrorCode,
 } from "./supabaseEdge";
 
 export type SketchErrorCode =
@@ -141,14 +143,7 @@ const REQUEST_TIMEOUT_MS = 120_000;
 function isSketchErrorCode(
   value: string | undefined,
 ): value is SketchErrorCode {
-  // An own-property check rather than `in`: `in` walks the prototype chain, so
-  // a server code of "toString" would resolve to a function where a message
-  // belongs and crash the render. hasOwnProperty.call instead of Object.hasOwn
-  // because the latter is ES2022 and the target here is ES2020.
-  return (
-    value !== undefined &&
-    Object.prototype.hasOwnProperty.call(SKETCH_ERROR_CAUSES, value)
-  );
+  return isKnownErrorCode(SKETCH_ERROR_CAUSES, value);
 }
 
 /**
@@ -194,24 +189,7 @@ async function requestSketch(photoDataUrl: string): Promise<string> {
       throw error;
     }
     if (error instanceof EdgeFunctionError) {
-      if (error.kind === "timeout") {
-        throw new SketchError("timeout");
-      }
-      if (error.kind === "network") {
-        throw new SketchError("network");
-      }
-      if (error.kind === "invalid-response") {
-        throw new SketchError("invalid-response");
-      }
-      if (isSketchErrorCode(error.code)) {
-        throw new SketchError(error.code);
-      }
-      if (error.status === 401 || error.status === 403) {
-        throw new SketchError("invalid-key");
-      }
-      if (error.status === 429) {
-        throw new SketchError("rate-limited");
-      }
+      throw new SketchError(mapEdgeFunctionErrorCode(error, isSketchErrorCode));
     }
     throw new SketchError("api-error");
   }

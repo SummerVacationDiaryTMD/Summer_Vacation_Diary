@@ -57,8 +57,7 @@ async function copyWithBrowser(text: string): Promise<void> {
 
   field.value = text;
   field.setAttribute("readonly", "");
-  field.style.position = "fixed";
-  field.style.opacity = "0";
+  field.className = "clipboard-copy-field";
 
   document.body.appendChild(field);
   field.select();

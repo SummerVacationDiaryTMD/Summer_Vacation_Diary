@@ -1,8 +1,9 @@
-import { Button, Top, useDialog, useToast } from "@toss/tds-mobile";
+import { Top, useDialog, useToast } from "@toss/tds-mobile";
 import { SafeAreaInsets } from "@apps-in-toss/web-framework";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import "./App.css";
+import { DiaryButton } from "./components/DiaryButton";
 import { DiaryShareModal } from "./components/DiaryShareModal";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
 import { PreviewStep } from "./components/PreviewStep";
@@ -25,6 +26,13 @@ import { isSketchAiConnected } from "./services/styleTransfer";
 // deep links yet, so a router would add dependency weight without benefit.
 // If stage 2+ needs shareable URLs, this maps 1:1 onto routes later.
 type Step = "upload" | "write" | "preview";
+
+interface DiaryConfirmOptions {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  cancelLabel: string;
+}
 
 // HHMMSS from the local clock, appended to the saved file name so two saves
 // on the same date don't produce an identical name.
@@ -152,6 +160,18 @@ function App() {
     photoSourceHash,
   );
   const { openAlert, openConfirm } = useDialog();
+  const openDiaryConfirm = ({
+    title,
+    description,
+    confirmLabel,
+    cancelLabel,
+  }: DiaryConfirmOptions) =>
+    openConfirm({
+      title,
+      description,
+      confirmButton: <DiaryButton>{confirmLabel}</DiaryButton>,
+      cancelButton: <DiaryButton tone="secondary">{cancelLabel}</DiaryButton>,
+    });
   const regionNoticeShownRef = useRef(false);
   const toast = useToast();
   const [saving, setSaving] = useState(false);
@@ -218,11 +238,7 @@ function App() {
       title: "해외 IP는 AI 기능을 사용할 수 없어요",
       description:
         "그림 그리기와 일기 검사는 한국에서만 이용할 수 있어요. 사진 그대로 그림일기를 만드는 건 그대로 할 수 있어요.",
-      alertButton: (
-        <Button className="summer-diary-button summer-diary-button-primary summer-diary-button-dialog">
-          확인
-        </Button>
-      ),
+      alertButton: <DiaryButton placement="dialog">확인</DiaryButton>,
       closeOnDimmerClick: false,
     });
   }, [openAlert, regionBlocked, showOnboarding]);
@@ -375,19 +391,11 @@ function App() {
         drawingLoading ? "크레파스 그림" : null,
         commentLoading ? "선생님 한마디" : null,
       ].filter((part): part is string => part !== null);
-      const proceed = await openConfirm({
+      const proceed = await openDiaryConfirm({
         title: "아직 그림일기가 만들어지고 있어요",
         description: `조금 기다리면 ${pending.join("과 ")}까지 담아 저장할 수 있어요. 지금 이대로 저장할까요?`,
-        confirmButton: (
-          <Button className="summer-diary-button summer-diary-button-primary">
-            이대로 저장
-          </Button>
-        ),
-        cancelButton: (
-          <Button className="summer-diary-button summer-diary-button-secondary">
-            기다릴게요
-          </Button>
-        ),
+        confirmLabel: "이대로 저장",
+        cancelLabel: "기다릴게요",
       });
       if (!proceed) {
         return;
@@ -398,20 +406,12 @@ function App() {
       // without the comment. A non-retryable failure means the daily budget is
       // gone, so it falls through and saves: asking would offer something that
       // cannot happen today.
-      const retry = await openConfirm({
+      const retry = await openDiaryConfirm({
         title: "선생님의 한마디를 불러오지 못했어요",
         description:
           "다시 시도해서 한마디와 첨삭까지 담거나, 지금 이대로 저장할 수 있어요.",
-        confirmButton: (
-          <Button className="summer-diary-button summer-diary-button-primary">
-            다시 시도
-          </Button>
-        ),
-        cancelButton: (
-          <Button className="summer-diary-button summer-diary-button-secondary">
-            이대로 저장
-          </Button>
-        ),
+        confirmLabel: "다시 시도",
+        cancelLabel: "이대로 저장",
       });
       if (retry) {
         runAnalysis();
@@ -421,20 +421,12 @@ function App() {
       // Never asked for a check at all. The comment and 첨삭 are the point of
       // the app, so leaving them out has to be a knowing choice — but only ask
       // when a check is actually still possible.
-      const check = await openConfirm({
+      const check = await openDiaryConfirm({
         title: "아직 선생님께 검사받지 않았어요",
         description:
           "지금 검사받으면 선생님 한마디와 첨삭까지 담을 수 있어요. 오늘 남은 검사 횟수가 한 번 줄어들어요.",
-        confirmButton: (
-          <Button className="summer-diary-button summer-diary-button-primary">
-            검사 받기
-          </Button>
-        ),
-        cancelButton: (
-          <Button className="summer-diary-button summer-diary-button-secondary">
-            이대로 저장
-          </Button>
-        ),
+        confirmLabel: "검사 받기",
+        cancelLabel: "이대로 저장",
       });
       if (check) {
         runAnalysis();
@@ -591,64 +583,64 @@ function App() {
 
       {step === "upload" && (
         <AppBottomBar>
-          <Button
-            className="app-stable-button-state feedback-disabled-button summer-diary-button summer-diary-button-primary"
-            display="block"
+          <DiaryButton
+            stable
+            feedbackDisabled
+            fullWidth
             aria-disabled={!canWrite}
             onClick={handleStartWriting}
           >
             {hasVisitedWrite ? "다시 일기 쓰러 가기" : "일기 쓰러 가기"}
-          </Button>
+          </DiaryButton>
         </AppBottomBar>
       )}
       {step === "write" && (
         <AppBottomBar double>
-          <Button
-            className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
-            display="block"
-            color="dark"
-            variant="weak"
+          <DiaryButton
+            tone="secondary"
+            stable
+            fullWidth
             onClick={() => {
               setShowSketchQuotaNotice(true);
               setStep("upload");
             }}
           >
             사진 변경
-          </Button>
+          </DiaryButton>
 
-          <Button
-            className="app-stable-button-state feedback-disabled-button summer-diary-button summer-diary-button-primary"
-            display="block"
+          <DiaryButton
+            stable
+            feedbackDisabled
+            fullWidth
             aria-disabled={!canPreview}
             onClick={handlePreview}
           >
             {hasVisitedPreview ? "다시 검사 받기" : "검사 받기"}
-          </Button>
+          </DiaryButton>
         </AppBottomBar>
       )}
       {step === "preview" && (
         <AppBottomBar double>
-          <Button
-            className="app-stable-button-state summer-diary-button summer-diary-button-secondary"
-            display="block"
-            color="dark"
-            variant="weak"
+          <DiaryButton
+            tone="secondary"
+            stable
+            fullWidth
             onClick={() => {
               setShowAnalyzeQuotaNotice(true);
               setStep("write");
             }}
           >
             일기 수정
-          </Button>
+          </DiaryButton>
 
-          <Button
-            className="app-stable-button-state summer-diary-button summer-diary-button-primary"
-            display="block"
+          <DiaryButton
+            stable
+            fullWidth
             disabled={saving}
             onClick={handleFinish}
           >
             일기 완성하기
-          </Button>
+          </DiaryButton>
         </AppBottomBar>
       )}
     </main>
