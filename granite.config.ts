@@ -1,6 +1,10 @@
 import { networkInterfaces } from "node:os";
 import { defineConfig } from "@apps-in-toss/web-framework/config";
-import { BRAND_DISPLAY_NAME, BRAND_PRIMARY_COLOR } from "./src/constants/brand";
+import {
+  BRAND_DISPLAY_NAME,
+  BRAND_ICON_URL,
+  BRAND_PRIMARY_COLOR,
+} from "./src/constants/brand";
 
 function resolveDevelopmentHost() {
   const override = process.env.AIT_DEV_HOST?.trim();
@@ -35,17 +39,17 @@ function resolveDevelopmentHost() {
 // the Toss sandbox app attach to the local dev server; every runtime API the
 // app uses (incl. saveBase64Data) exists in 2.10.7 with the same signature.
 export default defineConfig({
-  appName: "my-summer-diary",
-
+  appName: "summer-vacation-diary",
   brand: {
     // Console registration must use the same Korean app name and appName above.
     displayName: BRAND_DISPLAY_NAME,
     // Warm sandy beige inspired by the beach and summer vacation theme.
     primaryColor: BRAND_PRIMARY_COLOR,
-    // The registered look comes from the console upload
-    // (docs/images/app-icon-600.png); the 2.x schema requires this key, so it
-    // stays as an explicit empty placeholder instead of a duplicated URL.
-    icon: "",
+    // Artwork lives at design/app-icon.png, but this key wants the URL of the
+    // console-uploaded copy — see BRAND_ICON_URL for why a repo path cannot
+    // work here. Until that URL is filled in, the console upload remains the
+    // single source of the icon.
+    icon: BRAND_ICON_URL,
   },
 
   // Tells `granite dev` where the web dev server runs and how to start/build
