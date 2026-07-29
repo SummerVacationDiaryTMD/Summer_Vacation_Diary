@@ -42,7 +42,7 @@ Supabase가 설정된 경우:
 ```mermaid
 flowchart LR
     User["사용자 입력"] --> Client["React 클라이언트"]
-    Client -->|HTTPS POST<br/>사진·제목·본문·날씨| Edge["Supabase diary-ai"]
+    Client -->|HTTPS POST<br/>사진·본문| Edge["Supabase diary-ai"]
     Client -->|apikey + 익명 client id| Edge
     Edge --> Unknown["서버 내부 처리<br/>확인 필요"]
 ```
@@ -127,7 +127,14 @@ Supabase에는 사용량 제한용 `public.diary_ai_rate_limits` 테이블이 �
 
 클라이언트는 raw 값을 `x-diary-client-id`로 보냅니다. 서버가 이를 salt/hash 처리하는지, IP를 어떤 형식과 기간으로 저장하는지는 서버 소스가 없어 확인 필요입니다.
 
-quota snapshot은 UI 표시와 선차단 용도입니다. 클라이언트 값을 수정해도 서버 강제가 유지되어야 하지만, 실제 원자적 차감·환불 구현은 확인할 수 없습니다.
+quota snapshot은 UI 표시와 선차단 용도입니다. 클라이언트는 공통 `all`
+카운터를 통합 AI 검사 기회로 사용하고, 이전 서버에서는 분리된
+`sketch`·`analyze` 카운터를 임시로 합쳐 표시합니다. 실제 강제는
+`inspect` 요청을 원자적으로 차감·환불하는 서버 RPC가 담당합니다.
+
+제목·날짜·날씨는 완성 이미지 구성에만 사용하며 외부 분석 요청에는
+포함하지 않습니다. 따라서 이 세 값만 수정한 경우 기존 분석 결과를
+그대로 사용하고 검사 기회를 추가로 소진하지 않습니다.
 
 서버 사용량 집계 구조는 [ERD](./erd.md)에 정리되어 있습니다.
 

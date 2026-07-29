@@ -122,8 +122,8 @@ sequenceDiagram
     App->>Sketch: 업로드 단계 종료
     Sketch->>Service: transferPhotoToSketch
     alt Supabase + 실제 모드
-        Service->>Edge: sketch action
-        Edge-->>Service: imageBase64 + quota
+        Service->>Edge: inspect action
+        Edge-->>Service: imageBase64 + analysis + quota
         Service->>Image: JPEG 재압축
     else Supabase 미설정
         Service->>Service: Canvas 연필 필터
@@ -138,7 +138,7 @@ sequenceDiagram
 
 ## 일기 검사 흐름
 
-`검사 받기`가 명시적으로 `runAnalysis()`를 호출합니다. 입력 signature는 사진, 제목, 본문, 날씨의 JSON 배열이며 날짜는 분석 입력에 영향을 주지 않아 제외합니다.
+`검사 받기`가 명시적으로 `runAnalysis()`를 호출합니다. 입력 signature는 사진과 본문의 JSON 배열입니다. 제목·날짜·날씨는 분석 입력이 아니므로 수정해도 기존 결과를 재사용합니다.
 
 - 같은 signature의 진행 중 Promise 재사용
 - 성공 결과 최근 3개 메모리 캐시
@@ -148,6 +148,23 @@ sequenceDiagram
 - 비속어가 포함된 키워드·첨삭 대상 제외
 
 실패 격리는 분석 상태 안에서 이루어져, 분석이 없어도 사용자는 그림일기를 완성할 수 있습니다.
+
+## 통합 AI 검사 기회
+
+사용자에게 사진 변환과 일기 분석 횟수를 따로 노출하지 않습니다.
+`useAiQuota`는 서버 snapshot의 공통 `all` counter를 통합 기회의
+권위값으로 사용합니다. 이전 서버가 `all`을 생략할 때만 다음 fallback을
+사용합니다.
+
+- 통합 한도: `min(sketch.limit, analyze.limit)`
+- 통합 사용량: `max(sketch.used, analyze.used)`
+- 그림 요청 진행 중에는 sketch ledger를 사용량에 선반영
+- 통합 잔여량이 0이면 그림 변환과 분석을 함께 선차단
+
+클라이언트는 필요한 그림·분석 작업을 하나의 `inspect` 요청으로 모읍니다.
+서버 RPC는 사용자 `all`과 IP를 요청당 한 번만 원자적으로 증가시키고,
+서비스 전체 사용량은 실제 실행한 sketch·analyze 작업만 각각 증가시킵니다.
+fallback 계산은 이전 서버의 배포 호환용입니다.
 
 ## 완성 이미지 흐름
 
@@ -165,7 +182,7 @@ Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 �
 
 | 대상                | 전송 또는 저장 데이터                                                               | 경계                      |
 | ------------------- | ----------------------------------------------------------------------------------- | ------------------------- |
-| Supabase `diary-ai` | sketch: 사진, analyze: 사진·제목·본문·날씨, quota: 익명 식별 header                 | `supabaseEdge.ts`         |
+| Supabase `diary-ai` | inspect: 필요한 사진 변환·사진/본문 분석, quota: 익명 식별 header                  | `supabaseEdge.ts`         |
 | Supabase PostgreSQL | scope·식별자 hash·action·window별 요청 횟수                                         | `diary_ai_rate_limits`    |
 | OpenAI              | 클라이언트가 직접 호출하지 않음. 별도 Edge Function 뒤의 실제 전달은 서버 확인 필요 | 저장소 밖                 |
 | Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지                                     | web-framework runtime API |
