@@ -35,13 +35,11 @@ function QuotaCounterNotice({
   used,
   limit,
   exhaustedMessage,
-  recheckMessage,
 }: {
   label: string;
   used: number;
   limit: number;
   exhaustedMessage: string;
-  recheckMessage?: string;
 }) {
   const remaining = Math.max(limit - used, 0);
   const available = remaining > 0;
@@ -56,7 +54,9 @@ function QuotaCounterNotice({
     >
       <div className="ai-quota-counter-header">
         <div className="ai-quota-counter-heading">
-          <span className="ai-quota-counter-kicker">오늘의 {label}</span>
+          <span className="ai-quota-counter-kicker">
+            오늘의 {label} · 하루 {limit}회
+          </span>
           <strong>
             {available ? `${remaining}회 남았어요` : exhaustedMessage}
           </strong>
@@ -90,9 +90,6 @@ function QuotaCounterNotice({
 
       <div className="ai-quota-counter-footer">
         <span>{available ? `하루 최대 ${limit}회` : QUOTA_RESET_NOTICE}</span>
-        {available && recheckMessage !== undefined && (
-          <strong>{recheckMessage}</strong>
-        )}
       </div>
     </div>
   );
@@ -105,7 +102,6 @@ interface QuotaNoticeCopy {
   regionBlocked: string[];
   checking: string;
   exhausted: string;
-  recheck: string;
 }
 
 const QUOTA_NOTICE_COPY: QuotaNoticeCopy = {
@@ -118,10 +114,9 @@ const QUOTA_NOTICE_COPY: QuotaNoticeCopy = {
   ],
   checking: "오늘의 AI 검사 기회를 확인하고 있어요.",
   exhausted: "오늘 기회를 모두 사용했어요",
-  recheck: "다시 검사하면 1회 사용",
 };
 
-function QuotaNotice({ showRecheckNotice }: { showRecheckNotice: boolean }) {
+function QuotaNotice() {
   const quota = useAiQuota();
   const copy = QUOTA_NOTICE_COPY;
 
@@ -148,15 +143,31 @@ function QuotaNotice({ showRecheckNotice }: { showRecheckNotice: boolean }) {
       used={used}
       limit={limit}
       exhaustedMessage={copy.exhausted}
-      recheckMessage={showRecheckNotice ? copy.recheck : undefined}
     />
   );
 }
 
-export function AiQuotaNotice({
-  showRecheckNotice = false,
-}: {
-  showRecheckNotice?: boolean;
-}) {
-  return <QuotaNotice showRecheckNotice={showRecheckNotice} />;
+export function AiQuotaNotice() {
+  return <QuotaNotice />;
+}
+
+export function AiRecheckNotice() {
+  const quota = useAiQuota();
+
+  if (
+    isAiTestMode ||
+    isRegionBlocked(quota) ||
+    quota.mode !== "ready" ||
+    quota.testMode ||
+    quota.completion.used >= quota.completion.limit
+  ) {
+    return null;
+  }
+
+  return (
+    <NoticeBox
+      lines={["다시 검사하면 오늘의 AI 검사 기회 1회를 사용해요."]}
+      tone="warning"
+    />
+  );
 }

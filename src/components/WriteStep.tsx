@@ -84,9 +84,6 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
   const titleLength = Array.from(draft.title).length;
   const titleAtLimit = titleLength >= TITLE_MAX_LENGTH;
   const contentLength = Array.from(draft.content).length;
-  const selectedWeather =
-    WEATHER_OPTIONS.find((option) => option.value === draft.weather) ??
-    WEATHER_OPTIONS[0];
   const handleContentChange = (value: string, element: HTMLTextAreaElement) => {
     const limitedContent = Array.from(
       value.split("\n").slice(0, CONTENT_MAX_LINES).join("\n"),
@@ -218,33 +215,8 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
             typography="t7"
             color={LABEL_INK}
           >
-            날씨
+            날씨와 배경
           </Paragraph>
-          <div className="weather-options" role="radiogroup" aria-label="날씨">
-            {WEATHER_OPTIONS.map((option) => {
-              const isSelected = draft.weather === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`weather-option${isSelected ? " is-selected" : ""}`}
-                  role="radio"
-                  aria-checked={isSelected}
-                  onClick={() =>
-                    onChange({ weather: option.value as WeatherValue })
-                  }
-                >
-                  <img
-                    className="weather-option-icon"
-                    src={option.iconUrl}
-                    alt=""
-                    aria-hidden="true"
-                  />
-                  <span className="weather-option-label">{option.label}</span>
-                </button>
-              );
-            })}
-          </div>
           <div className="time-theme-row">
             <span className="time-theme-label">배경 분위기</span>
             <div
@@ -276,46 +248,31 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
               })}
             </div>
           </div>
-          <button
-            key={`${draft.weather}-${draft.timeOfDay}`}
-            type="button"
-            className={`weather-theme-preview preview-${draft.timeOfDay} preview-weather-${draft.weather}`}
-            aria-label={`${selectedWeather.label} ${draft.timeOfDay === "day" ? "낮" : "밤"} 배경을 화면 위에서 확인하기`}
-            onClick={() => {
-              const reduceMotion = window.matchMedia(
-                "(prefers-reduced-motion: reduce)",
-              ).matches;
-              window.scrollTo({
-                top: 0,
-                behavior: reduceMotion ? "auto" : "smooth",
-              });
-            }}
-          >
-            <div className="weather-theme-preview-sky" aria-hidden="true">
-              <img
-                className="weather-theme-preview-weather"
-                src={selectedWeather.iconUrl}
-                alt=""
-              />
-              <img
-                className="weather-theme-preview-time"
-                src={
-                  draft.timeOfDay === "day"
-                    ? "/weather/day.webp"
-                    : "/weather/night.webp"
-                }
-                alt=""
-              />
-            </div>
-            <div className="weather-theme-preview-copy">
-              <span>선택한 배경</span>
-              <strong>
-                {selectedWeather.label} ·{" "}
-                {draft.timeOfDay === "day" ? "낮" : "밤"}
-              </strong>
-              <small>상단 배경 보러 가기 ↑</small>
-            </div>
-          </button>
+          <div className="weather-options" role="radiogroup" aria-label="날씨">
+            {WEATHER_OPTIONS.map((option) => {
+              const isSelected = draft.weather === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`weather-option${isSelected ? " is-selected" : ""}`}
+                  role="radio"
+                  aria-checked={isSelected}
+                  onClick={() =>
+                    onChange({ weather: option.value as WeatherValue })
+                  }
+                >
+                  <img
+                    className="weather-option-icon"
+                    src={option.iconUrl}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                  <span className="weather-option-label">{option.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </section>
 
         <section className="diary-form-section diary-content-section">
