@@ -69,8 +69,8 @@ export function DiaryShareModal({
           completionTitleRef.current?.focus({ preventScroll: true });
         }}
       >
-        <div className="app-modal-layout">
-          <div className="diary-share-body modal-scroll-body">
+        <div className="app-modal-layout diary-share-layout">
+          <div className="diary-share-body">
             <div className="diary-share-summary">
               <h2
                 ref={completionTitleRef}

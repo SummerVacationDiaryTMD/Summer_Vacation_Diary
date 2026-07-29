@@ -344,7 +344,6 @@ export function PreviewStep({
     (isAiConnected && analysisState.status === "success");
   const [renderedPreview, setRenderedPreview] =
     useState<ComposedDiaryImage | null>(null);
-  const [previewRenderFailed, setPreviewRenderFailed] = useState(false);
   const [processingStep, setProcessingStep] = useState(0);
   const animatedAnalysis = renderedPreview === null ? null : analysis;
   const annotationTimeline = useMemo(
@@ -366,13 +365,11 @@ export function PreviewStep({
     const imageDataUrl = draft.sketchDataUrl ?? draft.photoDataUrl;
     if (imageDataUrl === null) {
       setRenderedPreview(null);
-      setPreviewRenderFailed(false);
       return;
     }
 
     let cancelled = false;
     setRenderedPreview(null);
-    setPreviewRenderFailed(false);
     void composeDiaryImage({
       imageDataUrl,
       title: draft.title.trim() || "제목 없는 일기",
@@ -388,7 +385,6 @@ export function PreviewStep({
       .catch(() => {
         if (!cancelled) {
           setRenderedPreview(null);
-          setPreviewRenderFailed(true);
         }
       });
 
@@ -399,10 +395,7 @@ export function PreviewStep({
 
   const isPreviewPreparing =
     analysisState.status === "loading" ||
-    sketchState.status === "loading" ||
-    (analysisState.status === "success" &&
-      renderedPreview === null &&
-      !previewRenderFailed);
+    sketchState.status === "loading";
 
   useEffect(() => {
     if (!isPreviewPreparing) {
