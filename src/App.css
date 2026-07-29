@@ -635,7 +635,7 @@ html:has(.diary-content-section textarea:focus) {
   margin: -2px clamp(16px, 5vw, 24px) 5px;
   padding: 8px 12px 7px;
   border: 1px solid rgba(80, 142, 181, 0.14);
-  border-radius: 999px;
+  border-radius: 20px 15px 18px 17px;
   background: rgba(255, 255, 255, 0.68);
   box-shadow: 0 5px 18px rgba(70, 125, 160, 0.08);
   color: var(--summer-sea);
@@ -788,6 +788,13 @@ html:has(.diary-content-section textarea:focus) {
 
 /* --- Photo upload step --- */
 
+.photo-placeholder,
+.photo-preview {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  box-sizing: border-box;
+}
+
 .photo-placeholder {
   position: relative;
   display: flex;
@@ -795,8 +802,6 @@ html:has(.diary-content-section textarea:focus) {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  width: 100%;
-  aspect-ratio: 3 / 2;
   height: auto;
   min-height: 0;
   padding: 0;
@@ -851,23 +856,13 @@ html:has(.diary-content-section textarea:focus) {
   flex: 1 1 auto;
 }
 
-.app-shell-upload .photo-placeholder,
-.app-shell-upload .photo-preview {
-  min-height: 0;
-  flex: 1 1 auto;
-}
-
-.app-shell-upload .photo-placeholder {
-  aspect-ratio: auto;
-}
-
 .photo-preview {
-  width: 100%;
+  display: block;
   border-radius: 16px;
   /* The photo keeps its own aspect ratio; capping height prevents a portrait
      shot from pushing the CTA below the fold on small screens. */
   max-height: min(46dvh, 420px);
-  object-fit: contain;
+  object-fit: cover;
   background-color: #f2f4f6;
 }
 
@@ -3099,8 +3094,8 @@ html:has(.diary-content-section textarea:focus) {
 .ai-quota-notice-warning {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 13px 14px;
+  gap: 8px;
+  padding: 10px 12px;
   border: 1px solid #d4c3a8;
   border-left: 4px solid #72acd0;
   background: linear-gradient(135deg, #fffdf6 0%, #eef8fc 100%);
@@ -3114,15 +3109,15 @@ html:has(.diary-content-section textarea:focus) {
 
 .ai-quota-notice-symbol {
   display: inline-grid;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
   background: #72acd0;
   color: #fff;
   font-family: ui-rounded, "Arial Rounded MT Bold", sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
 }
@@ -3142,7 +3137,7 @@ html:has(.diary-content-section textarea:focus) {
 .ai-quota-notice-copy > span {
   margin: 0 !important;
   color: #493d2d !important;
-  font-size: 14px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   line-height: 1.45 !important;
   text-align: left;
@@ -3152,8 +3147,8 @@ html:has(.diary-content-section textarea:focus) {
 .ai-quota-counter {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 15px 13px;
+  gap: 7px;
+  padding: 10px 12px 9px;
   border: 1.5px solid rgba(87, 158, 131, 0.42);
   background:
     radial-gradient(
@@ -3191,7 +3186,7 @@ html:has(.diary-content-section textarea:focus) {
 
 .ai-quota-counter-heading > strong {
   color: #3e493c;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
   line-height: 1.35;
   word-break: keep-all;
@@ -3201,9 +3196,9 @@ html:has(.diary-content-section textarea:focus) {
   display: inline-flex;
   align-items: baseline;
   justify-content: center;
-  min-width: 62px;
+  min-width: 54px;
   box-sizing: border-box;
-  padding: 5px 9px 4px;
+  padding: 4px 8px 3px;
   border: 1px solid rgba(87, 158, 131, 0.3);
   border-radius: 12px 9px 11px 10px;
   background: rgba(255, 255, 255, 0.82);
@@ -3213,12 +3208,12 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .ai-quota-counter-value strong {
-  font-size: 25px;
+  font-size: 21px;
   font-weight: 800;
 }
 
 .ai-quota-counter-value span {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -3229,7 +3224,7 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .ai-quota-meter > span {
-  height: 7px;
+  height: 5px;
   min-width: 0;
   flex: 1 1 0;
   border-radius: 999px;
@@ -3249,7 +3244,7 @@ html:has(.diary-content-section textarea:focus) {
   gap: 6px 12px;
   flex-wrap: wrap;
   color: #776c5a;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.35;
 }
 
@@ -3298,11 +3293,6 @@ html:has(.diary-content-section textarea:focus) {
   .ai-quota-counter-value {
     min-width: 56px;
   }
-}
-
-.app-shell-upload .step-body > .ai-quota-notice {
-  margin-top: 0;
-  margin-bottom: 2px;
 }
 
 .app-shell-write > .ai-quota-notice {

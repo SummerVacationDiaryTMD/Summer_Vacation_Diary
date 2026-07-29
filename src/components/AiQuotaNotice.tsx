@@ -98,7 +98,7 @@ function QuotaCounterNotice({
   );
 }
 
-type QuotaAction = "sketch" | "analyze";
+type QuotaAction = "analyze";
 
 interface QuotaNoticeCopy {
   label: string;
@@ -111,20 +111,6 @@ interface QuotaNoticeCopy {
 }
 
 const QUOTA_NOTICE_COPY: Record<QuotaAction, QuotaNoticeCopy> = {
-  sketch: {
-    label: "그림 그리기",
-    localTest: [
-      "테스트 모드에서는 원본 사진으로 그림일기를 미리 볼 수 있어요.",
-    ],
-    serverTest: ["테스트 모드 · 그림 그리기를 제한 없이 이용할 수 있어요."],
-    regionBlocked: [
-      "해외에서는 AI친구가 그림을 그려줄 수 없어요.",
-      "원본 사진으로 그림일기를 완성할 수 있어요.",
-    ],
-    checking: "오늘의 그림 그리기 기회를 확인하고 있어요.",
-    exhausted: "오늘 기회를 모두 사용했어요",
-    recheck: "다시 그리면 1회 사용",
-  },
   analyze: {
     label: "일기 검사",
     localTest: ["테스트 모드 · 일기 검사를 제한 없이 이용할 수 있어요."],
@@ -175,14 +161,6 @@ function QuotaNotice({
       recheckMessage={showRecheckNotice ? copy.recheck : undefined}
     />
   );
-}
-
-export function SketchQuotaNotice({
-  showRecheckNotice = false,
-}: {
-  showRecheckNotice?: boolean;
-}) {
-  return <QuotaNotice action="sketch" showRecheckNotice={showRecheckNotice} />;
 }
 
 export function AnalyzeQuotaNotice({
