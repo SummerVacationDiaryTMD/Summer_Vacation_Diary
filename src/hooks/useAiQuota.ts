@@ -34,8 +34,8 @@ export type AiQuotaView =
   | { mode: "unknown" }
   | {
       mode: "ready";
-      sketch: QuotaCounterView;
-      analyze: QuotaCounterView;
+      /** One user-facing budget shared by drawing and diary analysis. */
+      completion: QuotaCounterView;
       blocked: QuotaBlockedReason | null;
       region: QuotaRegion;
       resetAt: string;
@@ -44,10 +44,6 @@ export type AiQuotaView =
     };
 
 const QUOTA_STATUS_TIMEOUT_MS = 10_000;
-
-function toView(counter: QuotaCounter): QuotaCounterView {
-  return { ...counter, available: counter.remaining > 0 };
-}
 
 /**
  * Folds the requests this client has already sent into the server's numbers.
@@ -127,11 +123,7 @@ export function useAiQuota(): AiQuotaView {
     }
     return {
       mode: "ready",
-      sketch: withPending(snapshot.sketch, pendingSketches),
-      // No ledger for analysis: `useDiaryAnalysis` already reuses the in-flight
-      // promise and caches by input signature, and its round trip is seconds
-      // rather than a minute, so the counter is never meaningfully stale.
-      analyze: toView(snapshot.analyze),
+      completion: withPending(snapshot.all, pendingSketches),
       blocked: snapshot.blocked,
       region: snapshot.region,
       resetAt: snapshot.resetAt,
@@ -141,17 +133,12 @@ export function useAiQuota(): AiQuotaView {
 }
 
 /**
- * True only when the counter is known AND spent. Gating on the per-action
- * remaining count and nothing else is deliberate: `blocked` reasons like
- * `device` and `service` are per-action on the server, so treating them as a
- * global block would disable the other action too. An occasional request that
- * the server refuses costs nothing — a refused request consumes no quota.
+ * True only when the shared inspection budget is known AND spent. Both drawing
+ * and analysis use this same gate, so one action cannot continue after the
+ * three bundled opportunities are gone.
  */
-export function isActionSpent(
-  view: AiQuotaView,
-  action: "sketch" | "analyze",
-): boolean {
-  return view.mode === "ready" && !view.testMode && !view[action].available;
+export function isAiQuotaSpent(view: AiQuotaView): boolean {
+  return view.mode === "ready" && !view.testMode && !view.completion.available;
 }
 
 /**
