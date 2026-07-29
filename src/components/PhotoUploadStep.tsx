@@ -362,8 +362,9 @@ export function PhotoUploadStep({
                   <h3>처리하는 정보</h3>
 
                   <p>
-                    선택한 사진, 작성한 제목·일기·날짜·날씨와 사용량 제한을 위한
-                    기기 식별값·IP를 처리해요.
+                    AI 분석에는 선택한 사진과 일기 본문을 사용해요. 제목·날짜·날씨는
+                    완성 이미지 표시에만 사용하며, 사용량 제한을 위해 기기
+                    식별값·IP를 처리해요.
                   </p>
                 </section>
 
@@ -381,7 +382,7 @@ export function PhotoUploadStep({
 
                   {isSupabaseConfigured ? (
                     <p>
-                      사진과 일기 내용은 Supabase Edge Function을 거쳐 OpenAI로
+                      사진과 일기 본문은 Supabase Edge Function을 거쳐 OpenAI로
                       전송돼요.{" "}
                       {isAiTestMode &&
                         "테스트 모드에서는 분석만 진행하고 그림 변환 모델은 호출하지 않아요. "}
