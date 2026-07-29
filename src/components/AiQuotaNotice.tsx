@@ -98,8 +98,6 @@ function QuotaCounterNotice({
   );
 }
 
-type QuotaAction = "analyze";
-
 interface QuotaNoticeCopy {
   label: string;
   localTest: string[];
@@ -110,30 +108,22 @@ interface QuotaNoticeCopy {
   recheck: string;
 }
 
-const QUOTA_NOTICE_COPY: Record<QuotaAction, QuotaNoticeCopy> = {
-  analyze: {
-    label: "일기 검사",
-    localTest: ["테스트 모드 · 일기 검사를 제한 없이 이용할 수 있어요."],
-    serverTest: ["테스트 모드 · 일기 검사를 제한 없이 이용할 수 있어요."],
-    regionBlocked: [
-      "해외에서는 선생님이 일기를 검사해 줄 수 없어요.",
-      "선생님 한마디 없이도 그림일기를 완성할 수 있어요.",
-    ],
-    checking: "오늘의 일기 검사 기회를 확인하고 있어요.",
-    exhausted: "오늘 기회를 모두 사용했어요",
-    recheck: "다시 검사하면 1회 사용",
-  },
+const QUOTA_NOTICE_COPY: QuotaNoticeCopy = {
+  label: "AI 검사",
+  localTest: ["테스트 모드 · AI 검사를 제한 없이 이용할 수 있어요."],
+  serverTest: ["테스트 모드 · AI 검사를 제한 없이 이용할 수 있어요."],
+  regionBlocked: [
+    "해외에서는 AI 그림일기 검사를 이용할 수 없어요.",
+    "AI 결과 없이도 그림일기를 완성할 수 있어요.",
+  ],
+  checking: "오늘의 AI 검사 기회를 확인하고 있어요.",
+  exhausted: "오늘 기회를 모두 사용했어요",
+  recheck: "다시 검사하면 1회 사용",
 };
 
-function QuotaNotice({
-  action,
-  showRecheckNotice,
-}: {
-  action: QuotaAction;
-  showRecheckNotice: boolean;
-}) {
+function QuotaNotice({ showRecheckNotice }: { showRecheckNotice: boolean }) {
   const quota = useAiQuota();
-  const copy = QUOTA_NOTICE_COPY[action];
+  const copy = QUOTA_NOTICE_COPY;
 
   if (isAiTestMode) {
     return <NoticeBox lines={copy.localTest} />;
@@ -150,7 +140,7 @@ function QuotaNotice({
     ) : null;
   }
 
-  const { used, limit } = quota[action];
+  const { used, limit } = quota.completion;
 
   return (
     <QuotaCounterNotice
@@ -163,10 +153,10 @@ function QuotaNotice({
   );
 }
 
-export function AnalyzeQuotaNotice({
+export function AiQuotaNotice({
   showRecheckNotice = false,
 }: {
   showRecheckNotice?: boolean;
 }) {
-  return <QuotaNotice action="analyze" showRecheckNotice={showRecheckNotice} />;
+  return <QuotaNotice showRecheckNotice={showRecheckNotice} />;
 }

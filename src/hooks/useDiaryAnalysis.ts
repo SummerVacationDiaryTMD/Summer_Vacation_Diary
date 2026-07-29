@@ -7,6 +7,7 @@ import {
   isAnalysisErrorRetryable,
 } from "../services/diaryAnalysis";
 import type { DiaryAnalysis } from "../services/diaryAnalysis";
+import type { DiaryInspectionContext } from "../services/diaryInspection";
 import { refreshAiQuota } from "./useAiQuota";
 import type { DiaryDraft } from "./useDiaryDraft";
 
@@ -74,11 +75,10 @@ function toPublicState(
  * Runs the diary analysis on demand: `run()` is wired to the 검사 받기 button.
  *
  * It used to fire automatically whenever the preview opened, which cannot
- * survive a five-per-day budget — editing one character changes the input
- * signature, so "preview → fix a typo → preview" four times would spend the
- * whole day. Results are still cached by input signature and an in-flight
- * request for the same input is reused, so asking again without editing costs
- * nothing.
+ * survive a three-per-day bundled budget — editing one character changes the
+ * input signature, so a few typo fixes would spend the whole day. Results are
+ * still cached by input signature and an in-flight request for the same input
+ * is reused, so asking again without editing costs nothing.
  */
 export function useDiaryAnalysis(draft: DiaryDraft) {
   const [internalState, setInternalState] = useState<InternalState>({
@@ -88,14 +88,14 @@ export function useDiaryAnalysis(draft: DiaryDraft) {
   const pendingRef = useRef<PendingRequest | null>(null);
   const requestIdRef = useRef(0);
 
-  // `date` is excluded on purpose: it doesn't change the AI input, so editing
-  // it must not invalidate a result the user already paid for.
-  const { photoDataUrl, title, content, weather } = draft;
+  // Only the photo and diary body are AI inputs. Title, date and weather edits
+  // therefore keep the paid result and never consume another opportunity.
+  const { photoDataUrl, content } = draft;
   // JSON.stringify gives an unambiguous key without inventing a separator
   // that user text could theoretically contain.
-  const signature = JSON.stringify([photoDataUrl, title, content, weather]);
+  const signature = JSON.stringify([photoDataUrl, content]);
 
-  const run = useCallback(() => {
+  const run = useCallback((inspection?: DiaryInspectionContext) => {
     const cached = cacheRef.current.get(signature);
     if (cached !== undefined) {
       // A cache hit never reaches the server, so it never spends a request.
@@ -116,7 +116,7 @@ export function useDiaryAnalysis(draft: DiaryDraft) {
     if (pending === null || pending.signature !== signature) {
       pending = {
         signature,
-        promise: analyzeDiary({ photoDataUrl, title, content, weather }),
+        promise: analyzeDiary({ photoDataUrl, content }, inspection),
       };
       pendingRef.current = pending;
     }
@@ -165,7 +165,7 @@ export function useDiaryAnalysis(draft: DiaryDraft) {
           signature: request.signature,
         });
       });
-  }, [photoDataUrl, title, content, weather, signature]);
+  }, [photoDataUrl, content, signature]);
 
   return {
     state: toPublicState(

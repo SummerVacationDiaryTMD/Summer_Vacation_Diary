@@ -1,9 +1,11 @@
-import { QUOTA_RESET_NOTICE, weatherLabel } from "../constants/diary";
-import type { WeatherValue } from "../constants/diary";
+import { QUOTA_RESET_NOTICE } from "../constants/diary";
 import { containsProfanity } from "../utils/profanity";
 import {
+  requestInspectionAnalysis,
+  type DiaryInspectionContext,
+} from "./diaryInspection";
+import {
   EdgeFunctionError,
-  invokeDiaryAi,
   isSupabaseConfigured,
   isKnownErrorCode,
   mapEdgeFunctionErrorCode,
@@ -21,9 +23,7 @@ import {
 
 export interface DiaryAnalysisInput {
   photoDataUrl: string | null;
-  title: string;
   content: string;
-  weather: WeatherValue;
 }
 
 export type DiaryStamp = "great" | "effort";
@@ -66,7 +66,7 @@ export const ANALYSIS_ERROR_MESSAGES: Record<AnalysisErrorCode, string> = {
   "invalid-key": "AI 연결 설정을 확인해 주세요.",
   "rate-limited": "지금은 요청이 많아요. 잠시 후 다시 시도해 주세요.",
   "region-blocked": "해외에서는 선생님이 일기를 검사해 줄 수 없어요.",
-  "analyze-daily-limit-exceeded": `오늘의 일기 검사 횟수를 모두 사용했어요.\n${QUOTA_RESET_NOTICE}`,
+  "analyze-daily-limit-exceeded": `오늘의 AI 검사 기회를 모두 사용했어요.\n${QUOTA_RESET_NOTICE}`,
   "ip-burst-limit-exceeded":
     "잠깐 사이에 요청이 너무 많았어요. 잠시 후 다시 시도해 주세요.",
   "ip-daily-limit-exceeded": `같은 인터넷에서 오늘 이용할 수 있는 횟수를 모두 사용했어요.\n${QUOTA_RESET_NOTICE}`,
@@ -122,17 +122,14 @@ export const isAiConnected = isSupabaseConfigured;
  */
 export function analyzeDiary(
   input: DiaryAnalysisInput,
+  inspection?: DiaryInspectionContext,
 ): Promise<DiaryAnalysis> {
   return isAiConnected
-    ? analyzeWithEdgeFunction(input)
+    ? analyzeWithEdgeFunction(input, inspection)
     : analyzeWithMock(input);
 }
 
 // --- Supabase Edge Function provider ---------------------------------------
-
-// The spec's 예외 처리 section requires a timeout path; 30s matches its
-// "평균 생성 시간 30초 이내" target.
-const REQUEST_TIMEOUT_MS = 30_000;
 
 function toStringArray(value: unknown, max: number): string[] {
   if (!Array.isArray(value)) {
@@ -239,20 +236,13 @@ function parseAnalysis(parsed: unknown, content: string): DiaryAnalysis {
 
 async function analyzeWithEdgeFunction(
   input: DiaryAnalysisInput,
+  inspection?: DiaryInspectionContext,
 ): Promise<DiaryAnalysis> {
   try {
-    const body = await invokeDiaryAi(
-      {
-        action: "analyze",
-        input: {
-          photoDataUrl: input.photoDataUrl,
-          title: input.title,
-          content: input.content,
-          weather: weatherLabel(input.weather),
-        },
-      },
-      REQUEST_TIMEOUT_MS,
-    );
+    if (inspection === undefined) {
+      throw new AnalysisError("invalid-response");
+    }
+    const body = await requestInspectionAnalysis(inspection, input);
     return parseAnalysis(body, input.content);
   } catch (error) {
     if (error instanceof AnalysisError) {

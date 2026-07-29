@@ -1,13 +1,16 @@
 import { recompressDataUrl } from "../utils/image";
 import { applyPencilFilter } from "../utils/sketchFilter";
 import {
+  requestInspectionSketch,
+  type DiaryInspectionContext,
+} from "./diaryInspection";
+import {
   releaseSketchTicket,
   reserveSketchTicket,
   settleSketchTicket,
 } from "./sketchLedger";
 import {
   EdgeFunctionError,
-  invokeDiaryAi,
   isAiTestMode,
   isKnownErrorCode,
   isSupabaseConfigured,
@@ -44,10 +47,10 @@ export const SKETCH_ERROR_CAUSES: Record<SketchErrorCode, string> = {
   "content-blocked": "부적절한 이미지때문에",
   "invalid-image": "깨진 이미지때문에",
   "region-blocked": "해외 IP라서",
-  "sketch-daily-limit-exceeded": "오늘 그림 그리기 횟수를 다 써서",
-  "ip-daily-limit-exceeded": "오늘 그림 그리기 횟수를 다 써서",
-  "service-daily-limit-exceeded": "오늘 그림 그리기 횟수를 다 써서",
-  "daily-limit-exceeded": "오늘 그림 그리기 횟수를 다 써서",
+  "sketch-daily-limit-exceeded": "오늘 AI 검사 기회를 다 써서",
+  "ip-daily-limit-exceeded": "오늘 AI 검사 기회를 다 써서",
+  "service-daily-limit-exceeded": "오늘 AI 검사 기회를 다 써서",
+  "daily-limit-exceeded": "오늘 AI 검사 기회를 다 써서",
   // Everything transient reads the same way on purpose — the distinction
   // between a timeout, a busy model and a dead tunnel is ours to debug from the
   // logs, not the child's to interpret.
@@ -127,18 +130,19 @@ export function isSketchOutcomeUnverified(error: unknown): boolean {
 export const isSketchAiConnected = isSupabaseConfigured && !isAiTestMode;
 
 /** Converts a photo through Supabase, or uses the local filter in mock mode. */
-export function transferPhotoToSketch(photoDataUrl: string): Promise<string> {
+export function transferPhotoToSketch(
+  photoDataUrl: string,
+  inspection?: DiaryInspectionContext,
+): Promise<string> {
   // Test mode deliberately uses the original photo unchanged. It avoids both
   // the paid image model and the local pencil filter while analysis continues.
   if (isAiTestMode) {
     return Promise.resolve(photoDataUrl);
   }
   return isSketchAiConnected
-    ? sketchWithEdgeFunction(photoDataUrl)
+    ? sketchWithEdgeFunction(photoDataUrl, inspection)
     : sketchWithLocalFilter(photoDataUrl);
 }
-
-const REQUEST_TIMEOUT_MS = 120_000;
 
 function isSketchErrorCode(
   value: string | undefined,
@@ -152,10 +156,13 @@ function isSketchErrorCode(
  * `transferPhotoToSketch` — so a mode that never spends can never leave a
  * ticket behind, and no caller has to remember to count.
  */
-async function sketchWithEdgeFunction(photoDataUrl: string): Promise<string> {
+async function sketchWithEdgeFunction(
+  photoDataUrl: string,
+  inspection?: DiaryInspectionContext,
+): Promise<string> {
   reserveSketchTicket(photoDataUrl);
   try {
-    const sketch = await requestSketch(photoDataUrl);
+    const sketch = await requestSketch(photoDataUrl, inspection);
     settleSketchTicket(photoDataUrl);
     return sketch;
   } catch (error) {
@@ -168,16 +175,18 @@ async function sketchWithEdgeFunction(photoDataUrl: string): Promise<string> {
   }
 }
 
-async function requestSketch(photoDataUrl: string): Promise<string> {
+async function requestSketch(
+  photoDataUrl: string,
+  inspection?: DiaryInspectionContext,
+): Promise<string> {
   try {
-    const body = await invokeDiaryAi(
-      { action: "sketch", photoDataUrl },
-      REQUEST_TIMEOUT_MS,
-    );
-    const imageBase64 = (body as { imageBase64?: unknown }).imageBase64;
-    if (typeof imageBase64 !== "string" || imageBase64 === "") {
+    if (inspection === undefined) {
       throw new SketchError("invalid-response");
     }
+    const imageBase64 = await requestInspectionSketch(
+      inspection,
+      photoDataUrl,
+    );
 
     try {
       return await recompressDataUrl(`data:image/jpeg;base64,${imageBase64}`);

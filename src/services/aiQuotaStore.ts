@@ -34,6 +34,8 @@ export interface QuotaRegion {
 export interface QuotaSnapshot {
   sketch: QuotaCounter;
   analyze: QuotaCounter;
+  /** Shared inspection counter. Null while an older Function is deployed. */
+  all: QuotaCounter | null;
   /** ISO timestamp of the next daily reset (00:00 UTC = 09:00 KST). */
   resetAt: string;
   blocked: QuotaBlockedReason | null;
@@ -160,9 +162,18 @@ export function parseQuotaSnapshot(body: unknown): QuotaSnapshot | null {
     return null;
   }
 
+  const all =
+    record.all === undefined ? null : parseCounter(record.all);
+  if (record.all !== undefined && all === null) {
+    return null;
+  }
+
   return {
     sketch,
     analyze,
+    // Rolling-deployment compatibility: older Functions expose only the two
+    // action counters, so an absent shared counter is valid.
+    all,
     resetAt: record.resetAt,
     blocked: blocked as QuotaBlockedReason | null,
     region: parseRegion(record.region),

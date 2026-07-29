@@ -3,14 +3,14 @@ import { SafeAreaInsets } from "@apps-in-toss/web-framework";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import "./App.css";
-import { AnalyzeQuotaNotice } from "./components/AiQuotaNotice";
+import { AiQuotaNotice } from "./components/AiQuotaNotice";
 import { DiaryButton } from "./components/DiaryButton";
 import { DiaryShareModal } from "./components/DiaryShareModal";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
 import { PreviewStep } from "./components/PreviewStep";
 import { WriteStep } from "./components/WriteStep";
 import {
-  isActionSpent,
+  isAiQuotaSpent,
   isRegionBlocked,
   refreshAiQuota,
   useAiQuota,
@@ -18,6 +18,10 @@ import {
 import { useDiaryAnalysis } from "./hooks/useDiaryAnalysis";
 import { useDiaryDraft } from "./hooks/useDiaryDraft";
 import { useSketch } from "./hooks/useSketch";
+import {
+  createDiaryInspectionContext,
+  type DiaryInspectionContext,
+} from "./services/diaryInspection";
 import { composeDiaryImage } from "./utils/diaryImage";
 import { isAiConnected } from "./services/diaryAnalysis";
 import { isSketchAiConnected } from "./services/styleTransfer";
@@ -131,21 +135,23 @@ function App() {
   // versioning the draft shape for something that dies with the session anyway.
   const [photoSourceHash, setPhotoSourceHash] = useState<string | null>(null);
   const [weatherEffectKey, setWeatherEffectKey] = useState(0);
+  const [inspectionContext, setInspectionContext] =
+    useState<DiaryInspectionContext>();
   const quota = useAiQuota();
   // Refused outright by country, which unlike the daily budgets never comes
   // back — so it gates both operations rather than one.
   const regionBlocked = isRegionBlocked(quota);
+  const aiQuotaSpent = isAiQuotaSpent(quota);
   // Gate on "would this actually reach the server". Mock and test mode never
   // do, so they must never be blocked by a counter they don't spend.
   const sketchAllowed =
-    !isSketchAiConnected || (!regionBlocked && !isActionSpent(quota, "sketch"));
-  const analyzeAllowed =
-    !isAiConnected || (!regionBlocked && !isActionSpent(quota, "analyze"));
+    !isSketchAiConnected || (!regionBlocked && !aiQuotaSpent);
+  const analyzeAllowed = !isAiConnected || (!regionBlocked && !aiQuotaSpent);
 
   // Analysis is triggered explicitly by 검사 받기, not by opening the preview:
-  // at five checks a day, re-running on every edit would spend the budget on
-  // typo fixes. Results are cached by input inside the hook, so asking again
-  // without editing is free.
+  // with three bundled checks a day, re-running on every edit would spend the
+  // budget on typo fixes. Results are cached by input inside the hook, so
+  // asking again without editing is free.
   const { state: analysisState, run: runAnalysis } = useDiaryAnalysis(draft);
   // Photo conversion and diary analysis both start only after 검사 받기. This
   // preserves the user's limited drawing opportunities when they leave midway
@@ -161,6 +167,7 @@ function App() {
     step === "preview",
     sketchAllowed,
     photoSourceHash,
+    inspectionContext,
   );
   const { openAlert, openConfirm } = useDialog();
   const openDiaryConfirm = ({
@@ -340,30 +347,49 @@ function App() {
 
     setHasVisitedPreview(true);
 
+    const runSketchAi =
+      isSketchAiConnected && draft.sketchDataUrl === null && sketchAllowed;
+    const runAnalyzeAi =
+      isAiConnected && analysisState.status !== "success" && analyzeAllowed;
+    const inspection =
+      runSketchAi || runAnalyzeAi
+        ? createDiaryInspectionContext(runSketchAi, runAnalyzeAi)
+        : undefined;
+    setInspectionContext(inspection);
+
     // Navigation is never gated on the budget: unavailable AI results fall
     // back to the original photo or an uncommented diary, and 완성하기 still
     // works from there.
-    // A success state belongs to the CURRENT AI input signature. Date is not
-    // part of that signature, so date-only edits return to the completed
-    // preview without calling the server or consuming another opportunity.
+    // A success state belongs to the CURRENT AI input signature. Only the
+    // photo and body are part of it, so title/date/weather-only edits return
+    // to the completed preview without spending another opportunity.
     if (analyzeAllowed && analysisState.status !== "success") {
-      runAnalysis();
+      runAnalysis(inspection);
     }
 
-    const sketchOpportunitySpent =
-      isActionSpent(quota, "sketch") && draft.sketchDataUrl === null;
-    const analysisOpportunitySpent =
-      isActionSpent(quota, "analyze") && analysisState.status !== "success";
-
-    if (sketchOpportunitySpent && analysisOpportunitySpent) {
-      toast.openToast("오늘 사진 변환과 일기 검사 기회를 모두 사용했어요.");
-    } else if (sketchOpportunitySpent) {
-      toast.openToast("오늘 사진을 그림으로 바꿀 기회는 다 사용했어요.");
-    } else if (analysisOpportunitySpent) {
-      toast.openToast("오늘 일기 검사 기회는 다 사용했어요.");
+    const needsAiWork =
+      draft.sketchDataUrl === null || analysisState.status !== "success";
+    if (aiQuotaSpent && needsAiWork) {
+      toast.openToast("오늘 AI 검사 기회를 모두 사용했어요.");
     }
 
     setStep("preview");
+  };
+
+  const retryAnalysis = () => {
+    const inspection = isAiConnected
+      ? createDiaryInspectionContext(false, true)
+      : undefined;
+    setInspectionContext(inspection);
+    runAnalysis(inspection);
+  };
+
+  const retryDrawing = () => {
+    const inspection = isSketchAiConnected
+      ? createDiaryInspectionContext(true, false)
+      : undefined;
+    setInspectionContext(inspection);
+    retrySketch();
   };
 
   // Stage 4: compose the finished diary once, then let the result sheet reuse
@@ -411,7 +437,7 @@ function App() {
         cancelLabel: "이대로 저장",
       });
       if (retry) {
-        runAnalysis();
+        retryAnalysis();
         return;
       }
     } else if (analysisState.status === "idle" && analyzeAllowed) {
@@ -426,7 +452,7 @@ function App() {
         cancelLabel: "이대로 저장",
       });
       if (check) {
-        runAnalysis();
+        retryAnalysis();
         return;
       }
     }
@@ -560,7 +586,7 @@ function App() {
       )}
       {step === "write" && (
         <>
-          <AnalyzeQuotaNotice
+          <AiQuotaNotice
             showRecheckNotice={
               analyzeRecheckNoticeVisible && analysisState.status !== "success"
             }
@@ -580,9 +606,9 @@ function App() {
         <PreviewStep
           draft={draft}
           analysisState={analysisState}
-          onRetry={runAnalysis}
+          onRetry={retryAnalysis}
           sketchState={sketchState}
-          onSketchRetry={retrySketch}
+          onSketchRetry={retryDrawing}
         />
       )}
 
