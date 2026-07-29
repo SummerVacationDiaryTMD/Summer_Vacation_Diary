@@ -65,6 +65,8 @@ interface UntimedAnnotation {
 
 const FIRST_MARK_DELAY_MS = 300;
 const MARK_GAP_MS = 100;
+const ROW_TRANSITION_GAP_MS = 150;
+const PHASE_TRANSITION_GAP_MS = 200;
 const UNDERLINE_MS_PER_CELL = 180;
 const UNDERLINE_MIN_DURATION_MS = 320;
 const CIRCLE_DURATION_MS = 1_350;
@@ -153,42 +155,6 @@ function underlineDuration(length: number): number {
   return Math.max(UNDERLINE_MIN_DURATION_MS, length * UNDERLINE_MS_PER_CELL);
 }
 
-const SENTENCE_END_PATTERN = /[.!?。！？]/u;
-
-function buildCellSentenceIndexes(
-  content: string,
-  columnCount: number,
-  visibleCellCount: number,
-): number[] {
-  const sentenceIndexes = Array<number>(visibleCellCount).fill(0);
-  let cellIndex = 0;
-  let sentenceIndex = 0;
-
-  for (const character of Array.from(content)) {
-    if (character === "\n") {
-      const remainder = cellIndex % columnCount;
-      if (remainder !== 0) {
-        cellIndex += columnCount - remainder;
-      }
-      sentenceIndex += 1;
-      continue;
-    }
-
-    if (cellIndex >= visibleCellCount) {
-      break;
-    }
-
-    sentenceIndexes[cellIndex] = sentenceIndex;
-    cellIndex += 1;
-
-    if (SENTENCE_END_PATTERN.test(character)) {
-      sentenceIndex += 1;
-    }
-  }
-
-  return sentenceIndexes;
-}
-
 function annotationStartColumn(annotation: UntimedAnnotation): number {
   if (annotation.placement !== undefined) {
     return annotation.placement.column;
@@ -199,10 +165,68 @@ function annotationStartColumn(annotation: UntimedAnnotation): number {
   return annotation.orderColumn;
 }
 
+function annotationStartCell(
+  annotation: UntimedAnnotation,
+  columnCount: number,
+): number {
+  return (
+    annotation.row * columnCount + annotationStartColumn(annotation)
+  );
+}
+
+function annotationPhase(annotation: UntimedAnnotation): number {
+  return annotation.kind === "underline" ? 0 : 1;
+}
+
+function overlapsUnderlinedCells(
+  annotation: UntimedAnnotation,
+  underlinedCells: ReadonlySet<number>,
+  columnCount: number,
+): boolean {
+  if (annotation.kind === "underline") {
+    return true;
+  }
+
+  if (annotation.placement !== undefined) {
+    return underlinedCells.has(
+      annotation.placement.row * columnCount + annotation.placement.column,
+    );
+  }
+
+  if (annotation.run !== undefined) {
+    for (let offset = 0; offset < annotation.run.length; offset += 1) {
+      if (
+        underlinedCells.has(
+          annotation.run.row * columnCount +
+            annotation.run.startColumn +
+            offset,
+        )
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function annotationGap(
+  current: UntimedAnnotation,
+  next: UntimedAnnotation,
+): number {
+  if (current.kind === "underline" && next.kind !== "underline") {
+    return PHASE_TRANSITION_GAP_MS;
+  }
+  if (current.row !== next.row) {
+    return ROW_TRANSITION_GAP_MS;
+  }
+  return MARK_GAP_MS;
+}
+
 /**
- * Builds one teacher-like pass over the manuscript, grouped by sentence.
- * Sentences keep their reading order; inside each sentence the teacher
- * finishes every underline before drawing circles, stars and profanity marks.
+ * Builds one teacher-like pass around the exact sentence selected for the
+ * underline. Its line is completed across every occupied row first; marks
+ * overlapping that sentence then restart from its first row.
  */
 export function buildAnnotationTimeline(
   content: string,
@@ -266,64 +290,85 @@ export function buildAnnotationTimeline(
     })),
   ];
 
-  const sentenceIndexes = buildCellSentenceIndexes(
-    content,
-    columnCount,
-    columnCount * rowCount,
-  );
-  const sentenceOf = (annotation: UntimedAnnotation) =>
-    sentenceIndexes[
-      annotation.row * columnCount + annotationStartColumn(annotation)
-    ] ?? Number.MAX_SAFE_INTEGER;
+  const underlinedCells = new Set<number>();
+  for (const underline of underlines) {
+    for (let offset = 0; offset < underline.length; offset += 1) {
+      underlinedCells.add(
+        underline.row * columnCount + underline.startColumn + offset,
+      );
+    }
+  }
+  const underlineGroupStart =
+    underlinedCells.size === 0
+      ? Number.MAX_SAFE_INTEGER
+      : Math.min(...underlinedCells);
+  const isUnderlineGroupEvent = (annotation: UntimedAnnotation) =>
+    overlapsUnderlinedCells(annotation, underlinedCells, columnCount);
+  const groupStart = (annotation: UntimedAnnotation) =>
+    isUnderlineGroupEvent(annotation)
+      ? underlineGroupStart
+      : annotationStartCell(annotation, columnCount);
 
   untimedEvents.sort(
-    (first, second) =>
-      sentenceOf(first) - sentenceOf(second) ||
-      first.priority - second.priority ||
-      first.row - second.row ||
-      first.orderColumn - second.orderColumn ||
-      first.durationMs - second.durationMs,
+    (first, second) => {
+      const firstInUnderlineGroup = isUnderlineGroupEvent(first);
+      const secondInUnderlineGroup = isUnderlineGroupEvent(second);
+
+      return (
+        groupStart(first) - groupStart(second) ||
+        (firstInUnderlineGroup && secondInUnderlineGroup
+          ? annotationPhase(first) - annotationPhase(second)
+          : 0) ||
+        first.row - second.row ||
+        first.orderColumn - second.orderColumn ||
+        first.priority - second.priority ||
+        first.durationMs - second.durationMs
+      );
+    },
   );
 
   let cursorMs = FIRST_MARK_DELAY_MS;
-  const events: AnnotationTimelineEvent[] = untimedEvents.map((event) => {
-    const timing = {
-      delayMs: cursorMs,
-      durationMs: event.durationMs,
-    };
-    cursorMs += event.durationMs + MARK_GAP_MS;
+  const events: AnnotationTimelineEvent[] = untimedEvents.map(
+    (event, index) => {
+      const timing = {
+        delayMs: cursorMs,
+        durationMs: event.durationMs,
+      };
+      cursorMs += event.durationMs;
+      const nextEvent = untimedEvents[index + 1];
+      if (nextEvent !== undefined) {
+        cursorMs += annotationGap(event, nextEvent);
+      }
 
-    if (event.kind === "star" && event.placement !== undefined) {
-      return { ...timing, kind: "star", placement: event.placement };
-    }
-    if (event.kind === "circle" && event.run !== undefined) {
+      if (event.kind === "star" && event.placement !== undefined) {
+        return { ...timing, kind: "star", placement: event.placement };
+      }
+      if (event.kind === "circle" && event.run !== undefined) {
+        return {
+          ...timing,
+          kind: "circle",
+          run: event.run as CorrectionRun,
+        };
+      }
+      if (event.kind === "profanity" && event.run !== undefined) {
+        return {
+          ...timing,
+          kind: "profanity",
+          run: event.run as ProfanityCheckRun,
+        };
+      }
       return {
         ...timing,
-        kind: "circle",
+        kind: "underline",
         run: event.run as CorrectionRun,
+        originalRun: event.originalRun as CorrectionRun,
       };
-    }
-    if (event.kind === "profanity" && event.run !== undefined) {
-      return {
-        ...timing,
-        kind: "profanity",
-        run: event.run as ProfanityCheckRun,
-      };
-    }
-    return {
-      ...timing,
-      kind: "underline",
-      run: event.run as CorrectionRun,
-      originalRun: event.originalRun as CorrectionRun,
-    };
-  });
+    },
+  );
 
   return {
     events,
-    totalDurationMs:
-      events.length === 0
-        ? 0
-        : Math.max(FIRST_MARK_DELAY_MS, cursorMs - MARK_GAP_MS),
+    totalDurationMs: events.length === 0 ? 0 : cursorMs,
   };
 }
 
