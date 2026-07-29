@@ -88,8 +88,8 @@ export function useDiaryAnalysis(draft: DiaryDraft) {
   const pendingRef = useRef<PendingRequest | null>(null);
   const requestIdRef = useRef(0);
 
-  // Only the photo and diary body are AI inputs. Title, date and weather edits
-  // therefore keep the paid result and never consume another opportunity.
+  // Display-only fields (title, date, weather) don't change the AI input, so
+  // editing them must not invalidate a result the user already paid for.
   const { photoDataUrl, content } = draft;
   // JSON.stringify gives an unambiguous key without inventing a separator
   // that user text could theoretically contain.
