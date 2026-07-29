@@ -17,10 +17,16 @@ import {
 } from "./diaryFrameLayout";
 import { diaryDateParts } from "./diaryDate";
 import {
+  buildCorrectionRuns,
+  buildDiaryCells,
+  correctionMarkBox,
+  profanityMarkBox,
+  starMarkBox,
+} from "./diaryAnnotations";
+import {
   handwritingVariation,
   TITLE_HANDWRITING_STRENGTH,
 } from "./handwriting";
-import { buildHighlightSegments } from "./highlight";
 import { ImageProcessError, loadImageFromDataUrl } from "./image";
 import { buildProfanityCheckRuns } from "./profanityCheck";
 import { pickProfanityMarkAsset, PROFANITY_MARK_URLS } from "./profanityMarks";
@@ -86,18 +92,6 @@ const TEXT_COLOR = "#333333";
 const COMMENT_COLOR = "#4f432d";
 const LABEL_COLOR = "#806d3d";
 const AI_WATERMARK_COLOR = "#8B6A3E";
-
-interface DiaryCell {
-  text: string;
-  mark: "circle" | "underline" | "both" | null;
-}
-
-interface CorrectionRun {
-  mark: "circle" | "underline";
-  row: number;
-  startColumn: number;
-  length: number;
-}
 
 function fontWithWeight(font: string, weight: number): string {
   return /^(?:normal|bold|[1-9]00)\s/.test(font)
@@ -207,67 +201,6 @@ function drawCoverImage(
   );
 }
 
-function buildDiaryCells(
-  content: string,
-  analysis: DiaryAnalysis | null,
-  rowCount: number,
-): DiaryCell[] {
-  const segments =
-    analysis === null
-      ? [{ text: content, mark: null }]
-      : buildHighlightSegments(
-          content,
-          analysis.highlightWords,
-          analysis.highlightSentence,
-        );
-  const cells: DiaryCell[] = [];
-
-  for (const segment of segments) {
-    for (const character of Array.from(segment.text)) {
-      if (character === "\n") {
-        while (cells.length % COLUMN_COUNT !== 0) {
-          cells.push({
-            text: "",
-            mark: null,
-          });
-        }
-      } else {
-        cells.push({
-          text: character,
-          mark: segment.mark,
-        });
-      }
-    }
-  }
-
-  return cells.slice(0, COLUMN_COUNT * rowCount);
-}
-
-function buildCorrectionRuns(cells: DiaryCell[]): CorrectionRun[] {
-  const runs: CorrectionRun[] = [];
-  (["circle", "underline"] as const).forEach((mark) => {
-    cells.forEach((cell, index) => {
-      if (cell.mark !== mark && cell.mark !== "both") {
-        return;
-      }
-      const row = Math.floor(index / COLUMN_COUNT);
-      const column = index % COLUMN_COUNT;
-      const previous = runs[runs.length - 1];
-      if (
-        previous !== undefined &&
-        previous.mark === mark &&
-        previous.row === row &&
-        previous.startColumn + previous.length === column
-      ) {
-        previous.length += 1;
-      } else {
-        runs.push({ mark, row, startColumn: column, length: 1 });
-      }
-    });
-  });
-  return runs;
-}
-
 function drawContent(
   context: CanvasRenderingContext2D,
   content: string,
@@ -278,7 +211,12 @@ function drawContent(
   const { x, y, width, height } = layout.content;
   const cellWidth = width / COLUMN_COUNT;
   const cellHeight = height / layout.contentRows;
-  const cells = buildDiaryCells(content, analysis, layout.contentRows);
+  const cells = buildDiaryCells(
+    content,
+    analysis,
+    COLUMN_COUNT,
+    layout.contentRows,
+  );
 
   context.font = CONTENT_FONT;
   context.fillStyle = TEXT_COLOR;
@@ -308,32 +246,13 @@ function drawContent(
   // 미리보기와 동일하게 연속된 첨삭 구간을 한 개의 표시로 묶습니다.
   // 크기/위치 비율(88%, 16%, 5%)은 App.css의 .diary-correction-* 값과
   // 맞춰져 있습니다 — 한쪽만 바꾸면 미리보기와 저장본이 어긋납니다.
-  for (const run of buildCorrectionRuns(cells)) {
-    const runX = x + run.startColumn * cellWidth;
-    const runY = y + run.row * cellHeight;
-    const runWidth = run.length * cellWidth;
+  for (const run of buildCorrectionRuns(cells, COLUMN_COUNT)) {
+    const box = correctionMarkBox(layout, run);
     const markImage = markImages.get(
       pickCorrectionMarkAsset(run.mark, run.row, run.startColumn, run.length),
     );
     if (markImage === undefined) continue;
-    if (run.mark === "circle") {
-      context.drawImage(
-        markImage,
-        runX,
-        runY + cellHeight * 0.06,
-        runWidth,
-        cellHeight * 0.88,
-      );
-    } else {
-      const lineHeight = cellHeight * 0.16;
-      context.drawImage(
-        markImage,
-        runX,
-        runY + cellHeight - lineHeight - cellHeight * 0.05,
-        runWidth,
-        lineHeight,
-      );
-    }
+    context.drawImage(markImage, box.x, box.y, box.width, box.height);
   }
   const starPlacements =
     analysis === null
@@ -351,20 +270,8 @@ function drawContent(
     );
     if (starImage === undefined) continue;
 
-    const size = Math.min(cellWidth, cellHeight) * 0.84;
-    const cellX = x + placement.column * cellWidth;
-    const cellY = y + placement.row * cellHeight;
-    // Stars may cross manuscript cells and region lines, but the complete
-    // drawing must remain inside the exported 4:5 image.
-    const starX = Math.min(
-      Math.max(cellX - size * 0.28, 0),
-      layout.width - size,
-    );
-    const starY = Math.min(
-      Math.max(cellY - size * 0.22, 0),
-      layout.height - size,
-    );
-    context.drawImage(starImage, starX, starY, size, size);
+    const box = starMarkBox(layout, placement);
+    context.drawImage(starImage, box.x, box.y, box.width, box.height);
   }
 
   const profanityCheckRuns =
@@ -382,13 +289,8 @@ function drawContent(
     );
     if (checkImage === undefined) continue;
 
-    context.drawImage(
-      checkImage,
-      x + run.startColumn * cellWidth,
-      y + run.row * cellHeight,
-      run.length * cellWidth,
-      cellHeight,
-    );
+    const box = profanityMarkBox(layout, run);
+    context.drawImage(checkImage, box.x, box.y, box.width, box.height);
   }
 }
 

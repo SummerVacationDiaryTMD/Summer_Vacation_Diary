@@ -2359,23 +2359,6 @@ html:has(.diary-content-section textarea:focus) {
   overflow: hidden;
 }
 
-.diary-rendered-preview {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: block;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  animation: diary-rendered-preview-appear 250ms var(--preview-delay, 8s) both;
-}
-
-@keyframes diary-rendered-preview-appear {
-  to {
-    opacity: 1;
-  }
-}
-
 .diary-frame-background {
   position: absolute;
   inset: 0;
@@ -2590,37 +2573,51 @@ html:has(.diary-content-section textarea:focus) {
   position: absolute;
   box-sizing: border-box;
   background-repeat: no-repeat;
-  animation: diary-mark-write 850ms var(--mark-delay, 0ms)
+  background-position: center;
+  background-size: 100% 100%;
+  animation: diary-mark-write var(--mark-duration, 850ms) var(--mark-delay, 0ms)
     cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .diary-correction-circle {
-  /* Stretch the drawing to the run box, inset 6% top/bottom so the ellipse
-     strikes through the glyphs instead of hugging the cell borders. */
-  background-size: 100% 88%;
-  background-position: center;
+  /* The exact inset and height now come from diaryAnnotations.ts, shared with
+     the export canvas. This element is already the final drawing box. */
   animation-name: diary-round-mark-write;
-  animation-duration: 1.35s;
 }
 
 .diary-correction-underline {
-  /* Thin stroke pinned near the cell bottom; horizontal stretch is
-     invisible on a scribbled line, so no tiling is needed. */
-  background-size: 100% 16%;
-  background-position: left bottom 5%;
+  overflow: hidden;
+  background: none;
+}
+
+.diary-underline-segment-image {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 100% 100%;
 }
 
 .diary-star-mark {
   position: absolute;
   z-index: 3;
+  display: block;
   box-sizing: border-box;
-  /* This layer may cross manuscript cells and printed region lines. The
-     outer .diary-template alone clips at the final 4:5 image boundary. */
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 104% 104%;
-  transform: translate(-48%, -34%);
-  animation: diary-round-mark-write 1.5s var(--mark-delay, 0ms) ease-in-out both;
+  overflow: visible;
+}
+
+.diary-star-path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: diary-star-path-write var(--mark-duration, 1.5s)
+    var(--mark-delay, 0ms) ease-in-out both;
+}
+
+.diary-star-mask-finish {
+  opacity: 0;
+  animation: diary-star-mask-finish var(--mark-duration, 1.5s)
+    var(--mark-delay, 0ms) steps(1, end) both;
 }
 
 .diary-profanity-check {
@@ -2631,7 +2628,7 @@ html:has(.diary-content-section textarea:focus) {
   background-repeat: no-repeat;
   background-size: 100% 100%;
   filter: drop-shadow(0 0.7px 0 rgba(178, 43, 39, 0.28));
-  animation: diary-mark-write 850ms var(--mark-delay, 0ms)
+  animation: diary-mark-write var(--mark-duration, 850ms) var(--mark-delay, 0ms)
     cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
@@ -2659,8 +2656,7 @@ html:has(.diary-content-section textarea:focus) {
   }
 }
 
-.diary-correction-circle,
-.diary-star-mark {
+.diary-correction-circle {
   -webkit-mask-image: conic-gradient(
     from -90deg,
     #000 0deg var(--diary-draw-angle),
@@ -2671,6 +2667,18 @@ html:has(.diary-content-section textarea:focus) {
     #000 0deg var(--diary-draw-angle),
     transparent var(--diary-draw-angle)
   );
+}
+
+@keyframes diary-star-path-write {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes diary-star-mask-finish {
+  to {
+    opacity: 1;
+  }
 }
 
 .diary-card-comment {
@@ -2720,8 +2728,8 @@ html:has(.diary-content-section textarea:focus) {
   position: absolute;
   z-index: 7;
   overflow: hidden;
-  animation: diary-comment-canvas-write var(--comment-write-duration) 17.1s
-    steps(var(--comment-write-steps), end) both;
+  animation: diary-comment-canvas-write var(--comment-write-duration)
+    var(--comment-delay, 0ms) steps(var(--comment-write-steps), end) both;
 }
 
 .diary-rendered-comment img {
@@ -2788,6 +2796,8 @@ html:has(.diary-content-section textarea:focus) {
   .diary-stamp,
   .diary-correction,
   .diary-star-mark,
+  .diary-star-path,
+  .diary-star-mask-finish,
   .diary-profanity-check,
   .diary-rendered-comment {
     animation: none;
@@ -2795,6 +2805,14 @@ html:has(.diary-content-section textarea:focus) {
     clip-path: none;
     -webkit-mask-image: none;
     mask-image: none;
+  }
+
+  .diary-star-path {
+    stroke-dashoffset: 0;
+  }
+
+  .diary-star-mask-finish {
+    opacity: 1;
   }
 
   .diary-stamp {
