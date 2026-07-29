@@ -635,7 +635,7 @@ html:has(.diary-content-section textarea:focus) {
   margin: -2px clamp(16px, 5vw, 24px) 5px;
   padding: 8px 12px 7px;
   border: 1px solid rgba(80, 142, 181, 0.14);
-  border-radius: 999px;
+  border-radius: 20px 15px 18px 17px;
   background: rgba(255, 255, 255, 0.68);
   box-shadow: 0 5px 18px rgba(70, 125, 160, 0.08);
   color: var(--summer-sea);
