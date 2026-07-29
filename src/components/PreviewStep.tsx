@@ -394,8 +394,7 @@ export function PreviewStep({
   }, [analysis, draft, includesAiGeneratedContent]);
 
   const isPreviewPreparing =
-    analysisState.status === "loading" ||
-    sketchState.status === "loading";
+    analysisState.status === "loading" || sketchState.status === "loading";
 
   useEffect(() => {
     if (!isPreviewPreparing) {
@@ -490,23 +489,21 @@ export function PreviewStep({
                   />
                 </strong>
               </span>
-              {draft.weather !== "unknown" && (
-                <span className="diary-weather">
-                  <img
-                    className="diary-weather-icon"
-                    src={weatherIconUrl(draft.weather)}
-                    alt=""
-                    aria-hidden="true"
+              <span className="diary-weather">
+                <img
+                  className="diary-weather-icon"
+                  src={weatherIconUrl(draft.weather)}
+                  alt=""
+                  aria-hidden="true"
+                />
+                <strong>
+                  <HandwrittenText
+                    text={weatherLabel(draft.weather)}
+                    seedOffset={40}
+                    strength={0.45}
                   />
-                  <strong>
-                    <HandwrittenText
-                      text={weatherLabel(draft.weather)}
-                      seedOffset={40}
-                      strength={0.45}
-                    />
-                  </strong>
-                </span>
-              )}
+                </strong>
+              </span>
             </div>
 
             <div
