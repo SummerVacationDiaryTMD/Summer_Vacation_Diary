@@ -3,7 +3,7 @@ import { SafeAreaInsets } from "@apps-in-toss/web-framework";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import "./App.css";
-import { AiQuotaNotice } from "./components/AiQuotaNotice";
+import { AiQuotaNotice, AiRecheckNotice } from "./components/AiQuotaNotice";
 import { DiaryButton } from "./components/DiaryButton";
 import { DiaryShareModal } from "./components/DiaryShareModal";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
@@ -554,43 +554,43 @@ function App() {
       </div>
 
       {step === "upload" && (
-        <PhotoUploadStep
-          photoDataUrl={draft.photoDataUrl}
-          canRedraw={sketchAllowed}
-          isDrawingInProgress={isDrawingInProgress}
-          onPhotoChange={({
-            dataUrl,
-            sourceHash,
-            reusedSketchDataUrl,
-            redraw,
-          }) => {
-            setPhotoSourceHash(sourceHash);
-            // 다시 그리기 means the previous drawing is gone for good. Clearing
-            // the draft below is not enough: the caches would hand it straight
-            // back and the ledger would still count this photo as paid for, so
-            // the new request could never go out.
-            if (redraw === true) {
-              discardSketch(dataUrl, sourceHash);
-            }
-            // A sketch belongs to exactly one photo — replacing the photo
-            // must drop the old drawing in the same state update, or the
-            // preview could pair the new photo with the previous sketch. The
-            // one exception is a drawing the user explicitly asked to reuse,
-            // which also keeps the sketch hook from spending a request.
-            updateDraft({
-              photoDataUrl: dataUrl,
-              sketchDataUrl: reusedSketchDataUrl ?? null,
-            });
-          }}
-        />
+        <>
+          <AiQuotaNotice />
+          <PhotoUploadStep
+            photoDataUrl={draft.photoDataUrl}
+            canRedraw={sketchAllowed}
+            isDrawingInProgress={isDrawingInProgress}
+            onPhotoChange={({
+              dataUrl,
+              sourceHash,
+              reusedSketchDataUrl,
+              redraw,
+            }) => {
+              setPhotoSourceHash(sourceHash);
+              // 다시 그리기 means the previous drawing is gone for good. Clearing
+              // the draft below is not enough: the caches would hand it straight
+              // back and the ledger would still count this photo as paid for, so
+              // the new request could never go out.
+              if (redraw === true) {
+                discardSketch(dataUrl, sourceHash);
+              }
+              // A sketch belongs to exactly one photo — replacing the photo
+              // must drop the old drawing in the same state update, or the
+              // preview could pair the new photo with the previous sketch. The
+              // one exception is a drawing the user explicitly asked to reuse,
+              // which also keeps the sketch hook from spending a request.
+              updateDraft({
+                photoDataUrl: dataUrl,
+                sketchDataUrl: reusedSketchDataUrl ?? null,
+              });
+            }}
+          />
+        </>
       )}
       {step === "write" && (
         <>
-          <AiQuotaNotice
-            showRecheckNotice={
-              analyzeRecheckNoticeVisible && analysisState.status !== "success"
-            }
-          />
+          {analyzeRecheckNoticeVisible &&
+            analysisState.status !== "success" && <AiRecheckNotice />}
           <WriteStep
             draft={draft}
             onChange={(patch) => {

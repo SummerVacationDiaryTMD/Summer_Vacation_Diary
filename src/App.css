@@ -4109,11 +4109,6 @@ html:has(.diary-content-section textarea:focus) {
   line-height: 1.35;
 }
 
-.ai-quota-counter-footer strong {
-  color: #ba5a49;
-  font-weight: 700;
-}
-
 .ai-quota-counter.is-exhausted {
   border-color: rgba(226, 112, 90, 0.42);
   background:
@@ -4156,11 +4151,51 @@ html:has(.diary-content-section textarea:focus) {
   }
 }
 
+.app-shell-upload > .ai-quota-notice,
 .app-shell-write > .ai-quota-notice {
   position: relative;
   z-index: 2;
+  flex: 0 0 auto;
   width: auto;
   margin: 0 clamp(16px, 5vw, 24px) 8px;
+}
+
+.app-shell-upload > .ai-quota-notice {
+  margin-bottom: 6px;
+}
+
+.app-shell-upload > .ai-quota-counter {
+  gap: 5px;
+  padding: 8px 10px 7px;
+}
+
+.app-shell-upload > .ai-quota-counter .ai-quota-counter-heading {
+  gap: 0;
+}
+
+.app-shell-upload > .ai-quota-counter .ai-quota-counter-value {
+  min-width: 50px;
+  padding: 3px 7px 2px;
+}
+
+.app-shell-upload > .ai-quota-counter .ai-quota-counter-value strong {
+  font-size: 19px;
+}
+
+.app-shell-upload > .ai-quota-counter .ai-quota-meter > span {
+  height: 4px;
+}
+
+.app-shell-upload > .ai-quota-counter .ai-quota-counter-footer {
+  display: none;
+}
+
+.app-shell-upload > .ai-quota-counter.is-exhausted .ai-quota-counter-footer {
+  display: flex;
+}
+
+.app-shell-upload > :is(.ai-quota-notice-neutral, .ai-quota-notice-warning) {
+  padding: 8px 10px;
 }
 
 @media (max-width: 359px), (max-height: 600px) {
