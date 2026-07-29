@@ -190,13 +190,13 @@ invalid-response
 }
 ```
 
-| 필드                 | 타입             | 클라이언트 조건                                  |
-| -------------------- | ---------------- | ------------------------------------------------ |
-| `action`             | string           | 항상 `analyze`                                   |
-| `input.photoDataUrl` | string 또는 null | 현재 사진 data URL                               |
-| `input.title`        | string           | 화면 최대 15자, 공백만 입력 불가                 |
-| `input.content`      | string           | 화면 최대 65자, 진입 시 공백 제거 기준 20자 이상 |
-| `input.weather`      | string           | 한국어 표시값 5개 중 하나                        |
+| 필드                 | 타입             | 클라이언트 조건                  |
+| -------------------- | ---------------- | -------------------------------- |
+| `action`             | string           | 항상 `analyze`                   |
+| `input.photoDataUrl` | string 또는 null | 현재 사진 data URL               |
+| `input.title`        | string           | 화면 최대 15자, 공백만 입력 불가 |
+| `input.content`      | string           | 화면 최대 65자, 공백만 입력 불가 |
+| `input.weather`      | string           | 한국어 표시값 5개 중 하나        |
 
 - **timeout:** 30초
 - **Path·Query parameter:** 없음

@@ -103,7 +103,7 @@ Supabase에는 사용량 제한용 `public.diary_ai_rate_limits` 테이블이 �
 - 제목 최대 15 code point
 - 본문 최대 65 code point
 - 공백뿐인 제목 거부
-- 공백 제거 본문 최소 20자
+- 공백뿐인 본문 거부
 - newline은 입력 시 공백으로 치환
 
 ### 분석 응답
