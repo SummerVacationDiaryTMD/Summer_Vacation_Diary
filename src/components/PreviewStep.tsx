@@ -498,7 +498,7 @@ export function PreviewStep({
             style={frameRegionStyle(frameLayout.comment, frameLayout)}
           >
             {animatedAnalysis === null && (
-              <div className="diary-comment-label">선생님 한줄평</div>
+              <div className="diary-comment-label">선생님 한마디</div>
             )}
 
             {analysisState.status === "loading" && (

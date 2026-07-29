@@ -374,7 +374,7 @@ function drawComment(
   if (context.measureText(comment).width <= contentWidth) {
     context.font = COMMENT_LABEL_FONT;
     context.fillStyle = LABEL_COLOR;
-    context.fillText("선생님 한줄평", x + paddingX, y + 27);
+    context.fillText("선생님 한마디", x + paddingX, y + 27);
 
     context.font = COMMENT_FONT;
     context.fillStyle = COMMENT_COLOR;
@@ -385,8 +385,8 @@ function drawComment(
 
   context.font = COMMENT_LABEL_FONT;
   context.fillStyle = LABEL_COLOR;
-  context.fillText("선생님 한줄평", x + paddingX, y + 43);
-  const labelWidth = context.measureText("선생님 한줄평").width;
+  context.fillText("선생님 한마디", x + paddingX, y + 43);
+  const labelWidth = context.measureText("선생님 한마디").width;
 
   context.font = COMMENT_FONT;
   context.fillStyle = COMMENT_COLOR;
