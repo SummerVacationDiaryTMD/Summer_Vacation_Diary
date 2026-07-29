@@ -130,6 +130,7 @@ function App() {
   // Not part of the draft: it is only a cache key, and persisting it would mean
   // versioning the draft shape for something that dies with the session anyway.
   const [photoSourceHash, setPhotoSourceHash] = useState<string | null>(null);
+  const [weatherEffectKey, setWeatherEffectKey] = useState(0);
   const quota = useAiQuota();
   // Refused outright by country, which unlike the daily budgets never comes
   // back — so it gates both operations rather than one.
@@ -342,7 +343,10 @@ function App() {
     // Navigation is never gated on the budget: unavailable AI results fall
     // back to the original photo or an uncommented diary, and 완성하기 still
     // works from there.
-    if (analyzeAllowed) {
+    // A success state belongs to the CURRENT AI input signature. Date is not
+    // part of that signature, so date-only edits return to the completed
+    // preview without calling the server or consuming another opportunity.
+    if (analyzeAllowed && analysisState.status !== "success") {
       runAnalysis();
     }
 
@@ -464,8 +468,13 @@ function App() {
     <main
       className={`app-shell app-shell-${step} weather-${draft.weather}${isAndroid ? " app-shell-android" : ""}`}
     >
-      <div className="summer-sky-accent" aria-hidden="true">
+      <div
+        key={`${draft.weather}-${weatherEffectKey}`}
+        className="summer-sky-accent"
+        aria-hidden="true"
+      >
         <span className="summer-sun" />
+        <span className="summer-moon" />
         <span className="summer-cloud summer-cloud-one" />
         <span className="summer-cloud summer-cloud-two" />
         <span className="summer-cloud summer-cloud-extra summer-cloud-three" />
@@ -473,7 +482,9 @@ function App() {
         <span className="summer-cloud summer-cloud-extra summer-cloud-five" />
         <span className="summer-cloud summer-cloud-extra summer-cloud-six" />
         <span className="summer-weather-rain" />
-        <span className="summer-weather-lightning" />
+        <span className="summer-weather-lightning summer-weather-lightning-one" />
+        <span className="summer-weather-lightning summer-weather-lightning-two" />
+        <span className="summer-weather-lightning summer-weather-lightning-three" />
         <span className="summer-weather-stars" />
       </div>
       <Top
@@ -550,9 +561,19 @@ function App() {
       {step === "write" && (
         <>
           <AnalyzeQuotaNotice
-            showRecheckNotice={analyzeRecheckNoticeVisible}
+            showRecheckNotice={
+              analyzeRecheckNoticeVisible && analysisState.status !== "success"
+            }
           />
-          <WriteStep draft={draft} onChange={updateDraft} />
+          <WriteStep
+            draft={draft}
+            onChange={(patch) => {
+              if (patch.weather !== undefined) {
+                setWeatherEffectKey((key) => key + 1);
+              }
+              updateDraft(patch);
+            }}
+          />
         </>
       )}
       {step === "preview" && (
@@ -617,7 +638,11 @@ function App() {
             aria-disabled={!canPreview}
             onClick={handlePreview}
           >
-            {hasVisitedPreview ? "다시 검사 받기" : "검사 받기"}
+            {analysisState.status === "success"
+              ? "미리보기로 돌아가기"
+              : hasVisitedPreview
+                ? "다시 검사 받기"
+                : "검사 받기"}
           </DiaryButton>
         </AppBottomBar>
       )}

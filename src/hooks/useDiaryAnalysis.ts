@@ -22,7 +22,7 @@ export type AnalysisState =
 // an older draft is never shown against newer content.
 type InternalState =
   | { status: "idle" }
-  | { status: "loading" }
+  | { status: "loading"; signature: string }
   | { status: "success"; analysis: DiaryAnalysis; signature: string }
   | {
       status: "error";
@@ -43,24 +43,31 @@ const CACHE_MAX_ENTRIES = 3;
 function toPublicState(
   internal: InternalState,
   signature: string,
+  cached: DiaryAnalysis | undefined,
 ): AnalysisState {
-  if (internal.status === "idle" || internal.status === "loading") {
-    return internal;
+  if (internal.status === "loading" && internal.signature === signature) {
+    return { status: "loading" };
   }
-  // A result produced by different input falls back to idle rather than
-  // loading. With an explicit trigger there is no effect queued up to replace
-  // it, so idle is what puts the 검사 받기 call to action back in front of the
-  // user instead of a spinner that would never resolve.
-  if (internal.signature !== signature) {
-    return { status: "idle" };
+  if (
+    internal.status !== "idle" &&
+    internal.status !== "loading" &&
+    internal.signature === signature
+  ) {
+    return internal.status === "success"
+      ? { status: "success", analysis: internal.analysis }
+      : {
+          status: "error",
+          message: internal.message,
+          retryable: internal.retryable,
+        };
   }
-  return internal.status === "success"
-    ? { status: "success", analysis: internal.analysis }
-    : {
-        status: "error",
-        message: internal.message,
-        retryable: internal.retryable,
-      };
+
+  // Restore a result synchronously when the user returns to an input that was
+  // already checked (A → B → A). No server request or quota is needed, and the
+  // preview can skip the processing screen just like an unchanged diary.
+  return cached === undefined
+    ? { status: "idle" }
+    : { status: "success", analysis: cached };
 }
 
 /**
@@ -101,7 +108,7 @@ export function useDiaryAnalysis(draft: DiaryDraft) {
 
     // Stale-response guard: only the newest run may commit state.
     const requestId = ++requestIdRef.current;
-    setInternalState({ status: "loading" });
+    setInternalState({ status: "loading", signature });
 
     // Reuse the in-flight request when the input hasn't changed (a double tap,
     // or navigating away and back mid-analysis) instead of paying twice.
@@ -160,5 +167,12 @@ export function useDiaryAnalysis(draft: DiaryDraft) {
       });
   }, [photoDataUrl, title, content, weather, signature]);
 
-  return { state: toPublicState(internalState, signature), run };
+  return {
+    state: toPublicState(
+      internalState,
+      signature,
+      cacheRef.current.get(signature),
+    ),
+    run,
+  };
 }

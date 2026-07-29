@@ -571,6 +571,7 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .app-top {
+  z-index: 3;
   background: transparent !important;
 }
 
@@ -599,6 +600,30 @@ html:has(.diary-content-section textarea:focus) {
     0 0 0 10px rgba(255, 215, 102, 0.18),
     0 0 0 18px rgba(255, 215, 102, 0.08),
     0 8px 22px rgba(232, 168, 42, 0.2);
+}
+
+.summer-moon {
+  position: absolute;
+  top: 28px;
+  right: 34px;
+  width: 54px;
+  height: 54px;
+  opacity: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 68% 30%,
+      rgba(130, 149, 178, 0.28) 0 4px,
+      transparent 4.5px
+    ),
+    radial-gradient(
+      circle at 34% 67%,
+      rgba(130, 149, 178, 0.2) 0 5px,
+      transparent 5.5px
+    ),
+    radial-gradient(circle at 36% 28%, #fffdf0 0 11%, transparent 12%), #f5f0d9;
+  box-shadow: 0 5px 18px rgba(225, 235, 255, 0.28);
+  transform: translate3d(12px, -8px, 0) scale(0.9);
 }
 
 .summer-cloud {
@@ -631,6 +656,7 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .summer-sun,
+.summer-moon,
 .summer-cloud {
   transition:
     opacity 420ms ease,
@@ -651,23 +677,34 @@ html:has(.diary-content-section textarea:focus) {
 
 .summer-weather-rain {
   inset: 20px -48px -48px;
-  background-image: url(
-    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='31' height='280' viewBox='0 0 31 280'%3E%3Cpath d='M30 -20L0 300' fill='none' stroke='%23497e99' stroke-opacity='.52' stroke-width='.5' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E"
-  );
-  background-repeat: repeat-x;
-  background-size: 31px 100%;
-  transform: translate3d(12px, -42px, 0);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='176' height='220' viewBox='0 0 176 220'%3E%3Cg fill='none' stroke='%23fff' stroke-linecap='round'%3E%3Cpath d='M26 5l-9 25' stroke-width='2.8' stroke-opacity='.72'/%3E%3Cpath d='M79 25l-12 34' stroke-width='3.6' stroke-opacity='.88'/%3E%3Cpath d='M142 2l-8 23' stroke-width='2.4' stroke-opacity='.64'/%3E%3Cpath d='M41 101l-11 30' stroke-width='3.2' stroke-opacity='.82'/%3E%3Cpath d='M112 84l-9 26' stroke-width='2.6' stroke-opacity='.7'/%3E%3Cpath d='M164 126l-13 36' stroke-width='3.8' stroke-opacity='.9'/%3E%3Cpath d='M73 171l-8 22' stroke-width='2.5' stroke-opacity='.62'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 176px 220px;
+  filter: drop-shadow(0 1px 1px rgba(72, 103, 119, 0.18));
+  transform: translate3d(18px, -34px, 0) rotate(7deg);
 }
 
 .summer-weather-lightning {
+  --lightning-rotation: 7deg;
+
   top: 72px;
   right: 78px;
-  width: 24px;
-  height: 68px;
-  background: #ffe477;
-  clip-path: polygon(54% 0, 100% 0, 68% 38%, 94% 38%, 20% 100%, 40% 54%, 8% 54%);
-  filter: drop-shadow(0 0 7px rgba(255, 235, 128, 0.72));
-  transform: rotate(7deg) scale(0.85);
+  width: 30px;
+  height: 76px;
+  background: #fff29a;
+  clip-path: polygon(
+    54% 0,
+    100% 0,
+    68% 38%,
+    94% 38%,
+    20% 100%,
+    40% 54%,
+    8% 54%
+  );
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.96))
+    drop-shadow(0 0 10px rgba(255, 224, 91, 0.96))
+    drop-shadow(0 0 18px rgba(255, 237, 139, 0.7));
+  transform: rotate(var(--lightning-rotation)) scale(0.85);
 }
 
 .summer-weather-stars {
@@ -688,23 +725,36 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 /* The selected weather follows the diary through upload, writing and preview. */
+.app-shell.weather-sunny .summer-sun {
+  animation: summer-sun-arrive 900ms cubic-bezier(0.16, 0.72, 0.28, 1) both;
+}
+
+.app-shell.weather-sunny .summer-cloud-one {
+  animation: summer-sunny-cloud-left 760ms cubic-bezier(0.2, 0.72, 0.28, 1) both;
+}
+
+.app-shell.weather-sunny .summer-cloud-two {
+  animation: summer-sunny-cloud-right 820ms cubic-bezier(0.2, 0.72, 0.28, 1)
+    50ms both;
+}
+
 .app-shell.weather-partly-cloudy .summer-cloud-one {
-  top: 68px;
-  right: 64px;
+  top: 72px;
+  right: 62px;
   left: auto;
   opacity: 0.96;
-  transform: scale(1.18) rotate(-3deg);
-  animation: summer-partly-cloud-left 720ms cubic-bezier(0.22, 0.72, 0.28, 1)
+  transform: scale(1.52) rotate(-3deg);
+  animation: summer-partly-cloud-left 420ms cubic-bezier(0.22, 0.72, 0.28, 1)
     both;
 }
 
 .app-shell.weather-partly-cloudy .summer-cloud-two {
-  top: 66px;
-  right: -2px;
-  opacity: 0.96;
-  transform: scale(1.08) rotate(3deg);
-  animation: summer-partly-cloud-right 680ms
-    cubic-bezier(0.22, 0.72, 0.28, 1) 40ms both;
+  top: 84px;
+  right: 8px;
+  opacity: 0.92;
+  transform: scale(1.25) rotate(3deg);
+  animation: summer-partly-cloud-right 380ms cubic-bezier(0.22, 0.72, 0.28, 1)
+    20ms both;
 }
 
 .app-shell.weather-cloudy {
@@ -735,11 +785,15 @@ html:has(.diary-content-section textarea:focus) {
 
 .app-shell.weather-cloudy .summer-cloud-one {
   transform: scale(1.18) rotate(-3deg);
+  animation: summer-cloudy-drift-left 620ms cubic-bezier(0.2, 0.72, 0.28, 1)
+    both;
 }
 
 .app-shell.weather-cloudy .summer-cloud-two {
   opacity: 0.88;
   transform: scale(0.9) rotate(3deg);
+  animation: summer-cloudy-drift-right 560ms cubic-bezier(0.2, 0.72, 0.28, 1)
+    50ms both;
 }
 
 .app-shell.weather-cloudy .summer-cloud-three {
@@ -747,6 +801,7 @@ html:has(.diary-content-section textarea:focus) {
   left: 18px;
   opacity: 0.72;
   transform: scale(0.72) rotate(2deg);
+  animation: summer-cloudy-fade 520ms ease-out 80ms both;
 }
 
 .app-shell.weather-cloudy .summer-cloud-four {
@@ -754,6 +809,7 @@ html:has(.diary-content-section textarea:focus) {
   right: 116px;
   opacity: 0.82;
   transform: scale(0.86) rotate(-4deg);
+  animation: summer-cloudy-fade 560ms ease-out 120ms both;
 }
 
 .app-shell.weather-cloudy .summer-cloud-five {
@@ -761,6 +817,7 @@ html:has(.diary-content-section textarea:focus) {
   left: 92px;
   opacity: 0.76;
   transform: scale(0.68) rotate(4deg);
+  animation: summer-cloudy-fade 600ms ease-out 160ms both;
 }
 
 .app-shell.weather-cloudy .summer-cloud-six {
@@ -768,6 +825,7 @@ html:has(.diary-content-section textarea:focus) {
   right: -14px;
   opacity: 0.68;
   transform: scale(0.78) rotate(-2deg);
+  animation: summer-cloudy-fade 640ms ease-out 200ms both;
 }
 
 .app-shell.weather-rainy {
@@ -809,10 +867,9 @@ html:has(.diary-content-section textarea:focus) {
   transform: scale(0.94) rotate(3deg);
 }
 
-.app-shell.weather-rainy .summer-weather-rain,
-.app-shell.weather-stormy .summer-weather-rain {
+.app-shell.weather-rainy .summer-weather-rain {
   opacity: 1;
-  animation: summer-rain-fall 720ms linear infinite;
+  animation: summer-rain-settle 920ms cubic-bezier(0.2, 0.7, 0.28, 1) both;
 }
 
 .app-shell.weather-stormy {
@@ -831,13 +888,51 @@ html:has(.diary-content-section textarea:focus) {
   filter: brightness(0.72);
 }
 
-.app-shell.weather-stormy .summer-weather-rain {
-  filter: brightness(0.82);
+.app-shell.weather-stormy .summer-cloud-one {
+  top: 52px;
+  right: 34px;
+  left: auto;
+  transform: scale(1.24) rotate(-3deg);
 }
 
-.app-shell.weather-stormy .summer-weather-lightning {
+.app-shell.weather-stormy .summer-cloud-two {
+  top: 132px;
+  right: 44px;
+}
+
+.app-shell.weather-stormy .summer-weather-rain {
   opacity: 1;
-  animation: summer-lightning-flash 2.8s ease-in-out infinite;
+  filter: brightness(0.82);
+  animation: summer-storm-rain-settle 940ms cubic-bezier(0.2, 0.7, 0.28, 1) 80ms
+    both;
+}
+
+.app-shell.weather-stormy .summer-weather-lightning-one {
+  top: 44px;
+  right: 50px;
+  width: 26px;
+  height: 52px;
+  animation: summer-lightning-strike 760ms ease-out 360ms both;
+}
+
+.app-shell.weather-stormy .summer-weather-lightning-two {
+  --lightning-rotation: -6deg;
+
+  top: 50px;
+  right: 8px;
+  width: 18px;
+  height: 42px;
+  animation: summer-lightning-strike 700ms ease-out 500ms both;
+}
+
+.app-shell.weather-stormy .summer-weather-lightning-three {
+  --lightning-rotation: 12deg;
+
+  top: 58px;
+  right: 94px;
+  width: 16px;
+  height: 36px;
+  animation: summer-lightning-strike 660ms ease-out 610ms both;
 }
 
 .app-shell.weather-unknown {
@@ -852,15 +947,27 @@ html:has(.diary-content-section textarea:focus) {
   );
 }
 
-.app-shell.weather-unknown
-  :is(.summer-cloud-one, .summer-cloud-two) {
+.app-shell.weather-unknown :is(.summer-cloud-one, .summer-cloud-two) {
   opacity: 0.18;
   filter: brightness(0.72) saturate(0.72);
 }
 
+.app-shell.weather-unknown .summer-moon {
+  opacity: 1;
+  animation: summer-moon-rise 620ms cubic-bezier(0.2, 0.72, 0.28, 1) both;
+}
+
 .app-shell.weather-unknown .summer-weather-stars {
   opacity: 0.94;
-  animation: summer-stars-twinkle 2.6s ease-in-out infinite alternate;
+  animation: summer-stars-appear 820ms ease-out both;
+}
+
+.app-shell.weather-partly-cloudy .app-top :is(h1, h2, p, span),
+.app-shell.weather-cloudy .app-top :is(h1, h2, p, span),
+.app-shell.weather-rainy .app-top :is(h1, h2, p, span) {
+  text-shadow:
+    0 1px 3px rgba(255, 255, 255, 0.9),
+    0 0 10px rgba(255, 255, 255, 0.56);
 }
 
 .app-shell.weather-stormy .app-top :is(h1, h2, p, span),
@@ -869,50 +976,169 @@ html:has(.diary-content-section textarea:focus) {
   text-shadow: 0 1px 4px rgba(10, 29, 53, 0.48);
 }
 
-@keyframes summer-rain-fall {
-  to {
-    transform: translate3d(0, 0, 0);
+@keyframes summer-rain-settle {
+  0% {
+    opacity: 0;
+    transform: translate3d(18px, -58px, 0) rotate(7deg);
+  }
+
+  22% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.88;
+    transform: translate3d(4px, -4px, 0) rotate(7deg);
+  }
+}
+
+@keyframes summer-sun-arrive {
+  0% {
+    opacity: 0.42;
+    transform: translate3d(18px, -12px, 0) rotate(9deg) scale(0.9);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes summer-sunny-cloud-left {
+  0% {
+    opacity: 0.4;
+    transform: translate3d(-68px, 7px, 0) scale(0.7) rotate(-3deg);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translate3d(7px, -1px, 0) scale(0.9) rotate(-3deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(0.86) rotate(-3deg);
+  }
+}
+
+@keyframes summer-sunny-cloud-right {
+  0% {
+    opacity: 0.2;
+    transform: translate3d(58px, 9px, 0) scale(0.46) rotate(3deg);
+  }
+
+  72% {
+    opacity: 0.7;
+    transform: translate3d(-6px, -1px, 0) scale(0.62) rotate(3deg);
+  }
+
+  100% {
+    opacity: 0.62;
+    transform: translate3d(0, 0, 0) scale(0.58) rotate(3deg);
+  }
+}
+
+@keyframes summer-storm-rain-settle {
+  0% {
+    opacity: 0;
+    transform: translate3d(18px, -62px, 0) rotate(8deg);
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.78;
+    transform: translate3d(2px, -2px, 0) rotate(8deg);
   }
 }
 
 @keyframes summer-partly-cloud-left {
   from {
     opacity: 0.64;
-    transform: translate3d(-280px, 28px, 0) scale(0.86) rotate(-3deg);
+    transform: translate3d(-180px, 18px, 0) scale(1.08) rotate(-3deg);
   }
 }
 
 @keyframes summer-partly-cloud-right {
   from {
     opacity: 0.58;
-    transform: translate3d(54px, 88px, 0) scale(0.58) rotate(3deg);
+    transform: translate3d(64px, 34px, 0) scale(0.84) rotate(3deg);
   }
 }
 
-@keyframes summer-lightning-flash {
-  0%,
-  10%,
-  16%,
-  100% {
+@keyframes summer-cloudy-drift-left {
+  from {
+    opacity: 0.56;
+    transform: translate3d(-90px, 6px, 0) scale(1.06) rotate(-3deg);
+  }
+}
+
+@keyframes summer-cloudy-drift-right {
+  from {
+    opacity: 0.5;
+    transform: translate3d(78px, -4px, 0) scale(0.78) rotate(3deg);
+  }
+}
+
+@keyframes summer-cloudy-fade {
+  from {
     opacity: 0;
   }
+}
 
-  12%,
-  14% {
+@keyframes summer-lightning-strike {
+  0%,
+  28% {
+    opacity: 0;
+    transform: translate3d(0, -8px, 0) rotate(var(--lightning-rotation))
+      scale(0.72);
+  }
+
+  40% {
     opacity: 1;
-    transform: rotate(7deg) scale(1);
+    transform: translate3d(0, 0, 0) rotate(var(--lightning-rotation))
+      scale(1.08);
+  }
+
+  52% {
+    opacity: 0.28;
+  }
+
+  64%,
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(var(--lightning-rotation)) scale(1);
   }
 }
 
-@keyframes summer-stars-twinkle {
+@keyframes summer-moon-rise {
   from {
-    filter: drop-shadow(0 0 2px rgba(255, 244, 170, 0.45));
-    transform: scale(0.995);
+    opacity: 0;
+    transform: translate3d(12px, -8px, 0) scale(0.9);
   }
 
   to {
-    filter: drop-shadow(0 0 4px rgba(255, 244, 170, 0.76));
-    transform: scale(1.005);
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes summer-stars-appear {
+  0% {
+    opacity: 0;
+    filter: drop-shadow(0 0 1px rgba(255, 244, 170, 0.28));
+  }
+
+  55% {
+    opacity: 1;
+    filter: drop-shadow(0 0 5px rgba(255, 244, 170, 0.84));
+  }
+
+  100% {
+    opacity: 0.94;
+    filter: drop-shadow(0 0 3px rgba(255, 244, 170, 0.62));
   }
 }
 
@@ -920,13 +1146,21 @@ html:has(.diary-content-section textarea:focus) {
   .summer-weather-rain,
   .summer-weather-lightning,
   .summer-weather-stars,
+  .app-shell.weather-sunny .summer-sun,
+  .app-shell.weather-sunny .summer-cloud,
   .app-shell.weather-partly-cloudy .summer-cloud-one,
-  .app-shell.weather-partly-cloudy .summer-cloud-two {
+  .app-shell.weather-partly-cloudy .summer-cloud-two,
+  .app-shell.weather-cloudy .summer-cloud {
     animation: none !important;
   }
 
   .app-shell.weather-stormy .summer-weather-lightning {
-    opacity: 0.72;
+    opacity: 0.9;
+  }
+
+  .app-shell.weather-unknown .summer-moon {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -1657,13 +1891,21 @@ html:has(.diary-content-section textarea:focus) {
 
 /* --- Finished diary save/share sheet --- */
 
+.diary-share-layout {
+  --diary-share-inline-padding: var(--app-modal-bezel);
+
+  background: #ffffff;
+}
+
 .diary-share-body {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
-  gap: 16px;
-  padding: var(--app-modal-bezel);
+  gap: clamp(10px, 2vh, 16px);
+  padding: var(--app-modal-bezel) var(--diary-share-inline-padding);
+  overflow: hidden;
+  background: inherit;
 }
 
 .diary-share-summary {
@@ -1696,7 +1938,7 @@ html:has(.diary-content-section textarea:focus) {
 
 .diary-share-preview-wrap {
   display: flex;
-  flex: 0 0 auto;
+  flex: 1 1 0;
   align-items: center;
   justify-content: center;
   min-height: 80px;
@@ -1705,8 +1947,10 @@ html:has(.diary-content-section textarea:focus) {
 
 .diary-share-preview {
   display: block;
-  width: 100%;
-  height: auto;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
   min-height: 0;
   object-fit: contain;
   border-radius: 12px;
@@ -1728,11 +1972,15 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .diary-share-footer {
+  --app-control-height: clamp(48px, 7.5dvh, 58px);
+
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 12px var(--app-modal-bezel) var(--app-modal-bezel);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.04);
+  padding: 12px var(--diary-share-inline-padding) var(--app-modal-bezel);
+  border-top: 0;
+  background: inherit;
+  box-shadow: none;
 }
 
 .diary-share-feedback {
@@ -3677,13 +3925,13 @@ html:has(.diary-content-section textarea:focus) {
     padding-bottom: calc(12px + var(--app-safe-bottom));
   }
 
-  .photo-consent-scroll-body,
-  .diary-share-body {
+  .photo-consent-scroll-body {
     gap: 12px;
     padding: 14px 16px;
   }
 
   .diary-share-body {
     gap: 10px;
+    padding-block: 14px;
   }
 }
