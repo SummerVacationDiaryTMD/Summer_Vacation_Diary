@@ -1667,7 +1667,7 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .diary-share-summary {
-  padding: 2px 2px 0;
+  padding: 2px 0 0;
 }
 
 .diary-share-summary-title {
@@ -1696,7 +1696,7 @@ html:has(.diary-content-section textarea:focus) {
 
 .diary-share-preview-wrap {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   min-height: 80px;
@@ -1706,7 +1706,7 @@ html:has(.diary-content-section textarea:focus) {
 .diary-share-preview {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   min-height: 0;
   object-fit: contain;
   border-radius: 12px;
@@ -1769,8 +1769,8 @@ html:has(.diary-content-section textarea:focus) {
   background: transparent;
   color: #4e5968;
   font-family: "NanumCoDingHeuiMang", sans-serif;
-  font-size: 18px;
-  font-weight: 400;
+  font-size: 20px;
+  font-weight: 700;
   line-height: 1.4;
   white-space: nowrap;
   cursor: pointer;
@@ -2034,8 +2034,8 @@ html:has(.diary-content-section textarea:focus) {
      #fffdf6 sheet this composited to ~rgb(223,210,186) and read as no rule at
      all. This lands near rgb(200,183,155), clearly a drawn line. */
   --diary-rule-color: rgba(154, 126, 80, 0.55);
-  --diary-textarea-pad-top: 2px;
-  --diary-textarea-pad-bottom: 8px;
+  --diary-textarea-pad-top: 8px;
+  --diary-textarea-pad-bottom: 2px;
 
   scroll-margin-block: 16px;
 }
@@ -2055,18 +2055,16 @@ html:has(.diary-content-section textarea:focus) {
 .diary-content-section textarea {
   width: 100% !important;
   box-sizing: border-box !important;
-  /* 4 bands minimum, 5 maximum. Multiples of the pitch plus the padding, so
-     the last band is never sliced mid-line (the old 128/160 were not). */
-  min-height: calc(
-    4 * var(--diary-rule-pitch) + var(--diary-textarea-pad-top) +
-      var(--diary-textarea-pad-bottom)
-  ) !important;
-  max-height: calc(
+  /* Keep five ruled bands visible: newlines must not move the sections below. */
+  height: calc(
     5 * var(--diary-rule-pitch) + var(--diary-textarea-pad-top) +
       var(--diary-textarea-pad-bottom)
   ) !important;
-  padding: var(--diary-textarea-pad-top) 0 var(--diary-textarea-pad-bottom) !important;
-  resize: vertical !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: var(--diary-textarea-pad-top) 0 var(--diary-textarea-pad-bottom) 0 !important;
+  resize: none !important;
+  overflow: hidden !important;
   font-family: "NanumCoDingHeuiMang", sans-serif !important;
   font-size: 19px !important;
   line-height: var(--diary-rule-pitch) !important;
@@ -2084,7 +2082,8 @@ html:has(.diary-content-section textarea:focus) {
   background-color: transparent !important;
   background-repeat: repeat !important;
   background-size: 100% var(--diary-rule-pitch) !important;
-  background-position: 0 var(--diary-textarea-pad-top) !important;
+  /* Anchor the last ruled line to the field bottom, where TDS draws focus. */
+  background-position: 0 calc(100% - var(--diary-rule-offset)) !important;
   background-origin: padding-box !important;
   /* Clips the tile that would otherwise repeat up into the top padding and
      paint a stray rule above the first line. */
@@ -2101,6 +2100,10 @@ html:has(.diary-content-section textarea:focus) {
   padding-right: 0 !important;
   padding-left: 0 !important;
   box-sizing: border-box;
+}
+
+.diary-field-control {
+  position: relative;
 }
 
 .diary-title-section .diary-field-control > div {
@@ -2124,7 +2127,7 @@ html:has(.diary-content-section textarea:focus) {
 
 .write-form-surface input[aria-label="제목"] {
   width: 100% !important;
-  padding-right: 0 !important;
+  padding-right: 48px !important;
   padding-left: 0 !important;
   font-family: "NanumCoDingHeuiMang", sans-serif !important;
   font-size: 21px !important;
@@ -2198,19 +2201,34 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .diary-character-status {
+  position: absolute;
+  right: 0;
+  bottom: 7px;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   min-height: 18px;
-  margin: 7px 0 0;
-  padding: 0;
+  margin: 0;
+  padding: 0 2px;
+  background: rgba(255, 251, 234, 0.9);
   color: #645738;
   font-size: 16px;
   line-height: 1.4;
 }
 
 .diary-character-status-title {
+  bottom: 4px;
+  justify-content: flex-end;
+}
+
+.diary-character-status-content {
+  bottom: 10px;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  line-height: 1;
   justify-content: flex-end;
 }
 
