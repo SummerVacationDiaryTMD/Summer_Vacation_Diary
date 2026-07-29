@@ -488,6 +488,25 @@ html:has(.diary-content-section textarea:focus) {
   );
 }
 
+/* 사진 선택과 미리보기는 한 화면 안에서 완결되는 단계입니다. 뷰포트
+   높이를 넘겨 문서 스크롤이 생기지 않도록 남은 공간을 본문에 배분합니다. */
+.app-shell-upload,
+.app-shell-preview {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  flex-direction: column;
+  overscroll-behavior: none;
+}
+
+.app-shell-upload > .step-body,
+.app-shell-preview > .step-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
 .app-shell::before {
   content: "";
   position: absolute;
@@ -735,11 +754,11 @@ html:has(.diary-content-section textarea:focus) {
 .app-bottom-bar {
   position: fixed;
   z-index: 50;
-  right: max(24px, calc(12px + var(--app-safe-right)));
+  right: max(clamp(16px, 5vw, 24px), calc(12px + var(--app-safe-right)));
   bottom: calc(16px + var(--app-safe-bottom));
-  left: max(24px, calc(12px + var(--app-safe-left)));
+  left: max(clamp(16px, 5vw, 24px), calc(12px + var(--app-safe-left)));
   width: auto;
-  max-width: 400px;
+  max-width: 432px;
   box-sizing: border-box;
   margin: 0 auto;
   padding: 0;
@@ -825,6 +844,21 @@ html:has(.diary-content-section textarea:focus) {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.app-shell-upload .photo-selected {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.app-shell-upload .photo-placeholder,
+.app-shell-upload .photo-preview {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.app-shell-upload .photo-placeholder {
+  aspect-ratio: auto;
 }
 
 .photo-preview {
@@ -1938,8 +1972,11 @@ html:has(.diary-content-section textarea:focus) {
   color: #5a442c;
   font-family: "NanumCoDingHeuiMang", sans-serif;
   font-size: 21px;
+  font-weight: 900;
   line-height: 1.4;
   letter-spacing: 0.04em;
+  -webkit-text-stroke: 0.7px currentcolor;
+  paint-order: stroke fill;
   pointer-events: none;
 }
 
@@ -2191,6 +2228,7 @@ html:has(.diary-content-section textarea:focus) {
 
 .preview-step .diary-card {
   width: min(100%, 44dvh);
+  max-height: 100%;
   filter: drop-shadow(0 14px 24px rgba(61, 105, 132, 0.12));
 }
 
