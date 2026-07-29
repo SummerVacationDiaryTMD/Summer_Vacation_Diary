@@ -102,6 +102,15 @@ interface DiaryDraft {
 
 이는 데이터베이스 모델이 아니라 한 기기의 작업 사본입니다.
 
+## 완성 일기 보관
+
+`src/services/diaryStore.ts`는 완성한 일기를 기기에 보관하는 서비스 계층입니다. 작업 사본인 draft와 달리, 다시 만들 수 없는 결과물을 다루므로 저장 실패를 조용히 넘기지 않고 `DiaryStoreError`로 알립니다. 아직 어떤 화면과도 연결되어 있지 않습니다.
+
+- 저장 위치: 토스 앱에서는 Apps in Toss `Storage` 브리지, 브라우저 개발 환경에서는 localStorage. WebView의 웹 저장소는 미니앱 URL 기준으로 분리되고 OS가 정리할 수 있어 네이티브 저장소를 기본 경로로 둡니다. 그 결과 같은 토스 앱 안에서도 draft와 보관 일기의 보존 수명이 다릅니다.
+- key 구조: 목록용 `summer-vacation-diary:diary-index:v1`(이미지 없는 요약 배열)과 일기별 `summer-vacation-diary:diary:v1:<id>`. 목록 조회가 이미지 바이트를 읽지 않고, 저장이 기존 일기를 다시 쓰지 않도록 나눴습니다.
+- 일관성: 저장은 항목 → index 순으로 씁니다. 중간에 실패하면 화면에 보이지 않는 항목만 남고, 목록에 있는데 열 수 없는 일기는 생기지 않습니다. index에 남은 끊어진 참조는 `getDiary`가 발견할 때 정리합니다.
+- 정렬은 저장이 아니라 조회 시점에 날짜·저장 시각 내림차순으로 수행합니다.
+
 ## 사진 처리 흐름
 
 ```mermaid
@@ -179,8 +188,8 @@ Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 �
 | Supabase `diary-ai` | inspect: 필요한 사진 변환·사진/본문 분석, quota: 익명 식별 header                  | `supabaseEdge.ts`         |
 | Supabase PostgreSQL | scope·식별자 hash·action·window별 요청 횟수                                         | `diary_ai_rate_limits`    |
 | OpenAI              | 클라이언트가 직접 호출하지 않음. 별도 Edge Function 뒤의 실제 전달은 서버 확인 필요 | 저장소 밖                 |
-| Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지                                     | web-framework runtime API |
-| localStorage        | draft, quota snapshot, 브라우저 설치 ID                                             | 기기 내                   |
+| Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지, 완성 일기 보관(`Storage`, 화면 미연결) | web-framework runtime API |
+| localStorage        | draft, quota snapshot, 브라우저 설치 ID, 완성 일기 보관의 브라우저 대체 경로        | 기기 내                   |
 | 메모리              | 분석 캐시, 그림 캐시, 진행 요청 ledger, 완성 JPEG                                   | 현재 앱 실행              |
 
 ## 인증·인가

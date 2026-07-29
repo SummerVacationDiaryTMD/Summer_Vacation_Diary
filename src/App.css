@@ -4261,3 +4261,286 @@ html:has(.diary-content-section textarea:focus) {
     padding-block: 14px;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   Grape calendar (temporary layout)
+   Bunch = month, bead = day. Plain circles and flex rows on purpose: the real
+   grape stylesheet will replace this, so nothing here should be worth keeping.
+---------------------------------------------------------------------------- */
+
+.app-shell-calendar {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  flex-direction: column;
+  overscroll-behavior: none;
+}
+
+.grape-calendar-view {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.grape-calendar-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  padding-bottom: 96px;
+  overflow-y: auto;
+}
+
+.grape-calendar-description {
+  margin: 0 0 8px;
+  color: #5d6b68;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.grape-calendar-note {
+  margin: 0;
+  padding: 12px 0;
+  color: #5d6b68;
+  font-size: 14px;
+  text-align: center;
+}
+
+.grape-bunch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0 20px;
+}
+
+.grape-bunch-title {
+  margin: 0 0 4px;
+  color: #4a3364;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.grape-stem {
+  display: flex;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+}
+
+.grape-stem-stick {
+  width: 4px;
+  height: 18px;
+  border-radius: 2px;
+  background: #7a5c3e;
+}
+
+.grape-leaf {
+  width: 26px;
+  height: 16px;
+  margin-left: -2px;
+  border-radius: 0 100% 0 100%;
+  background: #4c9a52;
+}
+
+.grape-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Rows overlap slightly so the beads read as one bunch rather than a grid. */
+.grape-row {
+  display: flex;
+  margin-top: -6px;
+  justify-content: center;
+}
+
+.grape-bead {
+  display: flex;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  margin: 0 -2px;
+  padding: 0;
+  border: 2px solid #8e6bb5;
+  border-radius: 50%;
+  background: #fdfcff;
+  color: #6b4f8a;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.grape-bead-stamped {
+  border-color: #6b3fa0;
+  background: #8e5bd0;
+  color: #fff;
+  cursor: pointer;
+}
+
+.grape-bead-day {
+  position: relative;
+  z-index: 1;
+}
+
+.grape-bead-stamp {
+  position: absolute;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+/* Covers everything, including the header and the bottom bar, so the only
+   sharp and bright thing on screen is the diary itself. The solid tint is the
+   fallback: without backdrop-filter the page still goes dark, just not blurry.
+   z-index clears .app-bottom-bar at 50. */
+.grape-viewer-layer {
+  display: flex;
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  backdrop-filter: blur(10px) saturate(0.85);
+  -webkit-backdrop-filter: blur(10px) saturate(0.85);
+  background: rgba(24, 14, 36, 0.62);
+  animation: grape-veil 220ms ease-out;
+  touch-action: pan-y;
+}
+
+@keyframes grape-veil {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Starts at the tapped bead's centre (passed in as --grape-pop-*) and swells
+   into place, so the diary reads as coming out of that bead. */
+.grape-viewer-card {
+  display: flex;
+  width: 100%;
+  max-width: 420px;
+  max-height: 100%;
+  flex-direction: column;
+  gap: 10px;
+  animation: grape-pop 320ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+
+@keyframes grape-pop {
+  from {
+    transform: translate(var(--grape-pop-dx, 0), var(--grape-pop-dy, 0))
+      scale(0.12);
+    opacity: 0;
+  }
+  to {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+.grape-viewer-head {
+  text-align: center;
+}
+
+.grape-viewer-date {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
+}
+
+.grape-viewer-title {
+  margin: 2px 0 0;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.grape-viewer-stage {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.grape-viewer-image {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  object-fit: contain;
+}
+
+.grape-viewer-note {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  text-align: center;
+}
+
+.grape-viewer-error {
+  margin: 0;
+  color: #ffd5d5;
+  font-size: 13px;
+  text-align: center;
+}
+
+.grape-viewer-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.grape-viewer-arrow {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-family: inherit;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.grape-viewer-arrow:disabled {
+  opacity: 0.3;
+}
+
+.grape-viewer-count {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.grape-viewer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grape-viewer-layer,
+  .grape-viewer-card {
+    animation: none;
+  }
+}
+
+/* Upload step puts its two actions on an even split, unlike the later steps
+   where the primary action is given the wider half. */
+.app-bottom-bar-content-even {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
