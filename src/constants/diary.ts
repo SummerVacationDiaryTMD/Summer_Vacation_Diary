@@ -15,7 +15,11 @@ export const WEATHER_OPTIONS = [
     label: "천둥번개",
     iconUrl: "/weather/stormy.webp",
   },
-  { value: "unknown", label: "모름", iconUrl: "" },
+  {
+    value: "unknown",
+    label: "모름",
+    iconUrl: "/weather/unknown.webp",
+  },
 ] as const;
 
 export type WeatherValue = (typeof WEATHER_OPTIONS)[number]["value"];
