@@ -606,7 +606,7 @@ export function PreviewStep({
                 style={
                   {
                     ...frameRegionStyle(frameLayout.comment, frameLayout),
-                    "--comment-write-duration": `${Math.max(animatedAnalysis.comment.length, 1) * 180}ms`,
+                    "--comment-write-duration": `${Math.max(animatedAnalysis.comment.length, 1) * 50}ms`,
                     "--comment-delay": `${commentDelayMs}ms`,
                     "--comment-write-steps": Math.max(
                       animatedAnalysis.comment.length,
