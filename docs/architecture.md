@@ -153,18 +153,12 @@ sequenceDiagram
 
 사용자에게 사진 변환과 일기 분석 횟수를 따로 노출하지 않습니다.
 `useAiQuota`는 서버 snapshot의 공통 `all` counter를 통합 기회의
-권위값으로 사용합니다. 이전 서버가 `all`을 생략할 때만 다음 fallback을
-사용합니다.
-
-- 통합 한도: `min(sketch.limit, analyze.limit)`
-- 통합 사용량: `max(sketch.used, analyze.used)`
-- 그림 요청 진행 중에는 sketch ledger를 사용량에 선반영
-- 통합 잔여량이 0이면 그림 변환과 분석을 함께 선차단
+유일한 권위값으로 사용합니다. 그림 요청 진행 중에는 sketch ledger를
+`all` 사용량에 선반영하고, 통합 잔여량이 0이면 두 작업을 함께 선차단합니다.
 
 클라이언트는 필요한 그림·분석 작업을 하나의 `inspect` 요청으로 모읍니다.
 서버 RPC는 사용자 `all`과 IP를 요청당 한 번만 원자적으로 증가시키고,
 서비스 전체 사용량은 실제 실행한 sketch·analyze 작업만 각각 증가시킵니다.
-fallback 계산은 이전 서버의 배포 호환용입니다.
 
 ## 완성 이미지 흐름
 

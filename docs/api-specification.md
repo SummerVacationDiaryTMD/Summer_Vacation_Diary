@@ -34,16 +34,6 @@
 ```json
 {
   "quota": {
-    "sketch": {
-      "used": 0,
-      "limit": 0,
-      "remaining": 0
-    },
-    "analyze": {
-      "used": 0,
-      "limit": 0,
-      "remaining": 0
-    },
     "all": {
       "used": 0,
       "limit": 3,
@@ -62,33 +52,15 @@
 
 | 필드                | 타입·제약                                                   |
 | ------------------- | ----------------------------------------------------------- |
-| `sketch`, `analyze` | `used`, `limit`, `remaining`이 모두 number                  |
-| `all`               | 통합 AI 검사 카운터. 이전 서버와의 호환을 위해 누락 허용  |
+| `all`               | 필수 통합 AI 검사 카운터                                    |
 | `resetAt`           | 파싱 가능한 ISO date string                                 |
 | `blocked`           | `null`, `device`, `ip-burst`, `ip-daily`, `service` 중 하나 |
 | `region.allowed`    | boolean. 누락 시 클라이언트는 `true`로 호환 처리            |
 | `region.country`    | ISO 3166-1 alpha-2 string 또는 `null`로 기대                |
 | `testMode`          | `true`일 때만 true, 누락 시 false                           |
 
-클라이언트는 두 작업을 사용자에게 별도 기회로 노출하지 않습니다. 서버가
-`quota.all`을 반환하면 이를 통합 `AI 검사 기회`의 권위값으로 사용합니다.
-
-이전 Function처럼 `all`이 없을 때만 배포 호환 fallback으로 다음 값을
-계산합니다.
-
-```ts
-limit = Math.min(quota.sketch.limit, quota.analyze.limit);
-used = Math.min(Math.max(quota.sketch.used, quota.analyze.used), limit);
-remaining = Math.max(limit - used, 0);
-```
-
-진행 중인 그림 요청은 `quota.sketch.used`에 로컬 ledger 수량을 먼저
-합산한 뒤 같은 계산을 적용합니다. 이 fallback은 기존 서버에서 통합
-3회를 보수적으로 표시하고 선차단하기 위한 것이며, 서로 다른 action의
-사용량이 엇갈린 뒤 한쪽이 따라잡는 경우에는 매 실행마다 정확히 1회가
-증가했는지 판별할 수 없습니다.
-
-새 서버는 필요한 작업을 하나의 `inspect` 요청으로 묶고, 사용자 `all`
+클라이언트는 `quota.all`만 통합 `AI 검사 기회`의 권위값으로 사용합니다.
+서버는 필요한 작업을 하나의 `inspect` 요청으로 묶고, 사용자 `all`
 counter와 IP counter를 요청당 한 번만 원자적으로 차감합니다. 서비스
 counter는 실제 실행한 sketch·analyze 작업별로 유지합니다.
 
@@ -198,7 +170,6 @@ invalid-image
 model-unavailable
 rate-limited
 region-blocked
-sketch-daily-limit-exceeded
 ip-burst-limit-exceeded
 ip-daily-limit-exceeded
 service-daily-limit-exceeded
@@ -266,7 +237,6 @@ network
 invalid-key
 rate-limited
 region-blocked
-analyze-daily-limit-exceeded
 ip-burst-limit-exceeded
 ip-daily-limit-exceeded
 service-daily-limit-exceeded

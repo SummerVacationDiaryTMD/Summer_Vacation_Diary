@@ -25,12 +25,9 @@ export type SketchErrorCode =
   | "model-unavailable"
   | "rate-limited"
   | "region-blocked"
-  | "sketch-daily-limit-exceeded"
   | "ip-burst-limit-exceeded"
   | "ip-daily-limit-exceeded"
   | "service-daily-limit-exceeded"
-  // Legacy: the server stopped sending this when limits went per-action. Kept
-  // so rolling the Edge Function back cannot produce a blank message.
   | "daily-limit-exceeded"
   | "quota-exceeded"
   | "content-blocked"
@@ -47,7 +44,6 @@ export const SKETCH_ERROR_CAUSES: Record<SketchErrorCode, string> = {
   "content-blocked": "부적절한 이미지때문에",
   "invalid-image": "깨진 이미지때문에",
   "region-blocked": "해외 IP라서",
-  "sketch-daily-limit-exceeded": "오늘 AI 검사 기회를 다 써서",
   "ip-daily-limit-exceeded": "오늘 AI 검사 기회를 다 써서",
   "service-daily-limit-exceeded": "오늘 AI 검사 기회를 다 써서",
   "daily-limit-exceeded": "오늘 AI 검사 기회를 다 써서",
@@ -71,7 +67,6 @@ const NON_RETRYABLE_SKETCH_CODES: readonly SketchErrorCode[] = [
   "content-blocked",
   "invalid-image",
   "region-blocked",
-  "sketch-daily-limit-exceeded",
   "ip-daily-limit-exceeded",
   "service-daily-limit-exceeded",
   "daily-limit-exceeded",

@@ -61,24 +61,6 @@ function withPending(counter: QuotaCounter, pending: number): QuotaCounterView {
 }
 
 /**
- * The Edge Function still reports per-action counters, while the product
- * exposes one combined inspection budget. Whichever action has been used more
- * determines how many bundled opportunities are gone; the smaller server
- * limit is the safe shared ceiling during rolling deployments.
- */
-function toCombinedView(
-  sketch: QuotaCounter,
-  analyze: QuotaCounter,
-  pendingSketches: number,
-): QuotaCounterView {
-  const sketchWithPending = withPending(sketch, pendingSketches);
-  const limit = Math.min(sketchWithPending.limit, analyze.limit);
-  const used = Math.min(Math.max(sketchWithPending.used, analyze.used), limit);
-  const remaining = Math.max(limit - used, 0);
-  return { used, limit, remaining, available: remaining > 0 };
-}
-
-/**
  * Fetches the current usage snapshot. `invokeDiaryAi` records it into the store
  * on the way through, so there is nothing to return. Failures are swallowed on
  * purpose: a missing counter must never block the diary flow, and the server
@@ -141,14 +123,7 @@ export function useAiQuota(): AiQuotaView {
     }
     return {
       mode: "ready",
-      completion:
-        snapshot.all === null
-          ? toCombinedView(
-              snapshot.sketch,
-              snapshot.analyze,
-              pendingSketches,
-            )
-          : withPending(snapshot.all, pendingSketches),
+      completion: withPending(snapshot.all, pendingSketches),
       blocked: snapshot.blocked,
       region: snapshot.region,
       resetAt: snapshot.resetAt,

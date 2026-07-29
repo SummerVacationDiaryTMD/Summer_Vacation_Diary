@@ -50,12 +50,9 @@ export type AnalysisErrorCode =
   | "invalid-key"
   | "rate-limited"
   | "region-blocked"
-  | "analyze-daily-limit-exceeded"
   | "ip-burst-limit-exceeded"
   | "ip-daily-limit-exceeded"
   | "service-daily-limit-exceeded"
-  // Legacy: the server stopped sending this when limits went per-action. Kept
-  // so rolling the Edge Function back cannot produce a blank message.
   | "daily-limit-exceeded"
   | "api-error"
   | "invalid-response";
@@ -66,7 +63,6 @@ export const ANALYSIS_ERROR_MESSAGES: Record<AnalysisErrorCode, string> = {
   "invalid-key": "AI 연결 설정을 확인해 주세요.",
   "rate-limited": "지금은 요청이 많아요. 잠시 후 다시 시도해 주세요.",
   "region-blocked": "해외에서는 선생님이 일기를 검사해 줄 수 없어요.",
-  "analyze-daily-limit-exceeded": `오늘의 AI 검사 기회를 모두 사용했어요.\n${QUOTA_RESET_NOTICE}`,
   "ip-burst-limit-exceeded":
     "잠깐 사이에 요청이 너무 많았어요. 잠시 후 다시 시도해 주세요.",
   "ip-daily-limit-exceeded": `같은 인터넷에서 오늘 이용할 수 있는 횟수를 모두 사용했어요.\n${QUOTA_RESET_NOTICE}`,
@@ -81,7 +77,6 @@ export const ANALYSIS_ERROR_MESSAGES: Record<AnalysisErrorCode, string> = {
 // offer a retry button for them.
 const NON_RETRYABLE_ANALYSIS_CODES: readonly AnalysisErrorCode[] = [
   "region-blocked",
-  "analyze-daily-limit-exceeded",
   "ip-daily-limit-exceeded",
   "service-daily-limit-exceeded",
   "daily-limit-exceeded",
