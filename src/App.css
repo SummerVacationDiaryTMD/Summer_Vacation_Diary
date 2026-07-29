@@ -3872,6 +3872,643 @@ html:has(.diary-content-section textarea:focus) {
   margin: 0 clamp(16px, 5vw, 24px) 8px;
 }
 
+/* --- Praise grape archive --- */
+
+.praise-grape-screen {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  padding: calc(12px + var(--app-safe-top))
+    max(clamp(12px, 4vw, 20px), var(--app-safe-right)) var(--app-safe-bottom)
+    max(clamp(12px, 4vw, 20px), var(--app-safe-left));
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: linear-gradient(
+    180deg,
+    #b8e9f8 0 126px,
+    #f9f4e8 126px,
+    #fffdf7 100%
+  );
+  color: #44374a;
+  font-family: "NanumCoDingHeuiMang", sans-serif;
+  overscroll-behavior: contain;
+}
+
+.praise-grape-screen::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 104px;
+  right: -30px;
+  width: 120px;
+  height: 52px;
+  border-radius: 52% 48% 44% 56%;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow:
+    -58px 10px 0 -10px rgba(255, 255, 255, 0.7),
+    -18px -14px 0 -9px rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+}
+
+.praise-grape-screen::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: calc(15px + var(--app-safe-top));
+  right: max(17px, var(--app-safe-right));
+  width: 66px;
+  height: 66px;
+  border: 3px solid rgba(255, 246, 188, 0.84);
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 35% 32%,
+      rgba(255, 250, 214, 0.88) 0 5px,
+      transparent 6px
+    ),
+    linear-gradient(145deg, #ffe788 0%, #ffd45d 72%);
+  box-shadow:
+    0 0 0 8px rgba(255, 223, 105, 0.16),
+    0 5px 12px rgba(192, 139, 38, 0.18);
+  pointer-events: none;
+}
+
+.praise-grape-top,
+.praise-grape-paper {
+  position: relative;
+  z-index: 1;
+}
+
+.praise-grape-top {
+  display: flex;
+  min-height: 82px;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 4px 10px;
+}
+
+.praise-grape-top > div {
+  min-width: 0;
+  padding-right: 68px;
+}
+
+.praise-grape-top h1,
+.praise-grape-top p {
+  margin: 0;
+}
+
+.praise-grape-top h1 {
+  color: #5d286a;
+  font-size: clamp(27px, 8vw, 34px);
+  line-height: 1.15;
+  letter-spacing: 0.02em;
+}
+
+.praise-grape-top p {
+  margin-top: 4px;
+  color: #5f6470;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.praise-grape-back {
+  display: inline-flex;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 2px solid rgba(105, 48, 119, 0.48);
+  border-radius: 16px 13px 15px 12px;
+  background:
+    radial-gradient(
+      circle at 27% 23%,
+      rgba(255, 255, 255, 0.94) 0 3px,
+      transparent 4px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 9px,
+      rgba(125, 174, 194, 0.08) 9px 10px
+    ),
+    #fffbea;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.72),
+    0 3px 0 rgba(103, 52, 113, 0.16),
+    0 6px 11px rgba(80, 50, 87, 0.1);
+  color: #5d286a;
+  cursor: pointer;
+  transform: rotate(-1deg);
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.praise-grape-back:active {
+  transform: translateY(2px) rotate(0deg) scale(0.97);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.68),
+    0 1px 0 rgba(103, 52, 113, 0.14);
+}
+
+.praise-grape-arrow-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.6;
+}
+
+.praise-grape-back:focus-visible,
+.praise-grape-month-picker button:focus-visible,
+.praise-grape-berry:focus-visible,
+.praise-gallery-close:focus-visible {
+  outline: 3px dashed rgba(107, 52, 123, 0.42);
+  outline-offset: 3px;
+}
+
+.praise-grape-paper {
+  width: 100%;
+  max-width: 440px;
+  box-sizing: border-box;
+  margin: clamp(48px, 6vh, 58px) auto 0;
+  padding: 10px clamp(8px, 3vw, 14px) 94px;
+  border: 2px solid rgba(217, 199, 164, 0.72);
+  border-radius: 30px 24px 28px 22px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0 8%,
+      rgba(220, 124, 124, 0.12) 8% 8.4%,
+      transparent 8.4%
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 31px,
+      rgba(83, 153, 183, 0.14) 32px,
+      transparent 33px
+    ),
+    rgba(255, 253, 245, 0.96);
+  box-shadow:
+    inset 0 0 0 4px rgba(255, 255, 255, 0.62),
+    0 10px 24px rgba(88, 69, 39, 0.12);
+}
+
+.praise-grape-month-picker {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 46px;
+  align-items: center;
+  margin: 0 2px 4px;
+}
+
+.praise-grape-month-picker h2 {
+  margin: 0;
+  color: #5d286a;
+  font-size: 23px;
+  line-height: 46px;
+  text-align: center;
+}
+
+.praise-grape-month-picker button {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  padding: 0;
+  border: 1.5px solid rgba(111, 51, 125, 0.32);
+  border-radius: 14px 12px 13px 11px;
+  background:
+    radial-gradient(
+      circle at 28% 24%,
+      rgba(255, 255, 255, 0.95) 0 2px,
+      transparent 3px
+    ),
+    linear-gradient(145deg, #fffdf5 0%, #f6edcf 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.62),
+    0 2px 0 rgba(111, 51, 125, 0.13),
+    0 4px 8px rgba(74, 45, 79, 0.07);
+  color: #6f337d;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease;
+}
+
+.praise-grape-month-picker button:first-child {
+  transform: rotate(-1.5deg);
+}
+
+.praise-grape-month-picker button:last-child {
+  transform: rotate(1.5deg);
+}
+
+.praise-grape-month-picker button:active {
+  transform: translateY(1px) scale(0.96);
+  background: linear-gradient(145deg, #fbf5df 0%, #eee0b9 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.58),
+    0 1px 0 rgba(111, 51, 125, 0.12);
+}
+
+.praise-grape-month-picker .praise-grape-arrow-icon {
+  width: 21px;
+  height: 21px;
+  stroke-width: 2.4;
+}
+
+.praise-grape-illustration {
+  position: relative;
+  width: 100%;
+  padding-top: 68px;
+}
+
+.praise-grape-leaves {
+  position: absolute;
+  z-index: 0;
+  top: -8px;
+  left: 50%;
+  display: block;
+  width: 218px;
+  height: 108px;
+  overflow: visible;
+  transform: translateX(-51%);
+  filter: drop-shadow(0 3px 1px rgba(39, 83, 51, 0.16));
+}
+
+.praise-grape-leaves path:not(.praise-grape-stem, .praise-grape-leaf-line) {
+  fill: #70a67c;
+  stroke: #fffdf7;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.praise-grape-leaves .praise-grape-stem {
+  fill: none;
+  stroke: #765343;
+  stroke-linecap: round;
+  stroke-width: 13;
+}
+
+.praise-grape-leaves .praise-grape-leaf-line {
+  fill: none;
+  opacity: 0.4;
+  stroke: #397653;
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.praise-grape-sign {
+  position: absolute;
+  z-index: 5;
+  top: 54px;
+  left: calc(50% + 92px);
+  width: 52px;
+  padding: 8px 2px;
+  border: 3px solid #fffdf7;
+  border-radius: 47% 53% 44% 56%;
+  background: #fffdf7;
+  box-shadow:
+    0 0 0 2px rgba(112, 54, 127, 0.15),
+    0 4px 6px rgba(70, 40, 75, 0.12);
+  color: #6d2e78;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.05;
+  text-align: center;
+  transform: rotate(7deg);
+}
+
+.praise-grape-cluster {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 5px;
+}
+
+.praise-grape-row {
+  display: flex;
+  justify-content: center;
+  gap: 1px;
+  min-height: 50px;
+  margin-top: -4px;
+}
+
+.praise-grape-row:first-child {
+  margin-top: 0;
+}
+
+.praise-grape-berry {
+  position: relative;
+  display: inline-flex;
+  width: clamp(46px, 13vw, 52px);
+  height: clamp(46px, 13vw, 52px);
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #7a3988;
+  box-shadow:
+    0 0 0 1px #7a3988,
+    0 2px 3px rgba(78, 32, 87, 0.17);
+  color: #8d8990;
+  font-family: "NanumCoDingHeuiMang", sans-serif;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    filter 140ms ease;
+}
+
+.praise-grape-berry::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: inherit;
+  background: #fffdf7;
+  box-shadow: inset 0 1px 3px rgba(89, 66, 95, 0.1);
+}
+
+.praise-grape-berry:not(:disabled):active {
+  z-index: 3;
+  transform: scale(0.92);
+  filter: brightness(0.96);
+}
+
+.praise-grape-berry:disabled {
+  cursor: default;
+}
+
+.praise-grape-berry.has-diaries::before {
+  background: #fff9e8;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 215, 102, 0.55),
+    inset 0 1px 3px rgba(89, 66, 95, 0.1);
+}
+
+.praise-grape-day {
+  position: relative;
+  z-index: 2;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.praise-grape-berry.has-diaries .praise-grape-day {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  display: inline-flex;
+  min-width: 19px;
+  height: 19px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 1px 3px 0;
+  border: 1.5px solid #7a3988;
+  border-radius: 10px;
+  background: #fffdf7;
+  color: #63306e;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.praise-grape-stamp {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 39px;
+  height: 39px;
+  object-fit: contain;
+  opacity: 0.94;
+  pointer-events: none;
+}
+
+.praise-grape-stamp-effort {
+  width: 37px;
+  height: 37px;
+}
+
+.praise-grape-count {
+  position: absolute;
+  z-index: 3;
+  top: -1px;
+  right: -1px;
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fffdf7;
+  border-radius: 50%;
+  background: #ed735e;
+  color: #ffffff;
+  font: 800 11px/1 sans-serif;
+}
+
+.praise-grape-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 18px;
+  color: #675b69;
+  font-size: clamp(19px, 5.3vw, 22px);
+  font-weight: 700;
+}
+
+.praise-grape-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.praise-grape-legend img {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+}
+
+.praise-grape-message {
+  min-height: 22px;
+  margin: 8px 4px 0;
+  color: #6b6470;
+  font-size: clamp(20px, 5.4vw, 23px);
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.praise-grape-message-error {
+  color: #c64d51;
+}
+
+/* Day gallery */
+
+.praise-gallery-panel {
+  width: min(calc(100vw - 24px), calc(100% - 24px), 440px) !important;
+}
+
+.praise-gallery-layout {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 31px,
+      rgba(83, 153, 183, 0.1) 32px,
+      transparent 33px
+    ),
+    #fffdf7;
+}
+
+.praise-gallery-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px var(--app-modal-bezel) 12px;
+  border-bottom: 1px solid rgba(111, 75, 117, 0.12);
+}
+
+.praise-gallery-header h2 {
+  color: #5d286a;
+}
+
+.praise-gallery-header h2:focus {
+  outline: none;
+}
+
+.praise-gallery-header p {
+  margin: 4px 0 0;
+  color: #6b6470;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.praise-gallery-close {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0 4px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(111, 51, 125, 0.09);
+  color: #63306e;
+  font: 400 29px/1 sans-serif;
+  cursor: pointer;
+}
+
+.praise-gallery-stage {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 12px var(--app-modal-bezel);
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.praise-gallery-image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 12px;
+  background: #f2f4f6;
+  box-shadow: 0 6px 16px rgba(61, 45, 66, 0.14);
+  object-fit: contain;
+  user-select: none;
+  animation: praise-gallery-image-in 180ms ease-out both;
+}
+
+.praise-gallery-loading {
+  margin: 0;
+  color: #6b6470;
+  font-size: 15px;
+}
+
+.praise-gallery-navigation {
+  --app-control-height: 46px;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px minmax(0, 1fr);
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px var(--app-modal-bezel) var(--app-modal-bezel);
+  border-top: 1px solid rgba(111, 75, 117, 0.12);
+}
+
+.praise-gallery-navigation .summer-diary-button {
+  font-size: 17px !important;
+}
+
+.praise-gallery-page {
+  color: #5d286a;
+  font-family: "NanumCoDingHeuiMang", sans-serif;
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+}
+
+@keyframes praise-gallery-image-in {
+  from {
+    opacity: 0.55;
+    transform: translateX(8px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@media (max-width: 350px) {
+  .praise-grape-screen {
+    padding-inline: 8px;
+  }
+
+  .praise-grape-paper {
+    padding-inline: 5px;
+  }
+
+  .praise-grape-sign {
+    left: calc(50% + 82px);
+  }
+
+  .praise-grape-legend {
+    gap: 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .praise-grape-berry,
+  .praise-gallery-image {
+    animation: none;
+    transition: none;
+  }
+}
+
 @media (max-width: 359px), (max-height: 600px) {
   .app-modal-title {
     font-size: 20px;

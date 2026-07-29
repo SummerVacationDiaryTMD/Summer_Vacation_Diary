@@ -27,6 +27,7 @@
 | F-09 | 앱 링크 공유               | 구현 완료 | `DiaryShareModal.tsx`, `diaryShare.ts`                                    |
 | F-10 | 사용량 안내·차단           | 부분 구현 | `useAiQuota.ts`, `aiQuotaStore.ts`; 서버 강제 정책 확인 필요              |
 | F-11 | 새 일기 시작               | 구현 완료 | `App.tsx`, `useDiaryDraft.ts`                                             |
+| F-12 | 칭찬 포도·완성 일기 모아보기 | 구현 완료 | `PraiseGrapeScreen.tsx`, `completedDiaryStore.ts`                        |
 
 ## F-01 온보딩 시작
 
@@ -170,7 +171,7 @@
 - **권한:** `granite.config.ts` 권한 배열은 비어 있음. 저장은 런타임 API 또는 브라우저 다운로드 사용
 - **관련 화면:** 미리보기, 완성 모달
 - **관련 API:** Apps in Toss `saveBase64Data`
-- **관련 데이터:** 완성 이미지는 React 메모리에 머물고 저장 요청 시 기기로 전달됨
+- **관련 데이터:** 완성 이미지는 완료 모달의 React 상태와 기기 IndexedDB에 저장되며, 저장 요청 시 별도로 기기에 전달됨
 - **완료 조건:** 저장 API 완료 또는 브라우저 다운로드 시작
 - **상태:** `구현 완료`
 - **근거:** `src/App.tsx`, `src/utils/diaryImage.ts`, `src/services/diaryExport.ts`, `src/components/DiaryShareModal.tsx`
@@ -227,6 +228,23 @@
 - **상태:** `구현 완료`
 - **근거:** `src/App.tsx`, `src/hooks/useDiaryDraft.ts`
 
+## F-12 칭찬 포도·완성 일기 모아보기
+
+- **목적:** 날짜별 평가를 포도알 도장으로 확인하고 그날 완성한 그림일기를 다시 봅니다.
+- **Actor:** 사용자
+- **사전 조건:** 온보딩을 닫고 업로드 화면에 진입함
+- **입력:** `칭찬 포도`, 이전·다음 달, 완성 일기가 있는 포도알, 좌우 스와이프 또는 이전·다음 버튼
+- **정상 흐름:** 완성 시 날짜·완성 JPEG·분석 도장을 IndexedDB에 저장합니다. 같은 날짜의 일기 중 `great`가 하나라도 있으면 `참 잘했어요`, 하나도 없고 모든 일기가 `effort`이면 `좀 더 열심히` 도장을 표시합니다. 포도알을 누르면 작성 순서대로 이미지를 열고 2~3개인 경우 현재 페이지를 표시합니다.
+- **예외 흐름:** 분석 없이 완성한 기존 fallback 일기는 평가를 임의 생성하지 않고 날짜와 이미지만 보관합니다. 저장소를 열지 못하면 완성을 중단하고 재시도를 안내합니다.
+- **출력:** 월별 1일 1포도알, 날짜별 집계 도장, 최대 3장의 완성 일기 갤러리
+- **권한:** 없음
+- **관련 화면:** 업로드 하단 버튼, 칭찬 포도, 날짜별 완성 일기 모달
+- **관련 API:** 없음
+- **관련 데이터:** IndexedDB `summer-vacation-diary`의 `completed-diaries` 요약 store와 `completed-diary-images` 이미지 store
+- **완료 조건:** 날짜별 최대 3개가 보관되고, OR 집계 결과와 갤러리 순서·페이지가 일치함
+- **상태:** `구현 완료`
+- **근거:** `src/App.tsx`, `src/components/PraiseGrapeScreen.tsx`, `src/components/DiaryGalleryModal.tsx`, `src/services/completedDiaryStore.ts`
+
 ## 수동 회귀 확인
 
 자동 테스트 프레임워크가 없으므로 변경 영향에 맞춰 다음을 확인합니다.
@@ -242,6 +260,9 @@
 - [ ] 모션 감소 설정과 320×600 화면에서도 완료 문구와 모든 액션을 사용할 수 있다.
 - [ ] 토스 WebView와 브라우저에서 저장·공유 대체 경로가 동작한다.
 - [ ] `새 일기 쓰기`가 현재 입력과 완성 모달을 초기화한다.
+- [ ] 업로드 하단에 `칭찬 포도`와 `일기 쓰러 가기`가 좌우로 표시된다.
+- [ ] 같은 날짜의 도장이 `great OR` 규칙으로 집계되고 최대 3개 제한이 적용된다.
+- [ ] 완성 일기 1개는 단독 표시되고, 2~3개는 스와이프·버튼·페이지 표시로 이동한다.
 
 ## 관련 문서
 

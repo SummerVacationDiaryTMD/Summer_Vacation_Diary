@@ -7,6 +7,7 @@ import { AnalyzeQuotaNotice } from "./components/AiQuotaNotice";
 import { DiaryButton } from "./components/DiaryButton";
 import { DiaryShareModal } from "./components/DiaryShareModal";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
+import { PraiseGrapeScreen } from "./components/PraiseGrapeScreen";
 import { PreviewStep } from "./components/PreviewStep";
 import { WriteStep } from "./components/WriteStep";
 import {
@@ -21,6 +22,11 @@ import { useSketch } from "./hooks/useSketch";
 import { composeDiaryImage } from "./utils/diaryImage";
 import { isAiConnected } from "./services/diaryAnalysis";
 import { isSketchAiConnected } from "./services/styleTransfer";
+import {
+  canAddCompletedDiary,
+  CompletedDiaryLimitError,
+  saveCompletedDiary,
+} from "./services/completedDiaryStore";
 
 // Plain state instead of a router: the flow is a strict 3-step wizard with no
 // deep links yet, so a router would add dependency weight without benefit.
@@ -121,6 +127,7 @@ function AppBottomBar({
 function App() {
   const isAndroid = /Android/i.test(navigator.userAgent);
   const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showPraiseGrape, setShowPraiseGrape] = useState(false);
   const [step, setStep] = useState<Step>("upload");
   // Always open on a fresh diary. Draft persistence remains available in the
   // hook, but this flow must not restore a previous visit's photo or text.
@@ -182,6 +189,9 @@ function App() {
     imageDataUrl: string;
     fileName: string;
   } | null>(null);
+  // Re-completing after "계속 보기" updates the same archive entry. A new
+  // diary gets a new id only through the explicit "새 일기 쓰기" action.
+  const [currentArchiveId, setCurrentArchiveId] = useState<string | null>(null);
 
   const [hasVisitedWrite, setHasVisitedWrite] = useState(false);
   const [hasVisitedPreview, setHasVisitedPreview] = useState(false);
@@ -303,6 +313,10 @@ function App() {
         </div>
       </main>
     );
+  }
+
+  if (showPraiseGrape) {
+    return <PraiseGrapeScreen onClose={() => setShowPraiseGrape(false)} />;
   }
 
   const handleStartWriting = () => {
@@ -431,6 +445,24 @@ function App() {
       }
     }
 
+    try {
+      const canArchive = await canAddCompletedDiary(
+        draft.date,
+        currentArchiveId,
+      );
+      if (!canArchive) {
+        toast.openToast(
+          "이 날짜에는 일기를 3개까지 쓸 수 있어요. 다른 날짜를 골라 주세요.",
+        );
+        return;
+      }
+    } catch {
+      toast.openToast(
+        "칭찬 포도 저장소를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.",
+      );
+      return;
+    }
+
     setSaving(true);
     try {
       const { dataUrl: imageDataUrl } = await composeDiaryImage({
@@ -443,14 +475,27 @@ function App() {
           analysisState.status === "success" ? analysisState.analysis : null,
         includesAiGeneratedContent,
       });
+      const archivedDiary = await saveCompletedDiary({
+        id: currentArchiveId ?? undefined,
+        date: draft.date,
+        imageDataUrl,
+        stamp:
+          analysisState.status === "success"
+            ? analysisState.analysis.stamp
+            : null,
+      });
+      setCurrentArchiveId(archivedDiary.id);
       setFinishedDiary({
         imageDataUrl,
         // ASCII name (some Android managers mangle Korean) + a time suffix so
         // saving twice in one day can't collide on an identical fileName.
         fileName: `summer-diary-${draft.date}-${clockSuffix()}.jpg`,
       });
-    } catch {
-      const message = "그림일기 이미지를 만들지 못했어요. 다시 시도해 주세요.";
+    } catch (error) {
+      const message =
+        error instanceof CompletedDiaryLimitError
+          ? "이 날짜에는 일기를 3개까지 쓸 수 있어요. 다른 날짜를 골라 주세요."
+          : "완성 일기를 만들거나 칭찬 포도에 담지 못했어요. 다시 시도해 주세요.";
       // Retry button keeps the failure recoverable in place instead of
       // vanishing with the 3s toast.
       toast.openToast(message, {
@@ -599,6 +644,7 @@ function App() {
             setHasVisitedWrite(false);
             setHasVisitedPreview(false);
             setAnalyzeRecheckNoticeVisible(false);
+            setCurrentArchiveId(null);
 
             setStep("upload");
           }}
@@ -606,7 +652,16 @@ function App() {
       )}
 
       {step === "upload" && (
-        <AppBottomBar>
+        <AppBottomBar double>
+          <DiaryButton
+            tone="secondary"
+            stable
+            fullWidth
+            onClick={() => setShowPraiseGrape(true)}
+          >
+            칭찬 포도
+          </DiaryButton>
+
           <DiaryButton
             stable
             feedbackDisabled
