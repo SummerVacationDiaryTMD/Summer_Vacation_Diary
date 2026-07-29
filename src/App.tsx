@@ -492,10 +492,10 @@ function App() {
 
   return (
     <main
-      className={`app-shell app-shell-${step} weather-${draft.weather}${isAndroid ? " app-shell-android" : ""}`}
+      className={`app-shell app-shell-${step} weather-${draft.weather} time-${draft.timeOfDay}${isAndroid ? " app-shell-android" : ""}`}
     >
       <div
-        key={`${draft.weather}-${weatherEffectKey}`}
+        key={`${draft.weather}-${draft.timeOfDay}-${weatherEffectKey}`}
         className="summer-sky-accent"
         aria-hidden="true"
       >
@@ -594,7 +594,10 @@ function App() {
           <WriteStep
             draft={draft}
             onChange={(patch) => {
-              if (patch.weather !== undefined) {
+              if (
+                patch.weather !== undefined ||
+                patch.timeOfDay !== undefined
+              ) {
                 setWeatherEffectKey((key) => key + 1);
               }
               updateDraft(patch);

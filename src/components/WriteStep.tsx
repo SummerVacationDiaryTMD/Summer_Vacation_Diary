@@ -38,7 +38,8 @@ function exceedsDiaryWritingArea(
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index] ?? "";
     for (const character of Array.from(line)) {
-      const characterWidth = context.measureText(character).width + letterSpacing;
+      const characterWidth =
+        context.measureText(character).width + letterSpacing;
       const lineLimit =
         row === CONTENT_MAX_LINES - 1
           ? fullLineWidth - CONTENT_COUNTER_WIDTH
@@ -83,6 +84,9 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
   const titleLength = Array.from(draft.title).length;
   const titleAtLimit = titleLength >= TITLE_MAX_LENGTH;
   const contentLength = Array.from(draft.content).length;
+  const selectedWeather =
+    WEATHER_OPTIONS.find((option) => option.value === draft.weather) ??
+    WEATHER_OPTIONS[0];
   const handleContentChange = (value: string, element: HTMLTextAreaElement) => {
     const limitedContent = Array.from(
       value.split("\n").slice(0, CONTENT_MAX_LINES).join("\n"),
@@ -230,19 +234,88 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
                     onChange({ weather: option.value as WeatherValue })
                   }
                 >
-                  {option.value !== "unknown" && (
-                    <img
-                      className="weather-option-icon"
-                      src={option.iconUrl}
-                      alt=""
-                      aria-hidden="true"
-                    />
-                  )}
+                  <img
+                    className="weather-option-icon"
+                    src={option.iconUrl}
+                    alt=""
+                    aria-hidden="true"
+                  />
                   <span className="weather-option-label">{option.label}</span>
                 </button>
               );
             })}
           </div>
+          <div className="time-theme-row">
+            <span className="time-theme-label">배경 분위기</span>
+            <div
+              className="time-theme-options"
+              role="radiogroup"
+              aria-label="배경 분위기"
+            >
+              {(["day", "night"] as const).map((timeOfDay) => {
+                const isSelected = draft.timeOfDay === timeOfDay;
+                const isDay = timeOfDay === "day";
+                return (
+                  <button
+                    key={timeOfDay}
+                    type="button"
+                    className={`time-theme-option${isSelected ? " is-selected" : ""}`}
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => onChange({ timeOfDay })}
+                  >
+                    <img
+                      className="time-theme-icon"
+                      src={isDay ? "/weather/day.webp" : "/weather/night.webp"}
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    {isDay ? "낮" : "밤"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <button
+            key={`${draft.weather}-${draft.timeOfDay}`}
+            type="button"
+            className={`weather-theme-preview preview-${draft.timeOfDay} preview-weather-${draft.weather}`}
+            aria-label={`${selectedWeather.label} ${draft.timeOfDay === "day" ? "낮" : "밤"} 배경을 화면 위에서 확인하기`}
+            onClick={() => {
+              const reduceMotion = window.matchMedia(
+                "(prefers-reduced-motion: reduce)",
+              ).matches;
+              window.scrollTo({
+                top: 0,
+                behavior: reduceMotion ? "auto" : "smooth",
+              });
+            }}
+          >
+            <div className="weather-theme-preview-sky" aria-hidden="true">
+              <img
+                className="weather-theme-preview-weather"
+                src={selectedWeather.iconUrl}
+                alt=""
+              />
+              <img
+                className="weather-theme-preview-time"
+                src={
+                  draft.timeOfDay === "day"
+                    ? "/weather/day.webp"
+                    : "/weather/night.webp"
+                }
+                alt=""
+              />
+            </div>
+            <div className="weather-theme-preview-copy">
+              <span>선택한 배경</span>
+              <strong>
+                {selectedWeather.label} ·{" "}
+                {draft.timeOfDay === "day" ? "낮" : "밤"}
+              </strong>
+              <small>상단 배경 보러 가기 ↑</small>
+            </div>
+          </button>
         </section>
 
         <section className="diary-form-section diary-content-section">

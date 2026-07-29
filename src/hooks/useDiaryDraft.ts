@@ -7,6 +7,8 @@ import {
 } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 
+export type TimeOfDay = "day" | "night";
+
 export interface DiaryDraft {
   photoDataUrl: string | null;
   /**
@@ -21,6 +23,8 @@ export interface DiaryDraft {
   /** Local date in YYYY-MM-DD, matching what <input type="date"> uses. */
   date: string;
   weather: WeatherValue;
+  /** Visual-only sky theme. It is never included in an AI request. */
+  timeOfDay: TimeOfDay;
 }
 
 // toISOString() reports UTC, which is "yesterday" for Korean users before 09:00,
@@ -32,6 +36,11 @@ function todayString(): string {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
+function currentTimeOfDay(): TimeOfDay {
+  const hour = new Date().getHours();
+  return hour >= 6 && hour < 18 ? "day" : "night";
+}
+
 function emptyDraft(): DiaryDraft {
   return {
     photoDataUrl: null,
@@ -40,6 +49,7 @@ function emptyDraft(): DiaryDraft {
     content: "",
     date: todayString(),
     weather: "sunny",
+    timeOfDay: currentTimeOfDay(),
   };
 }
 
@@ -83,6 +93,10 @@ function loadDraft(): DiaryDraft {
       weather: WEATHER_VALUES.includes(candidate.weather as WeatherValue)
         ? (candidate.weather as WeatherValue)
         : "sunny",
+      timeOfDay:
+        candidate.timeOfDay === "day" || candidate.timeOfDay === "night"
+          ? candidate.timeOfDay
+          : currentTimeOfDay(),
     };
   } catch {
     return emptyDraft();
