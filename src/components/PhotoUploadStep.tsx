@@ -20,7 +20,6 @@ import {
 import { getCachedSketch, hashPhotoFile } from "../services/sketchCache";
 import { isAiTestMode, isSupabaseConfigured } from "../services/supabaseEdge";
 import { DiaryButton } from "./DiaryButton";
-import { SketchQuotaNotice } from "./AiQuotaNotice";
 
 const loadPhotoCropModal = () => import("./PhotoCropModal");
 const PhotoCropModal = lazy(async () => {
@@ -45,7 +44,6 @@ export interface PhotoSelection {
 interface PhotoUploadStepProps {
   photoDataUrl: string | null;
   onPhotoChange: (selection: PhotoSelection) => void;
-  showRecheckNotice?: boolean;
   /** False when no request can reach the server today (budget spent, region). */
   canRedraw: boolean;
   /** True while a drawing for that source file is still on its way. */
@@ -63,7 +61,6 @@ interface PhotoUploadStepProps {
 export function PhotoUploadStep({
   photoDataUrl,
   onPhotoChange,
-  showRecheckNotice = false,
   canRedraw,
   isDrawingInProgress,
 }: PhotoUploadStepProps) {
@@ -231,10 +228,6 @@ export function PhotoUploadStep({
 
   return (
     <div className="step-body">
-      {/* Show the quota before the photo action so the user understands the
-          cost before choosing or replacing a photo. */}
-      <SketchQuotaNotice showRecheckNotice={showRecheckNotice} />
-
       {photoDataUrl !== null ? (
         <div className="photo-selected">
           <img

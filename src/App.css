@@ -3099,8 +3099,8 @@ html:has(.diary-content-section textarea:focus) {
 .ai-quota-notice-warning {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 13px 14px;
+  gap: 8px;
+  padding: 10px 12px;
   border: 1px solid #d4c3a8;
   border-left: 4px solid #72acd0;
   background: linear-gradient(135deg, #fffdf6 0%, #eef8fc 100%);
@@ -3114,15 +3114,15 @@ html:has(.diary-content-section textarea:focus) {
 
 .ai-quota-notice-symbol {
   display: inline-grid;
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   flex: 0 0 auto;
   place-items: center;
   border-radius: 999px;
   background: #72acd0;
   color: #fff;
   font-family: ui-rounded, "Arial Rounded MT Bold", sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1;
 }
@@ -3142,7 +3142,7 @@ html:has(.diary-content-section textarea:focus) {
 .ai-quota-notice-copy > span {
   margin: 0 !important;
   color: #493d2d !important;
-  font-size: 14px !important;
+  font-size: 13px !important;
   font-weight: 600 !important;
   line-height: 1.45 !important;
   text-align: left;
@@ -3152,8 +3152,8 @@ html:has(.diary-content-section textarea:focus) {
 .ai-quota-counter {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 15px 13px;
+  gap: 7px;
+  padding: 10px 12px 9px;
   border: 1.5px solid rgba(87, 158, 131, 0.42);
   background:
     radial-gradient(
@@ -3191,7 +3191,7 @@ html:has(.diary-content-section textarea:focus) {
 
 .ai-quota-counter-heading > strong {
   color: #3e493c;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
   line-height: 1.35;
   word-break: keep-all;
@@ -3201,9 +3201,9 @@ html:has(.diary-content-section textarea:focus) {
   display: inline-flex;
   align-items: baseline;
   justify-content: center;
-  min-width: 62px;
+  min-width: 54px;
   box-sizing: border-box;
-  padding: 5px 9px 4px;
+  padding: 4px 8px 3px;
   border: 1px solid rgba(87, 158, 131, 0.3);
   border-radius: 12px 9px 11px 10px;
   background: rgba(255, 255, 255, 0.82);
@@ -3213,12 +3213,12 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .ai-quota-counter-value strong {
-  font-size: 25px;
+  font-size: 21px;
   font-weight: 800;
 }
 
 .ai-quota-counter-value span {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -3229,7 +3229,7 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .ai-quota-meter > span {
-  height: 7px;
+  height: 5px;
   min-width: 0;
   flex: 1 1 0;
   border-radius: 999px;
@@ -3249,7 +3249,7 @@ html:has(.diary-content-section textarea:focus) {
   gap: 6px 12px;
   flex-wrap: wrap;
   color: #776c5a;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.35;
 }
 
@@ -3298,11 +3298,6 @@ html:has(.diary-content-section textarea:focus) {
   .ai-quota-counter-value {
     min-width: 56px;
   }
-}
-
-.app-shell-upload .step-body > .ai-quota-notice {
-  margin-top: 0;
-  margin-bottom: 2px;
 }
 
 .app-shell-write > .ai-quota-notice {

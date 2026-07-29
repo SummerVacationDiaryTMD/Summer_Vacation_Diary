@@ -26,7 +26,6 @@ import { isSketchAiConnected } from "./services/styleTransfer";
 // deep links yet, so a router would add dependency weight without benefit.
 // If stage 2+ needs shareable URLs, this maps 1:1 onto routes later.
 type Step = "upload" | "write" | "preview";
-type AiAction = "sketch" | "analyze";
 
 interface DiaryConfirmOptions {
   title: string;
@@ -100,11 +99,6 @@ const ONBOARDING_TITLE_LINES = [
     { name: "gi", file: "title-gi.png" },
   ],
 ] as const;
-
-const INITIAL_RECHECK_NOTICE_VISIBILITY: Record<AiAction, boolean> = {
-  sketch: false,
-  analyze: false,
-};
 
 function AppBottomBar({
   children,
@@ -190,13 +184,8 @@ function App() {
 
   const [hasVisitedWrite, setHasVisitedWrite] = useState(false);
   const [hasVisitedPreview, setHasVisitedPreview] = useState(false);
-  const [recheckNoticeVisible, setRecheckNoticeVisible] = useState(
-    INITIAL_RECHECK_NOTICE_VISIBILITY,
-  );
-
-  const setRecheckNotice = (action: AiAction, visible: boolean) => {
-    setRecheckNoticeVisible((current) => ({ ...current, [action]: visible }));
-  };
+  const [analyzeRecheckNoticeVisible, setAnalyzeRecheckNoticeVisible] =
+    useState(false);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -523,7 +512,6 @@ function App() {
       {step === "upload" && (
         <PhotoUploadStep
           photoDataUrl={draft.photoDataUrl}
-          showRecheckNotice={recheckNoticeVisible.sketch}
           canRedraw={sketchAllowed}
           isDrawingInProgress={isDrawingInProgress}
           onPhotoChange={({
@@ -555,7 +543,7 @@ function App() {
       {step === "write" && (
         <>
           <AnalyzeQuotaNotice
-            showRecheckNotice={recheckNoticeVisible.analyze}
+            showRecheckNotice={analyzeRecheckNoticeVisible}
           />
           <WriteStep draft={draft} onChange={updateDraft} />
         </>
@@ -582,7 +570,7 @@ function App() {
 
             setHasVisitedWrite(false);
             setHasVisitedPreview(false);
-            setRecheckNoticeVisible(INITIAL_RECHECK_NOTICE_VISIBILITY);
+            setAnalyzeRecheckNoticeVisible(false);
 
             setStep("upload");
           }}
@@ -609,7 +597,6 @@ function App() {
             stable
             fullWidth
             onClick={() => {
-              setRecheckNotice("sketch", true);
               setStep("upload");
             }}
           >
@@ -635,7 +622,7 @@ function App() {
             fullWidth
             disabled={saving}
             onClick={() => {
-              setRecheckNotice("analyze", true);
+              setAnalyzeRecheckNoticeVisible(true);
               setStep("write");
             }}
           >
