@@ -3,41 +3,41 @@ import { useState } from "react";
 
 import {
   CONTENT_MAX_LENGTH,
-  CONTENT_MIN_LENGTH,
   TITLE_MAX_LENGTH,
   WEATHER_OPTIONS,
 } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
-import { AnalyzeQuotaNotice } from "./AiQuotaNotice";
 
 interface WriteStepProps {
   draft: DiaryDraft;
   onChange: (patch: Partial<DiaryDraft>) => void;
-  showRecheckNotice?: boolean;
 }
 
 // The form sits on a permanently cream sheet, so an adaptive token here would
 // resolve to a near-white ink in dark mode. Fixed, like the date input's color.
 const LABEL_INK = "#6B5E3F";
 
+function formatDateValue(date: string): string {
+  const [year, month, day] = date.split("-");
+
+  if (year === undefined || month === undefined || day === undefined) {
+    return date;
+  }
+
+  return `${year}. ${Number(month)}. ${Number(day)}.`;
+}
+
 /**
  * Step 2: title, diary text, date and weather.
  * All fields write straight into the shared draft, so leaving this screen
  * (or the app) never loses input — the draft hook persists it.
  */
-export function WriteStep({
-  draft,
-  onChange,
-  showRecheckNotice = false,
-}: WriteStepProps) {
+export function WriteStep({ draft, onChange }: WriteStepProps) {
   const [titleLimitShakeCount, setTitleLimitShakeCount] = useState(0);
   const [contentLimitShakeCount, setContentLimitShakeCount] = useState(0);
   const titleLength = Array.from(draft.title).length;
   const titleAtLimit = titleLength >= TITLE_MAX_LENGTH;
-  const titleStatus = titleAtLimit
-    ? "멋진 제목이 완성됐어요"
-    : `${TITLE_MAX_LENGTH - titleLength}자 더 적을 수 있어요`;
   const contentLength = Array.from(draft.content).length;
   const handleContentChange = (value: string) => {
     const limitedContent = Array.from(value)
@@ -65,17 +65,10 @@ export function WriteStep({
 
     onChange({ title: limitedTitle });
   };
-  // Validate on trimmed length so whitespace padding can't satisfy the
-  // 20-char minimum; the visible counter still shows the raw length.
-  const contentTooShort =
-    contentLength > 0 &&
-    Array.from(draft.content.trim()).length < CONTENT_MIN_LENGTH;
   const contentAtLimit = contentLength >= CONTENT_MAX_LENGTH;
-  const contentStatus = contentTooShort
-    ? `${CONTENT_MIN_LENGTH}자 이상 적어주세요`
-    : contentAtLimit
-      ? `멋진 여름 이야기가 가득 찼어요`
-      : `${CONTENT_MAX_LENGTH - contentLength}자 더 적을 수 있어요`;
+  const contentStatus = contentAtLimit
+    ? `멋진 여름 이야기가 가득 찼어요`
+    : `${CONTENT_MAX_LENGTH - contentLength}자 더 적을 수 있어요`;
   // A whitespace-only title also blocks the preview button (App.tsx trims it),
   // so surface the reason here instead of leaving the button silently disabled.
   const titleBlank = draft.title.length > 0 && draft.title.trim() === "";
@@ -112,19 +105,18 @@ export function WriteStep({
           </div>
           <div
             id="title-character-status"
-            className={`diary-character-status${
+            className={`diary-character-status diary-character-status-title${
               titleAtLimit ? " diary-character-status-complete" : ""
             }`}
             aria-live="polite"
           >
-            <span>{titleStatus}</span>
             <strong>
               {titleLength}/{TITLE_MAX_LENGTH}
             </strong>
           </div>
         </section>
 
-        <section className="diary-form-section">
+        <section className="diary-form-section diary-date-section">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -135,6 +127,9 @@ export function WriteStep({
           {/* Native date input: the OS date picker on mobile beats any custom
               calendar for effort-to-quality, and TDS has no date picker widget. */}
           <div className="date-input-wrap">
+            <span className="date-input-value" aria-hidden="true">
+              {formatDateValue(draft.date)}
+            </span>
             <input
               className="date-input"
               type="date"
@@ -163,7 +158,7 @@ export function WriteStep({
           </div>
         </section>
 
-        <section className="diary-form-section">
+        <section className="diary-form-section diary-weather-section">
           <Paragraph
             className="form-section-label"
             typography="t7"
@@ -215,29 +210,25 @@ export function WriteStep({
                 : "diary-field-control"
             }
           >
-            {/* height is four 32px ruled bands plus padding. The CSS min/max
+            {/* Height is four 32px ruled bands plus 10px vertical padding.
+                The CSS min/max
                 height are !important and win regardless, but an off-grid
                 number here would read as the intended size and invite a "fix". */}
             <TextArea
               variant="line"
               aria-label="일기"
               aria-describedby="diary-character-status"
-              placeholder={`오늘의 이야기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요`}
-              height={142}
+              placeholder="오늘의 이야기를 적어주세요"
+              height={138}
               maxLength={CONTENT_MAX_LENGTH}
               value={draft.content}
-              hasError={contentTooShort}
               onChange={(event) => handleContentChange(event.target.value)}
             />
           </div>
           <div
             id="diary-character-status"
             className={`diary-character-status${
-              contentTooShort
-                ? " diary-character-status-error"
-                : contentAtLimit
-                  ? " diary-character-status-complete"
-                  : ""
+              contentAtLimit ? " diary-character-status-complete" : ""
             }`}
             aria-live="polite"
           >
@@ -246,7 +237,6 @@ export function WriteStep({
               {contentLength}/{CONTENT_MAX_LENGTH}
             </strong>
           </div>
-          <AnalyzeQuotaNotice showRecheckNotice={showRecheckNotice} />
         </section>
       </div>
     </div>

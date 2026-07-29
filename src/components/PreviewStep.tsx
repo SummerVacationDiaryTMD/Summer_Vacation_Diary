@@ -51,7 +51,68 @@ interface PreviewStepProps {
   onSketchRetry: () => void;
 }
 
-const ANALYSIS_LOADING_MESSAGE = "선생님이 일기를 검사하고 있어요.";
+const PREVIEW_PROCESSING_STEPS = [
+  "사진과 일기를 한 장에 담고 있어요",
+  "선생님이 일기를 꼼꼼히 읽고 있어요",
+  "그림과 첨삭을 마무리하고 있어요",
+] as const;
+
+function DiaryProcessingStage({ currentStep }: { currentStep: number }) {
+  return (
+    <section
+      className="diary-processing-stage"
+      aria-labelledby="diary-processing-title"
+    >
+      <p className="visually-hidden" role="status" aria-live="polite">
+        {PREVIEW_PROCESSING_STEPS[currentStep]}
+      </p>
+
+      <div className="diary-processing-visual" aria-hidden="true">
+        <span className="diary-processing-orbit" />
+        <span className="diary-processing-badge">
+          <svg
+            className="diary-processing-pencil"
+            viewBox="0 0 64 64"
+            focusable="false"
+          >
+            <path d="m17 46 4-13L43 11l10 10-22 22-14 3Z" />
+            <path d="m38 16 10 10M21 33l10 10M17 46l8-2-6-6-2 8Z" />
+          </svg>
+        </span>
+        <span className="diary-processing-spark diary-processing-spark-one" />
+        <span className="diary-processing-spark diary-processing-spark-two" />
+        <span className="diary-processing-spark diary-processing-spark-three" />
+      </div>
+
+      <div className="diary-processing-copy">
+        <span>선생님 검사 중</span>
+        <h2 id="diary-processing-title">그림일기를 만들고 있어요</h2>
+        <p>완성되면 그림과 첨삭을 함께 보여드릴게요.</p>
+      </div>
+
+      <ol className="diary-processing-steps">
+        {PREVIEW_PROCESSING_STEPS.map((message, index) => (
+          <li
+            key={message}
+            className={
+              index === currentStep
+                ? "is-current"
+                : index < currentStep
+                  ? "is-complete"
+                  : ""
+            }
+            aria-current={index === currentStep ? "step" : undefined}
+          >
+            <span aria-hidden="true">
+              {index < currentStep ? "✓" : index + 1}
+            </span>
+            <strong>{message}</strong>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 
 function frameRegionStyle(
   region: DiaryFrameRegion,
@@ -283,6 +344,8 @@ export function PreviewStep({
     (isAiConnected && analysisState.status === "success");
   const [renderedPreview, setRenderedPreview] =
     useState<ComposedDiaryImage | null>(null);
+  const [previewRenderFailed, setPreviewRenderFailed] = useState(false);
+  const [processingStep, setProcessingStep] = useState(0);
   const animatedAnalysis = renderedPreview === null ? null : analysis;
   const annotationTimeline = useMemo(
     () =>
@@ -303,11 +366,13 @@ export function PreviewStep({
     const imageDataUrl = draft.sketchDataUrl ?? draft.photoDataUrl;
     if (imageDataUrl === null) {
       setRenderedPreview(null);
+      setPreviewRenderFailed(false);
       return;
     }
 
     let cancelled = false;
     setRenderedPreview(null);
+    setPreviewRenderFailed(false);
     void composeDiaryImage({
       imageDataUrl,
       title: draft.title.trim() || "제목 없는 일기",
@@ -321,13 +386,39 @@ export function PreviewStep({
         if (!cancelled) setRenderedPreview(result);
       })
       .catch(() => {
-        if (!cancelled) setRenderedPreview(null);
+        if (!cancelled) {
+          setRenderedPreview(null);
+          setPreviewRenderFailed(true);
+        }
       });
 
     return () => {
       cancelled = true;
     };
   }, [analysis, draft, includesAiGeneratedContent]);
+
+  const isPreviewPreparing =
+    analysisState.status === "loading" ||
+    sketchState.status === "loading" ||
+    (analysisState.status === "success" &&
+      renderedPreview === null &&
+      !previewRenderFailed);
+
+  useEffect(() => {
+    if (!isPreviewPreparing) {
+      setProcessingStep(0);
+      return;
+    }
+
+    setProcessingStep(0);
+    const readTimer = window.setTimeout(() => setProcessingStep(1), 3200);
+    const finishTimer = window.setTimeout(() => setProcessingStep(2), 7600);
+
+    return () => {
+      window.clearTimeout(readTimer);
+      window.clearTimeout(finishTimer);
+    };
+  }, [isPreviewPreparing]);
 
   // Announced through the always-mounted live region below. A region that
   // mounts together with its text is often not read at all — only TEXT
@@ -353,289 +444,258 @@ export function PreviewStep({
         {sketchAnnouncement}
       </p>
 
-      {analysisState.status === "loading" && (
-        <div
-          className="analysis-loading-notice"
-          role="status"
-          aria-live="polite"
-        >
-          <Paragraph
-            as="span"
-            className="analysis-loading-text loading-blink"
-            typography="t5"
-            fontWeight="medium"
-            color="#6b5e3f"
-          >
-            {ANALYSIS_LOADING_MESSAGE}
-          </Paragraph>
-        </div>
-      )}
-
-      <div className="diary-card">
-        <div
-          className="diary-template"
-          style={
-            {
-              aspectRatio: `${frameLayout.width} / ${frameLayout.height}`,
-              "--stamp-delay": `${stampDelayMs}ms`,
-            } as CSSProperties
-          }
-        >
-          <DiaryFrameBackground layout={frameLayout} />
-
-          {includesAiGeneratedContent && (
-            <span className="ai-content-watermark">{AI_CONTENT_WATERMARK}</span>
-          )}
-
+      {isPreviewPreparing ? (
+        <DiaryProcessingStage currentStep={processingStep} />
+      ) : (
+        <div className="diary-card diary-card-reveal">
           <div
-            className="diary-card-header"
-            style={frameRegionStyle(DIARY_FRAME.header, frameLayout)}
+            className="diary-template"
+            style={
+              {
+                aspectRatio: `${frameLayout.width} / ${frameLayout.height}`,
+                "--stamp-delay": `${stampDelayMs}ms`,
+              } as CSSProperties
+            }
           >
-            <span>
-              <strong>
-                <HandwrittenText text={year} strength={0.45} />
-              </strong>
-            </span>
-            <span>
-              <strong>
-                <HandwrittenText text={month} seedOffset={10} strength={0.45} />
-              </strong>
-            </span>
-            <span>
-              <strong>
-                <HandwrittenText text={day} seedOffset={20} strength={0.45} />
-              </strong>
-            </span>
-            <span>
-              <strong>
-                <HandwrittenText
-                  text={weekday}
-                  seedOffset={30}
-                  strength={0.45}
-                />
-              </strong>
-            </span>
-            {draft.weather !== "unknown" && (
-              <span className="diary-weather">
-                <img
-                  className="diary-weather-icon"
-                  src={weatherIconUrl(draft.weather)}
-                  alt=""
-                  aria-hidden="true"
-                />
+            <DiaryFrameBackground layout={frameLayout} />
+
+            {includesAiGeneratedContent && (
+              <span className="ai-content-watermark">
+                {AI_CONTENT_WATERMARK}
+              </span>
+            )}
+
+            <div
+              className="diary-card-header"
+              style={frameRegionStyle(DIARY_FRAME.header, frameLayout)}
+            >
+              <span>
+                <strong>
+                  <HandwrittenText text={year} strength={0.45} />
+                </strong>
+              </span>
+              <span>
                 <strong>
                   <HandwrittenText
-                    text={weatherLabel(draft.weather)}
-                    seedOffset={40}
+                    text={month}
+                    seedOffset={10}
                     strength={0.45}
                   />
                 </strong>
               </span>
-            )}
-          </div>
+              <span>
+                <strong>
+                  <HandwrittenText text={day} seedOffset={20} strength={0.45} />
+                </strong>
+              </span>
+              <span>
+                <strong>
+                  <HandwrittenText
+                    text={weekday}
+                    seedOffset={30}
+                    strength={0.45}
+                  />
+                </strong>
+              </span>
+              {draft.weather !== "unknown" && (
+                <span className="diary-weather">
+                  <img
+                    className="diary-weather-icon"
+                    src={weatherIconUrl(draft.weather)}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                  <strong>
+                    <HandwrittenText
+                      text={weatherLabel(draft.weather)}
+                      seedOffset={40}
+                      strength={0.45}
+                    />
+                  </strong>
+                </span>
+              )}
+            </div>
 
-          <div
-            className="diary-title-row"
-            style={frameRegionStyle(DIARY_FRAME.title, frameLayout)}
-          >
-            <strong>
-              <HandwrittenText
-                text={draft.title !== "" ? draft.title : "제목 없는 일기"}
-                seedOffset={50}
-                strength={TITLE_HANDWRITING_STRENGTH}
-              />
-            </strong>
-          </div>
-
-          <div
-            className="diary-card-photo"
-            style={frameRegionStyle(DIARY_FRAME.photo, frameLayout)}
-          >
-            {draft.photoDataUrl !== null ? (
-              <>
-                <img
-                  src={showsSketch ? sketchUrl : draft.photoDataUrl}
-                  alt={
-                    showsSketch
-                      ? "크레파스 그림으로 바뀐 일기 사진"
-                      : "일기 사진"
-                  }
-                />
-                {sketchState.status === "loading" && (
-                  // aria-hidden: the persistent live region at the top of this
-                  // component already announces the conversion; reading this
-                  // overlay too would announce it twice.
-                  <div className="sketch-overlay" aria-hidden>
-                    <span className="loading-blink">
-                      사진을 크레파스 그림으로 바꾸고 있어요
-                    </span>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="diary-card-photo-empty">사진이 없어요</div>
-            )}
-          </div>
-
-          <div
-            className="diary-card-content"
-            style={{
-              ...frameRegionStyle(frameLayout.content, frameLayout),
-              gridTemplateRows: `repeat(${frameLayout.contentRows}, minmax(0, 1fr))`,
-            }}
-          >
-            <HighlightedContent
-              content={draft.content}
-              analysis={animatedAnalysis}
-              timeline={annotationTimeline}
-            />
-          </div>
-
-          {/* Fixed colors throughout the card: it sits on a fixed paper
-            background (#fffdf5), and the AIT provider is light-only today. */}
-          <div
-            className="diary-card-comment"
-            style={frameRegionStyle(frameLayout.comment, frameLayout)}
-          >
-            {animatedAnalysis === null && (
-              <div className="diary-comment-label">선생님 한마디</div>
-            )}
-
-            {analysisState.status === "loading" && (
-              <div className="comment-loading" aria-hidden="true">
-                <Paragraph
-                  as="span"
-                  className="diary-comment-text loading-blink"
-                  typography="t5"
-                  color="#8a7d55"
-                >
-                  {ANALYSIS_LOADING_MESSAGE}
-                </Paragraph>
-              </div>
-            )}
-
-            {analysisState.status === "error" && (
-              <div className="comment-error">
-                <Paragraph
-                  as="span"
-                  className="diary-comment-text"
-                  typography="t5"
-                  color="#8a7d55"
-                >
-                  한마디를 불러오지 못했어요
-                </Paragraph>
-              </div>
-            )}
-
-            {analysisState.status === "idle" && (
-              <div className="comment-error">
-                <Paragraph
-                  as="span"
-                  className="diary-comment-text"
-                  typography="t5"
-                  color="#8a7d55"
-                >
-                  아직 검사받지 않았어요
-                </Paragraph>
-              </div>
-            )}
-          </div>
-
-          {animatedAnalysis !== null && renderedPreview !== null && (
             <div
-              className="diary-rendered-comment"
-              style={
-                {
-                  ...frameRegionStyle(frameLayout.comment, frameLayout),
-                  "--comment-write-duration": `${Math.max(animatedAnalysis.comment.length, 1) * 180}ms`,
-                  "--comment-delay": `${commentDelayMs}ms`,
-                  "--comment-write-steps": Math.max(
-                    animatedAnalysis.comment.length,
-                    1,
-                  ),
-                } as CSSProperties
-              }
-              aria-hidden="true"
+              className="diary-title-row"
+              style={frameRegionStyle(DIARY_FRAME.title, frameLayout)}
             >
-              <img
-                src={renderedPreview.dataUrl}
-                alt=""
-                style={{
-                  left: `${(-frameLayout.comment.x / frameLayout.comment.width) * 100}%`,
-                  top: `${(-frameLayout.comment.y / frameLayout.comment.height) * 100}%`,
-                  width: `${(frameLayout.width / frameLayout.comment.width) * 100}%`,
-                  height: `${(frameLayout.height / frameLayout.comment.height) * 100}%`,
-                }}
+              <strong>
+                <HandwrittenText
+                  text={draft.title !== "" ? draft.title : "제목 없는 일기"}
+                  seedOffset={50}
+                  strength={TITLE_HANDWRITING_STRENGTH}
+                />
+              </strong>
+            </div>
+
+            <div
+              className="diary-card-photo"
+              style={frameRegionStyle(DIARY_FRAME.photo, frameLayout)}
+            >
+              {draft.photoDataUrl !== null ? (
+                <>
+                  <img
+                    src={showsSketch ? sketchUrl : draft.photoDataUrl}
+                    alt={
+                      showsSketch
+                        ? "크레파스 그림으로 바뀐 일기 사진"
+                        : "일기 사진"
+                    }
+                  />
+                </>
+              ) : (
+                <div className="diary-card-photo-empty">사진이 없어요</div>
+              )}
+            </div>
+
+            <div
+              className="diary-card-content"
+              style={{
+                ...frameRegionStyle(frameLayout.content, frameLayout),
+                gridTemplateRows: `repeat(${frameLayout.contentRows}, minmax(0, 1fr))`,
+              }}
+            >
+              <HighlightedContent
+                content={draft.content}
+                analysis={animatedAnalysis}
+                timeline={annotationTimeline}
               />
             </div>
-          )}
 
-          {animatedAnalysis !== null && (
-            <img
-              className="diary-stamp"
-              src={STAMP_IMAGE_URLS[animatedAnalysis.stamp]}
-              alt={STAMP_ALT_TEXT[animatedAnalysis.stamp]}
-            />
-          )}
-        </div>
+            {/* Fixed colors throughout the card: it sits on a fixed paper
+            background (#fffdf5), and the AIT provider is light-only today. */}
+            <div
+              className="diary-card-comment"
+              style={frameRegionStyle(frameLayout.comment, frameLayout)}
+            >
+              {animatedAnalysis === null && (
+                <div className="diary-comment-label">선생님 한마디</div>
+              )}
 
-        {analysisState.status === "error" && (
-          <div className="preview-status-panel" role="alert">
-            <Paragraph typography="t7" color="#6b5e3f">
-              {analysisState.message}
-            </Paragraph>
-            {/* Hidden once the daily budget is gone: the button would be an
-                invitation to press something that cannot succeed today. */}
-            {analysisState.retryable && (
-              <DiaryButton
-                tone="secondary"
-                stable
-                size="small"
-                onClick={onRetry}
+              {analysisState.status === "error" && (
+                <div className="comment-error">
+                  <Paragraph
+                    as="span"
+                    className="diary-comment-text"
+                    typography="t5"
+                    color="#8a7d55"
+                  >
+                    한마디를 불러오지 못했어요
+                  </Paragraph>
+                </div>
+              )}
+
+              {analysisState.status === "idle" && (
+                <div className="comment-error">
+                  <Paragraph
+                    as="span"
+                    className="diary-comment-text"
+                    typography="t5"
+                    color="#8a7d55"
+                  >
+                    아직 검사받지 않았어요
+                  </Paragraph>
+                </div>
+              )}
+            </div>
+
+            {animatedAnalysis !== null && renderedPreview !== null && (
+              <div
+                className="diary-rendered-comment"
+                style={
+                  {
+                    ...frameRegionStyle(frameLayout.comment, frameLayout),
+                    "--comment-write-duration": `${Math.max(animatedAnalysis.comment.length, 1) * 180}ms`,
+                    "--comment-delay": `${commentDelayMs}ms`,
+                    "--comment-write-steps": Math.max(
+                      animatedAnalysis.comment.length,
+                      1,
+                    ),
+                  } as CSSProperties
+                }
+                aria-hidden="true"
               >
-                한마디 다시 시도
-              </DiaryButton>
+                <img
+                  src={renderedPreview.dataUrl}
+                  alt=""
+                  style={{
+                    left: `${(-frameLayout.comment.x / frameLayout.comment.width) * 100}%`,
+                    top: `${(-frameLayout.comment.y / frameLayout.comment.height) * 100}%`,
+                    width: `${(frameLayout.width / frameLayout.comment.width) * 100}%`,
+                    height: `${(frameLayout.height / frameLayout.comment.height) * 100}%`,
+                  }}
+                />
+              </div>
+            )}
+
+            {animatedAnalysis !== null && (
+              <img
+                className="diary-stamp"
+                src={STAMP_IMAGE_URLS[animatedAnalysis.stamp]}
+                alt={STAMP_ALT_TEXT[animatedAnalysis.stamp]}
+              />
             )}
           </div>
-        )}
 
-        {/* Keep mode guidance outside the fixed-ratio paper. Content placed in
-            the printed comment box must scale with it and cannot grow freely. */}
-        {(isAiTestMode || !isAiConnected) && (
-          <div className="preview-mode-note">
-            {isAiTestMode
-              ? isAiConnected
-                ? "테스트 모드 · 원본 사진으로 분석만 진행해요"
-                : "테스트 모드 · 원본 사진과 예시 분석이 보여요"
-              : "체험 모드 · 예시 분석과 간단한 그림 효과가 보여요"}
-          </div>
-        )}
-
-        {sketchState.status === "error" && (
-          <div className="sketch-error">
-            <Paragraph typography="t7" color="#5A442C">
-              {sketchState.message}
-            </Paragraph>
-            {!sketchState.retryable && (
-              <Paragraph as="span" typography="t7" color="#5A442C">
-                원본 사진으로도 완성할 수 있어요
+          {analysisState.status === "error" && (
+            <div className="preview-status-panel" role="alert">
+              <Paragraph typography="t7" color="#6b5e3f">
+                {analysisState.message}
               </Paragraph>
-            )}
-            <div className="sketch-error-actions">
-              {sketchState.retryable && (
+              {/* Hidden once the daily budget is gone: the button would be an
+                invitation to press something that cannot succeed today. */}
+              {analysisState.retryable && (
                 <DiaryButton
                   tone="secondary"
                   stable
                   size="small"
-                  onClick={onSketchRetry}
+                  onClick={onRetry}
                 >
-                  다시 시도
+                  한마디 다시 시도
                 </DiaryButton>
               )}
             </div>
-          </div>
-        )}
-      </div>
+          )}
+
+          {/* Keep mode guidance outside the fixed-ratio paper. Content placed in
+            the printed comment box must scale with it and cannot grow freely. */}
+          {(isAiTestMode || !isAiConnected) && (
+            <div className="preview-mode-note">
+              {isAiTestMode
+                ? isAiConnected
+                  ? "테스트 모드 · 원본 사진으로 분석만 진행해요"
+                  : "테스트 모드 · 원본 사진과 예시 분석이 보여요"
+                : "체험 모드 · 예시 분석과 간단한 그림 효과가 보여요"}
+            </div>
+          )}
+
+          {sketchState.status === "error" && (
+            <div className="sketch-error">
+              <Paragraph typography="t7" color="#5A442C">
+                {sketchState.message}
+              </Paragraph>
+              {!sketchState.retryable && (
+                <Paragraph as="span" typography="t7" color="#5A442C">
+                  원본 사진으로도 완성할 수 있어요
+                </Paragraph>
+              )}
+              <div className="sketch-error-actions">
+                {sketchState.retryable && (
+                  <DiaryButton
+                    tone="secondary"
+                    stable
+                    size="small"
+                    onClick={onSketchRetry}
+                  >
+                    다시 시도
+                  </DiaryButton>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

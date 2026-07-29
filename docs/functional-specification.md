@@ -14,19 +14,19 @@
 
 ## 기능 목록
 
-| ID   | 기능                       | 상태      | 핵심 근거                                                      |
-| ---- | -------------------------- | --------- | -------------------------------------------------------------- |
-| F-01 | 온보딩 시작                | 구현 완료 | `src/App.tsx`                                                  |
-| F-02 | 사진 처리 동의             | 구현 완료 | `src/components/PhotoUploadStep.tsx`                           |
-| F-03 | 사진 선택·검증·자르기      | 구현 완료 | `PhotoUploadStep.tsx`, `PhotoCropModal.tsx`, `utils/image.ts`  |
-| F-04 | 일기 작성과 작업 사본 저장 | 구현 완료 | `WriteStep.tsx`, `useDiaryDraft.ts`                            |
-| F-05 | 사진 그림 변환             | 구현 완료 | `useSketch.ts`, `styleTransfer.ts`; 배포된 Edge Function 또는 로컬 필터 |
+| ID   | 기능                       | 상태      | 핵심 근거                                                                 |
+| ---- | -------------------------- | --------- | ------------------------------------------------------------------------- |
+| F-01 | 온보딩 시작                | 구현 완료 | `src/App.tsx`                                                             |
+| F-02 | 사진 처리 동의             | 구현 완료 | `src/components/PhotoUploadStep.tsx`                                      |
+| F-03 | 사진 선택·검증·자르기      | 구현 완료 | `PhotoUploadStep.tsx`, `PhotoCropModal.tsx`, `utils/image.ts`             |
+| F-04 | 일기 작성과 작업 사본 저장 | 구현 완료 | `WriteStep.tsx`, `useDiaryDraft.ts`                                       |
+| F-05 | 사진 그림 변환             | 구현 완료 | `useSketch.ts`, `styleTransfer.ts`; 배포된 Edge Function 또는 로컬 필터   |
 | F-06 | 일기 검사                  | 구현 완료 | `useDiaryAnalysis.ts`, `diaryAnalysis.ts`; 배포된 Edge Function 또는 mock |
-| F-07 | 그림일기 미리보기          | 구현 완료 | `PreviewStep.tsx`, `diaryFrameLayout.ts`                       |
-| F-08 | JPEG 완성·저장             | 구현 완료 | `App.tsx`, `diaryImage.ts`, `diaryExport.ts`                   |
-| F-09 | 앱 링크 공유               | 구현 완료 | `DiaryShareModal.tsx`, `diaryShare.ts`                         |
-| F-10 | 사용량 안내·차단           | 부분 구현 | `useAiQuota.ts`, `aiQuotaStore.ts`; 서버 강제 정책 확인 필요   |
-| F-11 | 새 일기 시작               | 구현 완료 | `App.tsx`, `useDiaryDraft.ts`                                  |
+| F-07 | 그림일기 미리보기          | 구현 완료 | `PreviewStep.tsx`, `diaryFrameLayout.ts`                                  |
+| F-08 | JPEG 완성·저장             | 구현 완료 | `App.tsx`, `diaryImage.ts`, `diaryExport.ts`                              |
+| F-09 | 앱 링크 공유               | 구현 완료 | `DiaryShareModal.tsx`, `diaryShare.ts`                                    |
+| F-10 | 사용량 안내·차단           | 부분 구현 | `useAiQuota.ts`, `aiQuotaStore.ts`; 서버 강제 정책 확인 필요              |
+| F-11 | 새 일기 시작               | 구현 완료 | `App.tsx`, `useDiaryDraft.ts`                                             |
 
 ## F-01 온보딩 시작
 
@@ -91,13 +91,13 @@
 - **사전 조건:** 유효한 사진이 선택됨
 - **입력:** 제목 0~~15자, 날짜, 5개 날씨 중 하나, 본문 0~~65자
 - **정상 흐름:** 입력마다 공통 `DiaryDraft`를 갱신하고 400ms 뒤 `localStorage`에 저장합니다. 페이지 숨김·종료 시 즉시 저장을 시도합니다.
-- **예외 흐름:** 공백뿐인 제목, 공백 제거 후 20자 미만 본문은 검사 단계 진입을 막고 도움말 또는 토스트를 표시합니다. 저장 용량이 부족하면 그림, 사진 순서로 제외해 텍스트 저장을 재시도합니다.
+- **예외 흐름:** 공백뿐인 제목이나 본문은 검사 단계 진입을 막고 도움말 또는 토스트를 표시합니다. 저장 용량이 부족하면 그림, 사진 순서로 제외해 텍스트 저장을 재시도합니다.
 - **출력:** 갱신된 `DiaryDraft`
 - **권한:** 없음
 - **관련 화면:** 작성
 - **관련 API:** 없음
 - **관련 데이터:** `summer-vacation-diary:draft:v2`
-- **완료 조건:** 제목이 공백이 아니고 본문이 공백 제거 기준 20자 이상이면 `검사 받기`가 유효해짐
+- **완료 조건:** 제목과 본문이 각각 공백이 아니면 `검사 받기`가 유효해짐
 - **상태:** `구현 완료`
 - **근거:** `src/components/WriteStep.tsx`, `src/App.tsx`, `src/hooks/useDiaryDraft.ts`, `src/constants/diary.ts`
 

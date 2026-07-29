@@ -70,7 +70,7 @@ showOnboarding=true
 step=upload
         ↓ 사진 있음
 step=write
-        ↓ 제목 + 공백 제거 본문 20자 이상
+        ↓ 제목 + 공백이 아닌 본문
 step=preview
         ↓ Canvas 합성 성공
 finishedDiary={imageDataUrl,fileName}

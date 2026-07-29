@@ -71,41 +71,22 @@ export function DiaryShareModal({
       >
         <div className="app-modal-layout">
           <div className="diary-share-body modal-scroll-body">
-            <div className="diary-completion-header">
-              <div className="diary-completion-badge-wrap" aria-hidden="true">
-                <span className="diary-completion-spark diary-completion-spark-one" />
-                <span className="diary-completion-spark diary-completion-spark-two" />
-                <span className="diary-completion-spark diary-completion-spark-three" />
+            <div className="diary-share-summary">
+              <h2
+                ref={completionTitleRef}
+                id="diary-completion-title"
+                className="app-modal-title diary-share-summary-title"
+                tabIndex={-1}
+              >
+                완성 이미지 저장하기
+              </h2>
 
-                <span className="diary-completion-badge">
-                  <svg
-                    className="diary-completion-check"
-                    viewBox="0 0 48 48"
-                    focusable="false"
-                  >
-                    <path d="M11 25.5 20 34l17-19" />
-                  </svg>
-                </span>
-              </div>
-
-              <div className="diary-completion-copy">
-                <h2
-                  ref={completionTitleRef}
-                  id="diary-completion-title"
-                  className="app-modal-title diary-completion-title"
-                  tabIndex={-1}
-                >
-                  그림일기가 완성됐어요!
-                </h2>
-
-                <p
-                  id="diary-completion-description"
-                  className="diary-share-description"
-                >
-                  완성 이미지를 만들었어요. 기기에 보관하려면 ‘이미지
-                  저장하기’를 눌러주세요.
-                </p>
-              </div>
+              <p
+                id="diary-completion-description"
+                className="diary-share-description"
+              >
+                그림일기를 기기에 보관하거나 앱을 공유할 수 있어요.
+              </p>
             </div>
 
             <div className="diary-share-preview-wrap">

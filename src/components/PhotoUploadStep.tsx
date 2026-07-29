@@ -231,6 +231,10 @@ export function PhotoUploadStep({
 
   return (
     <div className="step-body">
+      {/* Show the quota before the photo action so the user understands the
+          cost before choosing or replacing a photo. */}
+      <SketchQuotaNotice showRecheckNotice={showRecheckNotice} />
+
       {photoDataUrl !== null ? (
         <div className="photo-selected">
           <img
@@ -283,10 +287,6 @@ export function PhotoUploadStep({
           </DiaryButton>
         </div>
       )}
-
-      {/* Keep the notice outside the photo/no-photo branch so it remains in the
-          same place when the user returns to replace an existing photo. */}
-      <SketchQuotaNotice showRecheckNotice={showRecheckNotice} />
 
       <input
         ref={fileInputRef}
