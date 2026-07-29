@@ -788,6 +788,13 @@ html:has(.diary-content-section textarea:focus) {
 
 /* --- Photo upload step --- */
 
+.photo-placeholder,
+.photo-preview {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  box-sizing: border-box;
+}
+
 .photo-placeholder {
   position: relative;
   display: flex;
@@ -795,8 +802,6 @@ html:has(.diary-content-section textarea:focus) {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  width: 100%;
-  aspect-ratio: 3 / 2;
   height: auto;
   min-height: 0;
   padding: 0;
@@ -851,23 +856,13 @@ html:has(.diary-content-section textarea:focus) {
   flex: 1 1 auto;
 }
 
-.app-shell-upload .photo-placeholder,
-.app-shell-upload .photo-preview {
-  min-height: 0;
-  flex: 1 1 auto;
-}
-
-.app-shell-upload .photo-placeholder {
-  aspect-ratio: auto;
-}
-
 .photo-preview {
-  width: 100%;
+  display: block;
   border-radius: 16px;
   /* The photo keeps its own aspect ratio; capping height prevents a portrait
      shot from pushing the CTA below the fold on small screens. */
   max-height: min(46dvh, 420px);
-  object-fit: contain;
+  object-fit: cover;
   background-color: #f2f4f6;
 }
 
