@@ -4,14 +4,96 @@ import { QUOTA_RESET_NOTICE } from "../constants/diary";
 import { isRegionBlocked, useAiQuota } from "../hooks/useAiQuota";
 import { isAiTestMode } from "../services/supabaseEdge";
 
-function NoticeBox({ lines }: { lines: string[] }) {
+function NoticeBox({
+  lines,
+  tone = "neutral",
+}: {
+  lines: string[];
+  tone?: "neutral" | "warning";
+}) {
   return (
-    <div className="ai-quota-notice">
-      {lines.map((line) => (
-        <Paragraph key={line} as="span" typography="t7" color="#5A442C">
-          {line}
-        </Paragraph>
-      ))}
+    <div
+      className={`ai-quota-notice ai-quota-notice-${tone}`}
+      aria-live="polite"
+    >
+      <span className="ai-quota-notice-symbol" aria-hidden="true">
+        i
+      </span>
+      <div className="ai-quota-notice-copy">
+        {lines.map((line) => (
+          <Paragraph key={line} as="span" typography="t7" color="#5A442C">
+            {line}
+          </Paragraph>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function QuotaCounterNotice({
+  label,
+  used,
+  limit,
+  exhaustedMessage,
+  recheckMessage,
+}: {
+  label: string;
+  used: number;
+  limit: number;
+  exhaustedMessage: string;
+  recheckMessage?: string;
+}) {
+  const remaining = Math.max(limit - used, 0);
+  const available = remaining > 0;
+  const safeLimit = Math.max(limit, 1);
+
+  return (
+    <div
+      className={`ai-quota-notice ai-quota-counter${
+        available ? "" : " is-exhausted"
+      }`}
+      aria-live="polite"
+    >
+      <div className="ai-quota-counter-header">
+        <div className="ai-quota-counter-heading">
+          <span className="ai-quota-counter-kicker">오늘의 {label}</span>
+          <strong>
+            {available ? `${remaining}회 남았어요` : exhaustedMessage}
+          </strong>
+        </div>
+
+        <span
+          className="ai-quota-counter-value"
+          aria-label={`${limit}회 중 ${remaining}회 남음`}
+        >
+          <strong>{remaining}</strong>
+          <span>/{limit}</span>
+        </span>
+      </div>
+
+      <div
+        className="ai-quota-meter"
+        role="progressbar"
+        aria-label={`${label} 남은 횟수`}
+        aria-valuemin={0}
+        aria-valuemax={limit}
+        aria-valuenow={remaining}
+      >
+        {Array.from({ length: safeLimit }, (_, index) => (
+          <span
+            key={index}
+            className={index < remaining ? "is-remaining" : ""}
+            aria-hidden="true"
+          />
+        ))}
+      </div>
+
+      <div className="ai-quota-counter-footer">
+        <span>{available ? `하루 최대 ${limit}회` : QUOTA_RESET_NOTICE}</span>
+        {available && recheckMessage !== undefined && (
+          <strong>{recheckMessage}</strong>
+        )}
+      </div>
     </div>
   );
 }
@@ -19,47 +101,41 @@ function NoticeBox({ lines }: { lines: string[] }) {
 type QuotaAction = "sketch" | "analyze";
 
 interface QuotaNoticeCopy {
+  label: string;
   localTest: string[];
   serverTest: string[];
   regionBlocked: string[];
   checking: string;
   exhausted: string;
   recheck: string;
-  available: (used: number, limit: number) => string[];
 }
 
 const QUOTA_NOTICE_COPY: Record<QuotaAction, QuotaNoticeCopy> = {
   sketch: {
+    label: "그림 그리기",
     localTest: [
       "테스트 모드에서는 원본 사진으로 그림일기를 미리 볼 수 있어요.",
     ],
-    serverTest: ["테스트 모드 · 그림 그리기: 횟수 제한 없이 이용할 수 있어요."],
+    serverTest: ["테스트 모드 · 그림 그리기를 제한 없이 이용할 수 있어요."],
     regionBlocked: [
       "해외에서는 AI친구가 그림을 그려줄 수 없어요.",
       "원본 사진으로 그림일기를 완성할 수 있어요.",
     ],
     checking: "오늘의 그림 그리기 기회를 확인하고 있어요.",
-    exhausted: "오늘의 그림 그리기 기회를 모두 사용했어요.",
-    recheck: "사진을 바꿔 다시 그리면 1회 차감돼요.",
-    available: (used, limit) => [
-      `하루에 ${limit}번까지 그림을 그릴 수 있어요.`,
-      `오늘 그림 그리기: ${used}/${limit}`,
-    ],
+    exhausted: "오늘 기회를 모두 사용했어요",
+    recheck: "다시 그리면 1회 사용",
   },
   analyze: {
-    localTest: ["테스트 모드 · 일기 검사: 횟수 제한 없이 이용할 수 있어요."],
-    serverTest: ["테스트 모드 · 일기 검사: 횟수 제한 없이 이용할 수 있어요."],
+    label: "일기 검사",
+    localTest: ["테스트 모드 · 일기 검사를 제한 없이 이용할 수 있어요."],
+    serverTest: ["테스트 모드 · 일기 검사를 제한 없이 이용할 수 있어요."],
     regionBlocked: [
       "해외에서는 선생님이 일기를 검사해 줄 수 없어요.",
       "선생님 한마디 없이도 그림일기를 완성할 수 있어요.",
     ],
     checking: "오늘의 일기 검사 기회를 확인하고 있어요.",
-    exhausted: "오늘의 일기 검사 기회를 모두 사용했어요.",
-    recheck: "수정 후 다시 검사받으면 1회 차감돼요.",
-    available: (used, limit) => [
-      `선생님은 하루에 ${limit}번까지 일기를 검사해 줘요.`,
-      `오늘 일기 검사: ${used}/${limit}`,
-    ],
+    exhausted: "오늘 기회를 모두 사용했어요",
+    recheck: "다시 검사하면 1회 사용",
   },
 };
 
@@ -77,7 +153,7 @@ function QuotaNotice({
     return <NoticeBox lines={copy.localTest} />;
   }
   if (isRegionBlocked(quota)) {
-    return <NoticeBox lines={copy.regionBlocked} />;
+    return <NoticeBox lines={copy.regionBlocked} tone="warning" />;
   }
   if (quota.mode === "ready" && quota.testMode) {
     return <NoticeBox lines={copy.serverTest} />;
@@ -88,15 +164,17 @@ function QuotaNotice({
     ) : null;
   }
 
-  const { used, limit, available } = quota[action];
-  const lines = available
-    ? [
-        ...copy.available(used, limit),
-        ...(showRecheckNotice ? [copy.recheck] : []),
-      ]
-    : [copy.exhausted, QUOTA_RESET_NOTICE];
+  const { used, limit } = quota[action];
 
-  return <NoticeBox lines={lines} />;
+  return (
+    <QuotaCounterNotice
+      label={copy.label}
+      used={used}
+      limit={limit}
+      exhaustedMessage={copy.exhausted}
+      recheckMessage={showRecheckNotice ? copy.recheck : undefined}
+    />
+  );
 }
 
 export function SketchQuotaNotice({

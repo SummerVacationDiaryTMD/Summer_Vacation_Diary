@@ -46,7 +46,6 @@ export function formatKoreanDate(date: string): string {
 // The actual handwritten font is narrower than its nominal 40px em box.
 // The title region clips at the AI badge boundary as a final safety net.
 export const TITLE_MAX_LENGTH = 15;
-export const CONTENT_MIN_LENGTH = 20;
 export const AI_CONTENT_WATERMARK = "AI 생성 콘텐츠";
 
 // Daily AI budgets reset at 00:00 UTC, which is 09:00 KST — so "내일" alone

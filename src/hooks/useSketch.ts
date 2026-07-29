@@ -45,14 +45,13 @@ export type SketchState =
 const CACHE_MAX_ENTRIES = 2;
 
 /**
- * Runs the stage-3 photo → drawing conversion while `active` is true.
+ * Runs the photo → drawing conversion while `active` is true.
  *
- * The conversion starts the moment the user leaves the upload step (a
- * commitment signal — no API spend for abandoned photos) and runs while they
- * write, so the 30-60s the image model needs is hidden behind typing time.
- * The finished sketch is written INTO the draft, which both persists it and
- * makes "photo changed → sketch cleared" a single-source-of-truth rule that
- * App.tsx enforces at the moment the photo changes.
+ * App activates it only after the user presses 검사 받기, so selecting a photo
+ * or beginning a diary never spends a limited conversion opportunity. The
+ * finished sketch is written INTO the draft, which both persists it and makes
+ * "photo changed → sketch cleared" a single-source-of-truth rule that App.tsx
+ * enforces at the moment the photo changes.
  */
 export function useSketch(
   draft: Pick<DiaryDraft, "photoDataUrl" | "sketchDataUrl">,

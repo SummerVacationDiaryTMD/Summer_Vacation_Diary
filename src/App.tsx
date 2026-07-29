@@ -3,12 +3,12 @@ import { SafeAreaInsets } from "@apps-in-toss/web-framework";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import "./App.css";
+import { AnalyzeQuotaNotice } from "./components/AiQuotaNotice";
 import { DiaryButton } from "./components/DiaryButton";
 import { DiaryShareModal } from "./components/DiaryShareModal";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
 import { PreviewStep } from "./components/PreviewStep";
 import { WriteStep } from "./components/WriteStep";
-import { CONTENT_MIN_LENGTH } from "./constants/diary";
 import {
   isActionSpent,
   isRegionBlocked,
@@ -62,10 +62,12 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
 };
 
 const STEP_PROGRESS: Record<Step, { current: number; label: string }> = {
-  upload: { current: 1, label: "여름 한 장" },
-  write: { current: 2, label: "오늘의 이야기" },
-  preview: { current: 3, label: "마지막 확인" },
+  upload: { current: 1, label: "사진 고르기" },
+  write: { current: 2, label: "일기 쓰기" },
+  preview: { current: 3, label: "미리보기" },
 };
+
+const STEP_LABELS = ["사진 고르기", "일기 쓰기", "미리보기"] as const;
 
 const ONBOARDING_DECORATIONS = [
   { name: "sun", file: "sun.png" },
@@ -150,9 +152,9 @@ function App() {
   // typo fixes. Results are cached by input inside the hook, so asking again
   // without editing is free.
   const { state: analysisState, run: runAnalysis } = useDiaryAnalysis(draft);
-  // The drawing conversion starts when the user commits to writing (leaves
-  // the upload step): its 30-60s latency then overlaps with typing time, and
-  // an abandoned photo pick never spends an API call.
+  // Photo conversion and diary analysis both start only after 검사 받기. This
+  // preserves the user's limited drawing opportunities when they leave midway
+  // through writing or return to replace the photo.
   const {
     state: sketchState,
     retry: retrySketch,
@@ -161,7 +163,7 @@ function App() {
   } = useSketch(
     draft,
     updateDraft,
-    step !== "upload",
+    step === "preview",
     sketchAllowed,
     photoSourceHash,
   );
@@ -257,11 +259,10 @@ function App() {
   const header = STEP_HEADERS[step];
   const progress = STEP_PROGRESS[step];
   const canWrite = draft.photoDataUrl !== null;
-  // trim() on both fields so whitespace-only input can't pass validation
-  // (the spec's exception handling blocks empty/too-short diaries).
-  const canPreview =
-    draft.title.trim() !== "" &&
-    Array.from(draft.content.trim()).length >= CONTENT_MIN_LENGTH;
+  // trim() on both fields so whitespace-only input can't pass validation.
+  const canPreview = draft.title.trim() !== "" && draft.content.trim() !== "";
+  const previewPreparing =
+    sketchState.status === "loading" || analysisState.status === "loading";
   const includesAiGeneratedContent =
     (isSketchAiConnected && sketchState.status === "success") ||
     (isAiConnected && analysisState.status === "success");
@@ -324,10 +325,6 @@ function App() {
 
     setHasVisitedWrite(true);
 
-    if (isActionSpent(quota, "sketch") && draft.sketchDataUrl === null) {
-      toast.openToast("오늘 사진을 그림으로 바꿀 기회는 다 사용했어요.");
-    }
-
     // PhotoUploadStep already collects the required processing consent before
     // a photo can enter the draft, so another confirmation here would repeat
     // the same notice and interrupt the user a second time.
@@ -336,18 +333,10 @@ function App() {
 
   const handlePreview = () => {
     const titleMissing = draft.title.trim() === "";
-    const trimmedContentLength = Array.from(draft.content.trim()).length;
-    const contentMissing = trimmedContentLength === 0;
-    const contentTooShort = trimmedContentLength < CONTENT_MIN_LENGTH;
+    const contentMissing = draft.content.trim() === "";
 
     if (titleMissing && contentMissing) {
       toast.openToast("제목과 일기 내용을 입력해 주세요.");
-      return;
-    }
-    if (titleMissing && contentTooShort) {
-      toast.openToast(
-        `제목을 입력하고 일기를 ${CONTENT_MIN_LENGTH}자 이상 적어주세요.`,
-      );
       return;
     }
     if (titleMissing) {
@@ -358,25 +347,29 @@ function App() {
       toast.openToast("일기 내용을 입력해 주세요.");
       return;
     }
-    if (contentTooShort) {
-      toast.openToast(
-        `일기 내용을 ${CONTENT_MIN_LENGTH}자 이상 입력해 주세요.`,
-      );
-      return;
-    }
 
     setHasVisitedPreview(true);
 
-    // Navigation is never gated on the budget: with no check the preview simply
-    // shows the diary without a comment, and 완성하기 still works from there.
+    // Navigation is never gated on the budget: unavailable AI results fall
+    // back to the original photo or an uncommented diary, and 완성하기 still
+    // works from there.
     if (analyzeAllowed) {
       runAnalysis();
-    } else if (
-      isActionSpent(quota, "analyze") &&
-      analysisState.status !== "success"
-    ) {
+    }
+
+    const sketchOpportunitySpent =
+      isActionSpent(quota, "sketch") && draft.sketchDataUrl === null;
+    const analysisOpportunitySpent =
+      isActionSpent(quota, "analyze") && analysisState.status !== "success";
+
+    if (sketchOpportunitySpent && analysisOpportunitySpent) {
+      toast.openToast("오늘 사진 변환과 일기 검사 기회를 모두 사용했어요.");
+    } else if (sketchOpportunitySpent) {
+      toast.openToast("오늘 사진을 그림으로 바꿀 기회는 다 사용했어요.");
+    } else if (analysisOpportunitySpent) {
       toast.openToast("오늘 일기 검사 기회는 다 사용했어요.");
     }
+
     setStep("preview");
   };
 
@@ -503,24 +496,28 @@ function App() {
         className="summer-step-progress"
         aria-label={`그림일기 만들기 ${progress.current}단계, ${progress.label}`}
       >
-        <div className="summer-step-dots" aria-hidden="true">
-          {[1, 2, 3].map((item) => (
-            <span
-              key={item}
-              className={
-                item === progress.current
-                  ? "is-current"
-                  : item < progress.current
-                    ? "is-complete"
-                    : ""
-              }
-            />
-          ))}
-        </div>
-        <span className="summer-step-label">
-          <strong>{progress.current}/3</strong>
-          {progress.label}
-        </span>
+        <ol className="summer-step-list">
+          {STEP_LABELS.map((label, index) => {
+            const item = index + 1;
+
+            return (
+              <li
+                key={label}
+                aria-current={item === progress.current ? "step" : undefined}
+                className={
+                  item === progress.current
+                    ? "is-current"
+                    : item < progress.current
+                      ? "is-complete"
+                      : ""
+                }
+              >
+                <span className="summer-step-marker" aria-hidden="true" />
+                <span className="summer-step-name">{label}</span>
+              </li>
+            );
+          })}
+        </ol>
       </div>
 
       {step === "upload" && (
@@ -556,11 +553,12 @@ function App() {
         />
       )}
       {step === "write" && (
-        <WriteStep
-          draft={draft}
-          onChange={updateDraft}
-          showRecheckNotice={recheckNoticeVisible.analyze}
-        />
+        <>
+          <AnalyzeQuotaNotice
+            showRecheckNotice={recheckNoticeVisible.analyze}
+          />
+          <WriteStep draft={draft} onChange={updateDraft} />
+        </>
       )}
       {step === "preview" && (
         <PreviewStep
@@ -647,11 +645,15 @@ function App() {
           <DiaryButton
             stable
             fullWidth
-            disabled={saving}
-            aria-busy={saving}
+            disabled={saving || previewPreparing}
+            aria-busy={saving || previewPreparing}
             onClick={handleFinish}
           >
-            {saving ? "완성 중…" : "일기 완성하기"}
+            {saving
+              ? "완성 중…"
+              : previewPreparing
+                ? "선생님 검사 중…"
+                : "일기 완성하기"}
           </DiaryButton>
         </AppBottomBar>
       )}
