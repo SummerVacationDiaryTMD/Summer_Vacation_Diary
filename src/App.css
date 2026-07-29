@@ -2250,6 +2250,7 @@ html:has(.diary-content-section textarea:focus) {
   /* A single horizontal strip crosses the sheet edge without needing the tall
      overhang that the two diagonal corner strips required. */
   padding-top: 12px;
+  padding-bottom: calc(96px + var(--app-safe-bottom));
 }
 
 /* 종이 위쪽 가운데를 눌러 붙인 마스킹 테이프.
@@ -2756,6 +2757,10 @@ html:has(.diary-content-section textarea:focus) {
   min-width: 0;
 }
 
+.time-theme-row + .weather-options {
+  margin-top: 9px;
+}
+
 /* 손으로 오려 붙인 날씨 스티커.
    Not rotated: these sit inside the form and a fractional rotation composites
    the chip, softening its label. The hand-cut radius carries the look. */
@@ -2764,7 +2769,7 @@ html:has(.diary-content-section textarea:focus) {
   display: inline-flex;
   width: 100%;
   min-width: 0;
-  min-height: 54px;
+  min-height: 50px;
   box-sizing: border-box;
   flex-direction: column;
   align-items: center;
@@ -2849,8 +2854,8 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .weather-option-icon {
-  width: 24px;
-  height: 24px;
+  width: 23px;
+  height: 23px;
   object-fit: contain;
   flex: 0 0 auto;
 }
@@ -2863,9 +2868,9 @@ html:has(.diary-content-section textarea:focus) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-top: 10px;
-  padding: 7px 8px 7px 12px;
+  gap: 10px;
+  margin-top: 0;
+  padding: 6px 7px 6px 10px;
   border: 1.5px solid rgba(115, 185, 158, 0.42);
   border-radius: 15px 12px 14px 13px;
   background: rgba(255, 253, 245, 0.78);
@@ -2886,9 +2891,9 @@ html:has(.diary-content-section textarea:focus) {
 
 .time-theme-options {
   display: grid;
-  width: min(164px, 52%);
-  min-width: 142px;
-  padding: 3px;
+  width: min(164px, 56%);
+  min-width: 136px;
+  padding: 2px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   border-radius: 12px 10px 11px 9px;
   background: #e9eee8;
@@ -2898,11 +2903,11 @@ html:has(.diary-content-section textarea:focus) {
 .time-theme-option {
   display: inline-flex;
   min-width: 0;
-  min-height: 36px;
+  min-height: 34px;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 5px 8px;
+  padding: 4px 7px;
   border: 0;
   border-radius: 9px 7px 8px 7px;
   background: transparent;
@@ -2927,8 +2932,8 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .time-theme-icon {
-  width: 25px;
-  height: 25px;
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
   object-fit: contain;
 }
@@ -2948,180 +2953,6 @@ html:has(.diary-content-section textarea:focus) {
 
 .time-theme-option:active {
   transform: scale(0.96);
-}
-
-.weather-theme-preview {
-  display: grid;
-  min-height: 68px;
-  grid-template-columns: 104px minmax(0, 1fr);
-  align-items: stretch;
-  gap: 12px;
-  width: 100%;
-  margin-top: 9px;
-  padding: 0;
-  overflow: hidden;
-  border: 1.5px solid rgba(115, 185, 158, 0.34);
-  border-radius: 15px 12px 14px 13px;
-  background: rgba(255, 253, 245, 0.86);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.58),
-    1px 2px 0 rgba(93, 145, 124, 0.1);
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  animation: weather-theme-preview-change 360ms ease-out both;
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease;
-}
-
-.weather-theme-preview:hover {
-  border-color: rgba(89, 158, 132, 0.58);
-}
-
-.weather-theme-preview:focus {
-  outline: none;
-}
-
-.weather-theme-preview:focus-visible {
-  outline: 3px solid rgba(115, 185, 158, 0.38);
-  outline-offset: 3px;
-}
-
-.weather-theme-preview:active {
-  transform: scale(0.985);
-}
-
-.weather-theme-preview-sky {
-  position: relative;
-  min-height: 68px;
-  overflow: hidden;
-  border-right: 1px solid rgba(255, 255, 255, 0.5);
-  background: linear-gradient(160deg, #e8faff, #84cbe0);
-}
-
-.weather-theme-preview.preview-night .weather-theme-preview-sky {
-  background: linear-gradient(160deg, #152744, #567ba0);
-}
-
-.weather-theme-preview.preview-weather-partly-cloudy
-  .weather-theme-preview-sky {
-  background: linear-gradient(160deg, #e2f2f2, #94bdca);
-}
-
-.weather-theme-preview.preview-night.preview-weather-partly-cloudy
-  .weather-theme-preview-sky {
-  background: linear-gradient(160deg, #17263f, #536e86);
-}
-
-.weather-theme-preview.preview-weather-cloudy .weather-theme-preview-sky {
-  background: linear-gradient(160deg, #e6ebec, #9eafb5);
-}
-
-.weather-theme-preview.preview-night.preview-weather-cloudy
-  .weather-theme-preview-sky {
-  background: linear-gradient(160deg, #1b2838, #617582);
-}
-
-.weather-theme-preview.preview-weather-rainy .weather-theme-preview-sky {
-  background: linear-gradient(160deg, #d7e3e7, #748f9b);
-}
-
-.weather-theme-preview.preview-night.preview-weather-rainy
-  .weather-theme-preview-sky {
-  background: linear-gradient(160deg, #111e31, #4a6574);
-}
-
-.weather-theme-preview.preview-weather-stormy .weather-theme-preview-sky {
-  background: linear-gradient(160deg, #c3ced7, #526a7c);
-}
-
-.weather-theme-preview.preview-night.preview-weather-stormy
-  .weather-theme-preview-sky {
-  background: linear-gradient(160deg, #0b1525, #40566a);
-}
-
-.weather-theme-preview.preview-weather-unknown .weather-theme-preview-sky {
-  background: linear-gradient(160deg, #e1f2f2, #9fcbd0);
-}
-
-.weather-theme-preview.preview-night.preview-weather-unknown
-  .weather-theme-preview-sky {
-  background: linear-gradient(160deg, #101f40, #466d91);
-}
-
-.weather-theme-preview-weather,
-.weather-theme-preview-time {
-  position: absolute;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 3px rgba(31, 63, 73, 0.14));
-}
-
-.weather-theme-preview-weather {
-  top: 15px;
-  left: 13px;
-  width: 43px;
-  height: 43px;
-}
-
-.weather-theme-preview-time {
-  top: 7px;
-  right: 7px;
-  width: 28px;
-  height: 28px;
-}
-
-.weather-theme-preview-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  padding: 8px 10px 8px 0;
-  color: #60755f;
-  font-family: "NanumCoDingHeuiMang", sans-serif;
-  line-height: 1.15;
-}
-
-.weather-theme-preview-copy span {
-  color: #4f6657;
-  font-size: 12px;
-  -webkit-text-stroke: 0.18px currentcolor;
-  paint-order: stroke fill;
-}
-
-.weather-theme-preview-copy strong {
-  margin-top: 2px;
-  color: #594b34;
-  font-size: 16px;
-  font-weight: 400;
-  -webkit-text-stroke: 0.3px currentcolor;
-  paint-order: stroke fill;
-}
-
-.weather-theme-preview-copy small {
-  margin-top: 4px;
-  overflow: hidden;
-  color: #718076;
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
-  font-size: 11px;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-@keyframes weather-theme-preview-change {
-  from {
-    opacity: 0.48;
-    transform: translateY(-3px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* 선생님이 그려 준 빨간 크레용 동그라미. A pseudo-element rather than a node,
@@ -3186,10 +3017,6 @@ html:has(.diary-content-section textarea:focus) {
     opacity: 0.82;
     -webkit-mask-image: none;
     mask-image: none;
-  }
-
-  .weather-theme-preview {
-    animation: none;
   }
 }
 
