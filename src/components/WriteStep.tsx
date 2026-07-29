@@ -66,9 +66,6 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
     onChange({ title: limitedTitle });
   };
   const contentAtLimit = contentLength >= CONTENT_MAX_LENGTH;
-  const contentStatus = contentAtLimit
-    ? `멋진 여름 이야기가 가득 찼어요`
-    : `${CONTENT_MAX_LENGTH - contentLength}자 더 적을 수 있어요`;
   // A whitespace-only title also blocks the preview button (App.tsx trims it),
   // so surface the reason here instead of leaving the button silently disabled.
   const titleBlank = draft.title.length > 0 && draft.title.trim() === "";
@@ -232,7 +229,7 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
             }`}
             aria-live="polite"
           >
-            <span>{contentStatus}</span>
+            {contentAtLimit && <span>멋진 여름 이야기가 가득 찼어요</span>}
             <strong>
               {contentLength}/{CONTENT_MAX_LENGTH}
             </strong>
