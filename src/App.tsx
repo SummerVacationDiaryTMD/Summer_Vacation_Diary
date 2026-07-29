@@ -462,12 +462,19 @@ function App() {
 
   return (
     <main
-      className={`app-shell app-shell-${step}${isAndroid ? " app-shell-android" : ""}`}
+      className={`app-shell app-shell-${step} weather-${draft.weather}${isAndroid ? " app-shell-android" : ""}`}
     >
       <div className="summer-sky-accent" aria-hidden="true">
         <span className="summer-sun" />
         <span className="summer-cloud summer-cloud-one" />
         <span className="summer-cloud summer-cloud-two" />
+        <span className="summer-cloud summer-cloud-extra summer-cloud-three" />
+        <span className="summer-cloud summer-cloud-extra summer-cloud-four" />
+        <span className="summer-cloud summer-cloud-extra summer-cloud-five" />
+        <span className="summer-cloud summer-cloud-extra summer-cloud-six" />
+        <span className="summer-weather-rain" />
+        <span className="summer-weather-lightning" />
+        <span className="summer-weather-stars" />
       </div>
       <Top
         className="app-top"
