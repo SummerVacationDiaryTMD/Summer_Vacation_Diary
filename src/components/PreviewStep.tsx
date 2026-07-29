@@ -1,5 +1,5 @@
 import { Paragraph } from "@toss/tds-mobile";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 
 import {
   AI_CONTENT_WATERMARK,
@@ -7,6 +7,7 @@ import {
   weatherLabel,
 } from "../constants/diary";
 import { DiaryFrameBackground } from "./DiaryFrameBackground";
+import { StarMark } from "./StarMark";
 import type { AnalysisState } from "../hooks/useDiaryAnalysis";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
 import type { SketchState } from "../hooks/useSketch";
@@ -27,12 +28,17 @@ import {
 import { diaryDateParts } from "../utils/diaryDate";
 import { pickCorrectionMarkAsset } from "../utils/correctionMarks";
 import {
+  buildAnnotationTimeline,
+  buildDiaryCells,
+  correctionMarkBox,
+  profanityMarkBox,
+  starMarkBox,
+  type AnnotationTimeline,
+} from "../utils/diaryAnnotations";
+import {
   handwritingVariation,
   TITLE_HANDWRITING_STRENGTH,
 } from "../utils/handwriting";
-import { buildHighlightSegments } from "../utils/highlight";
-import { buildStarPlacements, pickStarMarkAsset } from "../utils/starMarks";
-import { buildProfanityCheckRuns } from "../utils/profanityCheck";
 import { pickProfanityMarkAsset } from "../utils/profanityMarks";
 import { STAMP_ALT_TEXT, STAMP_IMAGE_URLS } from "../constants/stamp";
 import { DiaryButton } from "./DiaryButton";
@@ -68,6 +74,18 @@ function handwritingCharacterStyle(
     fontWeight: variation.fontWeight,
     opacity: variation.opacity,
     transform: `translate(${variation.offsetXEm}em, ${variation.offsetYEm}em) rotate(${variation.rotationDeg}deg)`,
+  };
+}
+
+function contentRegionStyle(
+  region: DiaryFrameRegion,
+  layout: DiaryFrameLayout,
+): CSSProperties {
+  return {
+    left: `${((region.x - layout.content.x) / layout.content.width) * 100}%`,
+    top: `${((region.y - layout.content.y) / layout.content.height) * 100}%`,
+    width: `${(region.width / layout.content.width) * 100}%`,
+    height: `${(region.height / layout.content.height) * 100}%`,
   };
 }
 
@@ -109,101 +127,21 @@ function HandwrittenText({
 function HighlightedContent({
   content,
   analysis,
+  timeline,
 }: {
   content: string;
   analysis: DiaryAnalysis | null;
+  timeline: AnnotationTimeline;
 }) {
   const columnCount = DIARY_FRAME.columns;
   const layout = getDiaryFrameLayout(content);
   const rowCount = layout.contentRows;
-  const segments =
-    analysis === null
-      ? [{ text: content, mark: null }]
-      : buildHighlightSegments(
-          content,
-          analysis.highlightWords,
-          analysis.highlightSentence,
-        );
-  const cells: Array<{
-    text: string;
-    mark: "circle" | "underline" | "both" | null;
-  }> = [];
-
-  for (const segment of segments) {
-    for (const character of Array.from(segment.text)) {
-      if (character === "\n") {
-        while (cells.length % columnCount !== 0) {
-          cells.push({
-            text: "",
-            mark: null,
-          });
-        }
-        continue;
-      }
-      cells.push({
-        text: character,
-        mark: segment.mark,
-      });
-    }
-  }
-
-  // Fill the five manuscript rows printed on the supplied diary frame.
-  const visibleCellCount = Math.max(
-    columnCount * rowCount,
-    Math.ceil(cells.length / columnCount) * columnCount,
+  const visibleCells = buildDiaryCells(
+    content,
+    analysis,
+    columnCount,
+    rowCount,
   );
-  while (cells.length < visibleCellCount) {
-    cells.push({
-      text: "",
-      mark: null,
-    });
-  }
-  const visibleCells = cells.slice(0, columnCount * rowCount);
-  const starPlacements =
-    analysis === null
-      ? []
-      : buildStarPlacements(
-          content,
-          analysis.starWords,
-          columnCount,
-          columnCount * rowCount,
-        );
-  const profanityCheckRuns =
-    analysis === null
-      ? []
-      : buildProfanityCheckRuns(content, columnCount, columnCount * rowCount);
-
-  const correctionRuns: Array<{
-    mark: "circle" | "underline";
-    row: number;
-    startColumn: number;
-    length: number;
-  }> = [];
-  (["circle", "underline"] as const).forEach((mark) => {
-    visibleCells.forEach((cell, index) => {
-      if (cell.mark !== mark && cell.mark !== "both") {
-        return;
-      }
-      const row = Math.floor(index / columnCount);
-      const column = index % columnCount;
-      const previous = correctionRuns[correctionRuns.length - 1];
-      if (
-        previous !== undefined &&
-        previous.mark === mark &&
-        previous.row === row &&
-        previous.startColumn + previous.length === column
-      ) {
-        previous.length += 1;
-      } else {
-        correctionRuns.push({
-          mark,
-          row,
-          startColumn: column,
-          length: 1,
-        });
-      }
-    });
-  });
 
   return (
     <>
@@ -222,80 +160,96 @@ function HighlightedContent({
         );
       })}
       <span className="diary-correction-layer" aria-hidden>
-        {correctionRuns.map((run, index) => (
-          <span
-            key={index}
-            className={`diary-correction diary-correction-${run.mark}`}
-            style={
-              {
-                "--mark-delay":
-                  run.mark === "underline"
-                    ? `${
-                        correctionRuns
-                          .slice(0, index)
-                          .filter(({ mark }) => mark === "underline").length *
-                        950
-                      }ms`
-                    : `${
-                        5200 +
-                        correctionRuns
-                          .slice(0, index)
-                          .filter(({ mark }) => mark === "circle").length *
-                          1450
-                      }ms`,
-                left: `${(run.startColumn / columnCount) * 100}%`,
-                top: `${(run.row / rowCount) * 100}%`,
-                width: `${(run.length / columnCount) * 100}%`,
-                height: `${100 / rowCount}%`,
-                backgroundImage: `url("${pickCorrectionMarkAsset(
-                  run.mark,
-                  run.row,
-                  run.startColumn,
-                  run.length,
-                )}")`,
-              } as CSSProperties
-            }
-          />
-        ))}
-        {starPlacements.map((placement, index) => (
-          <span
-            key={`star-${index}`}
-            className="diary-star-mark"
-            style={
-              {
-                "--mark-delay": `${13600 + index * 1600}ms`,
-                left: `${(placement.column / columnCount) * 100}%`,
-                top: `${(placement.row / rowCount) * 100}%`,
-                width: `${100 / columnCount}%`,
-                height: `${100 / rowCount}%`,
-                backgroundImage: `url("${pickStarMarkAsset(
-                  placement.row,
-                  placement.column,
-                )}")`,
-              } as CSSProperties
-            }
-          />
-        ))}
-        {profanityCheckRuns.map((run, index) => (
-          <span
-            key={`profanity-check-${index}`}
-            className="diary-profanity-check"
-            style={
-              {
-                "--mark-delay": "0ms",
-                left: `${(run.startColumn / columnCount) * 100}%`,
-                top: `${(run.row / rowCount) * 100}%`,
-                width: `${(run.length / columnCount) * 100}%`,
-                height: `${100 / rowCount}%`,
-                backgroundImage: `url("${pickProfanityMarkAsset(
-                  run.row,
-                  run.startColumn,
-                  run.length,
-                )}")`,
-              } as CSSProperties
-            }
-          />
-        ))}
+        {timeline.events.map((event, index) => {
+          const timingStyle = {
+            "--mark-delay": `${event.delayMs}ms`,
+            "--mark-duration": `${event.durationMs}ms`,
+          } as CSSProperties;
+
+          if (event.kind === "star") {
+            return (
+              <StarMark
+                key={`star-${index}`}
+                placement={event.placement}
+                style={{
+                  ...contentRegionStyle(
+                    starMarkBox(layout, event.placement),
+                    layout,
+                  ),
+                  ...timingStyle,
+                }}
+              />
+            );
+          }
+
+          if (event.kind === "profanity") {
+            return (
+              <span
+                key={`profanity-${index}`}
+                className="diary-profanity-check"
+                style={{
+                  ...contentRegionStyle(
+                    profanityMarkBox(layout, event.run),
+                    layout,
+                  ),
+                  ...timingStyle,
+                  backgroundImage: `url("${pickProfanityMarkAsset(
+                    event.run.row,
+                    event.run.startColumn,
+                    event.run.length,
+                  )}")`,
+                }}
+              />
+            );
+          }
+
+          const box = correctionMarkBox(layout, event.run);
+          if (event.kind === "circle") {
+            return (
+              <span
+                key={`circle-${index}`}
+                className="diary-correction diary-correction-circle"
+                style={{
+                  ...contentRegionStyle(box, layout),
+                  ...timingStyle,
+                  backgroundImage: `url("${pickCorrectionMarkAsset(
+                    "circle",
+                    event.run.row,
+                    event.run.startColumn,
+                    event.run.length,
+                  )}")`,
+                }}
+              />
+            );
+          }
+
+          const originalBox = correctionMarkBox(layout, event.originalRun);
+          const segmentOffset = box.x - originalBox.x;
+          return (
+            <span
+              key={`underline-${index}`}
+              className="diary-correction diary-correction-underline"
+              style={{
+                ...contentRegionStyle(box, layout),
+                ...timingStyle,
+              }}
+            >
+              <span
+                className="diary-underline-segment-image"
+                style={{
+                  left: `${(-segmentOffset / box.width) * 100}%`,
+                  width: `${(originalBox.width / box.width) * 100}%`,
+                  backgroundImage: `url("${pickCorrectionMarkAsset(
+                    "underline",
+                    event.originalRun.row,
+                    event.originalRun.startColumn,
+                    event.originalRun.length,
+                  )}")`,
+                }}
+              />
+            </span>
+          );
+        })}
       </span>
     </>
   );
@@ -330,6 +284,20 @@ export function PreviewStep({
   const [renderedPreview, setRenderedPreview] =
     useState<ComposedDiaryImage | null>(null);
   const animatedAnalysis = renderedPreview === null ? null : analysis;
+  const annotationTimeline = useMemo(
+    () =>
+      buildAnnotationTimeline(
+        draft.content,
+        animatedAnalysis,
+        DIARY_FRAME.columns,
+        DIARY_FRAME.baseRows,
+      ),
+    [animatedAnalysis, draft.content],
+  );
+  const commentWriteDurationMs =
+    Math.max(animatedAnalysis?.comment.length ?? 0, 1) * 180;
+  const commentDelayMs = annotationTimeline.totalDurationMs + 350;
+  const stampDelayMs = commentDelayMs + commentWriteDurationMs + 300;
 
   useEffect(() => {
     const imageDataUrl = draft.sketchDataUrl ?? draft.photoDataUrl;
@@ -409,8 +377,7 @@ export function PreviewStep({
           style={
             {
               aspectRatio: `${frameLayout.width} / ${frameLayout.height}`,
-              "--stamp-delay": `${17450 + (analysis?.comment.length ?? 0) * 180}ms`,
-              "--preview-delay": `${18450 + (analysis?.comment.length ?? 0) * 180}ms`,
+              "--stamp-delay": `${stampDelayMs}ms`,
             } as CSSProperties
           }
         >
@@ -520,6 +487,7 @@ export function PreviewStep({
             <HighlightedContent
               content={draft.content}
               analysis={animatedAnalysis}
+              timeline={annotationTimeline}
             />
           </div>
 
@@ -529,7 +497,9 @@ export function PreviewStep({
             className="diary-card-comment"
             style={frameRegionStyle(frameLayout.comment, frameLayout)}
           >
-            <div className="diary-comment-label">선생님 한줄평</div>
+            {animatedAnalysis === null && (
+              <div className="diary-comment-label">선생님 한마디</div>
+            )}
 
             {analysisState.status === "loading" && (
               <div className="comment-loading" aria-hidden="true">
@@ -578,6 +548,7 @@ export function PreviewStep({
                 {
                   ...frameRegionStyle(frameLayout.comment, frameLayout),
                   "--comment-write-duration": `${Math.max(animatedAnalysis.comment.length, 1) * 180}ms`,
+                  "--comment-delay": `${commentDelayMs}ms`,
                   "--comment-write-steps": Math.max(
                     animatedAnalysis.comment.length,
                     1,
@@ -604,14 +575,6 @@ export function PreviewStep({
               className="diary-stamp"
               src={STAMP_IMAGE_URLS[animatedAnalysis.stamp]}
               alt={STAMP_ALT_TEXT[animatedAnalysis.stamp]}
-            />
-          )}
-
-          {renderedPreview !== null && analysisState.status === "success" && (
-            <img
-              className="diary-rendered-preview"
-              src={renderedPreview.dataUrl}
-              alt="저장될 그림일기 미리보기"
             />
           )}
         </div>

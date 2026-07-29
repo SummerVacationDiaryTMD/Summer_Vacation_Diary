@@ -3,14 +3,34 @@ import star2 from "../assets/handwrites/processed/star2.png";
 
 import { pickPositionedAsset } from "./positionedAsset";
 
-const STAR_MARKS = [star1, star2];
+const STAR_MARKS = [
+  {
+    url: star1,
+    // Existing crayon stroke traced in the requested
+    // 1(left) → 2(right) → 3(lower-left) → 4(top) → 5(lower-right) → 1 order.
+    path: "M 25 52 L 85 31 L 32 89 L 58 12 L 66 86 L 25 52",
+  },
+  {
+    url: star2,
+    path: "M 20 41 L 88 29 L 31 83 L 54 10 L 61 92 L 20 41",
+  },
+] as const;
 
 /** Star URLs that must be preloaded before the canvas export is drawn. */
-export const STAR_MARK_URLS = [...STAR_MARKS];
+export const STAR_MARK_URLS = STAR_MARKS.map(({ url }) => url);
 
 export interface StarPlacement {
   row: number;
   column: number;
+}
+
+export interface StarMarkDefinition {
+  url: string;
+  path: string;
+}
+
+export function pickStarMark(row: number, column: number): StarMarkDefinition {
+  return pickPositionedAsset(STAR_MARKS, row, column);
 }
 
 /**
@@ -18,7 +38,7 @@ export interface StarPlacement {
  * ensuring the DOM preview and canvas export always choose the same asset.
  */
 export function pickStarMarkAsset(row: number, column: number): string {
-  return pickPositionedAsset(STAR_MARKS, row, column);
+  return pickStarMark(row, column).url;
 }
 
 function findCharacters(
