@@ -12,10 +12,10 @@
 | ------------------ | ------------------------ | ------------------------------------ | ---------------------------------- |
 | 원본을 자른 사진   | 파일 선택·Canvas         | draft의 JPEG data URL                | sketch, analyze 요청               |
 | 그림 변환 이미지   | 로컬 필터 또는 Edge 응답 | draft의 JPEG data URL                | 추가 전송 없음                     |
-| 제목               | 작성 화면                | draft                                | analyze 요청                       |
+| 제목               | 작성 화면                | draft                                | 전송하지 않음                      |
 | 본문               | 작성 화면                | draft                                | analyze 요청                       |
-| 날짜               | 작성 화면                | draft                                | 현재 Edge 요청에는 포함하지 않음   |
-| 날씨               | 작성 화면                | draft                                | analyze 요청에 한국어 label로 포함 |
+| 날짜               | 작성 화면                | draft                                | 전송하지 않음                      |
+| 날씨               | 작성 화면                | draft                                | 전송하지 않음                      |
 | 분석 결과          | mock 또는 Edge 응답      | React 메모리 캐시                    | 추가 전송 없음                     |
 | 완성 JPEG          | Canvas                   | React 메모리, 사용자가 저장하면 기기 | 공유 payload에는 포함하지 않음     |
 | Toss 익명 key      | Toss runtime             | 앱이 별도 저장하지 않음              | `x-diary-client-id`                |
@@ -42,7 +42,7 @@ Supabase가 설정된 경우:
 ```mermaid
 flowchart LR
     User["사용자 입력"] --> Client["React 클라이언트"]
-    Client -->|HTTPS POST<br/>사진·제목·본문·날씨| Edge["Supabase diary-ai"]
+    Client -->|HTTPS POST<br/>사진·본문| Edge["Supabase diary-ai"]
     Client -->|apikey + 익명 client id| Edge
     Edge --> Unknown["서버 내부 처리<br/>확인 필요"]
 ```

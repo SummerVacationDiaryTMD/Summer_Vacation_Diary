@@ -88,12 +88,12 @@ export function useDiaryAnalysis(draft: DiaryDraft) {
   const pendingRef = useRef<PendingRequest | null>(null);
   const requestIdRef = useRef(0);
 
-  // `date` is excluded on purpose: it doesn't change the AI input, so editing
-  // it must not invalidate a result the user already paid for.
-  const { photoDataUrl, title, content, weather } = draft;
+  // Display-only fields (title, date, weather) don't change the AI input, so
+  // editing them must not invalidate a result the user already paid for.
+  const { photoDataUrl, content } = draft;
   // JSON.stringify gives an unambiguous key without inventing a separator
   // that user text could theoretically contain.
-  const signature = JSON.stringify([photoDataUrl, title, content, weather]);
+  const signature = JSON.stringify([photoDataUrl, content]);
 
   const run = useCallback(() => {
     const cached = cacheRef.current.get(signature);
@@ -116,7 +116,7 @@ export function useDiaryAnalysis(draft: DiaryDraft) {
     if (pending === null || pending.signature !== signature) {
       pending = {
         signature,
-        promise: analyzeDiary({ photoDataUrl, title, content, weather }),
+        promise: analyzeDiary({ photoDataUrl, content }),
       };
       pendingRef.current = pending;
     }
@@ -165,7 +165,7 @@ export function useDiaryAnalysis(draft: DiaryDraft) {
           signature: request.signature,
         });
       });
-  }, [photoDataUrl, title, content, weather, signature]);
+  }, [photoDataUrl, content, signature]);
 
   return {
     state: toPublicState(

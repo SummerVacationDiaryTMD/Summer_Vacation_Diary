@@ -183,9 +183,7 @@ invalid-response
   "action": "analyze",
   "input": {
     "photoDataUrl": "data:image/jpeg;base64,...",
-    "title": "계곡에서",
-    "content": "가족과 계곡에서 물놀이를 해서 정말 즐거웠다.",
-    "weather": "맑음"
+    "content": "가족과 계곡에서 물놀이를 해서 정말 즐거웠다."
   }
 }
 ```
@@ -194,9 +192,7 @@ invalid-response
 | -------------------- | ---------------- | -------------------------------- |
 | `action`             | string           | 항상 `analyze`                   |
 | `input.photoDataUrl` | string 또는 null | 현재 사진 data URL               |
-| `input.title`        | string           | 화면 최대 15자, 공백만 입력 불가 |
 | `input.content`      | string           | 화면 최대 65자, 공백만 입력 불가 |
-| `input.weather`      | string           | 한국어 표시값 5개 중 하나        |
 
 - **timeout:** 30초
 - **Path·Query parameter:** 없음

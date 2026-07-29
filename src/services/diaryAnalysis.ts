@@ -1,5 +1,4 @@
-import { QUOTA_RESET_NOTICE, weatherLabel } from "../constants/diary";
-import type { WeatherValue } from "../constants/diary";
+import { QUOTA_RESET_NOTICE } from "../constants/diary";
 import { containsProfanity } from "../utils/profanity";
 import {
   EdgeFunctionError,
@@ -21,9 +20,7 @@ import {
 
 export interface DiaryAnalysisInput {
   photoDataUrl: string | null;
-  title: string;
   content: string;
-  weather: WeatherValue;
 }
 
 export type DiaryStamp = "great" | "effort";
@@ -246,9 +243,7 @@ async function analyzeWithEdgeFunction(
         action: "analyze",
         input: {
           photoDataUrl: input.photoDataUrl,
-          title: input.title,
           content: input.content,
-          weather: weatherLabel(input.weather),
         },
       },
       REQUEST_TIMEOUT_MS,
