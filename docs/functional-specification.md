@@ -170,7 +170,7 @@
 - **권한:** `granite.config.ts` 권한 배열은 비어 있음. 저장은 런타임 API 또는 브라우저 다운로드 사용
 - **관련 화면:** 미리보기, 완성 모달
 - **관련 API:** Apps in Toss `saveBase64Data`
-- **관련 데이터:** 완성 이미지는 React 메모리에 머물고 저장 요청 시 기기로 전달됨
+- **관련 데이터:** 완성 이미지는 React 메모리에 머물고 저장 요청 시 기기로 전달됨. 별도의 보관 서비스(F-12)가 있지만 이 흐름에서는 호출하지 않음
 - **완료 조건:** 저장 API 완료 또는 브라우저 다운로드 시작
 - **상태:** `구현 완료`
 - **근거:** `src/App.tsx`, `src/utils/diaryImage.ts`, `src/services/diaryExport.ts`, `src/components/DiaryShareModal.tsx`
@@ -225,6 +225,24 @@
 - **완료 조건:** 사진·그림·제목·본문이 초기화됨
 - **상태:** `구현 완료`
 - **근거:** `src/App.tsx`, `src/hooks/useDiaryDraft.ts`
+
+## F-12 일기 보관 저장(서비스 계층)
+
+- **목적:** 완성한 일기를 기기에 보관해 이후 목록·상세 화면이 지난 일기를 다시 열 수 있게 합니다.
+- **Actor:** 없음(현재는 호출하는 화면이 없음)
+- **사전 조건:** 없음
+- **입력:** `saveDiary({ date, title, content, weather, imageDataUrl, includesAiGeneratedContent })`
+- **정상 흐름:** 일기별 key에 전체 기록을 쓴 뒤 목록 index에 요약을 추가합니다. `listDiaries`는 이미지를 제외한 요약을 날짜·저장 시각 내림차순으로 반환하고, `getDiary`는 한 편 전체를, `deleteDiary`는 index와 항목을 함께 지웁니다.
+- **예외 흐름:** 저장 실패는 `DiaryStoreError("storage-full")`로 알립니다. 손상된 데이터는 오류 대신 없는 것으로 처리하고 끊어진 index 참조를 정리합니다. 읽기 자체가 실패하면 `DiaryStoreError("read-failed")`입니다.
+- **출력:** 저장된 `DiaryRecord`
+- **권한:** `granite.config.ts` 권한 배열은 비어 있음
+- **관련 화면:** 없음
+- **관련 API:** Apps in Toss `Storage`(브라우저 개발 환경에서는 localStorage 대체)
+- **관련 데이터:** `summer-vacation-diary:diary-index:v1`, `summer-vacation-diary:diary:v1:<id>`
+- **완료 조건:** 저장·조회·삭제가 기기 저장소에 반영됨
+- **상태:** `부분 구현`
+- **부분 구현 이유:** 서비스 모듈만 구현했고 어떤 화면과도 연결하지 않았습니다. 토스 앱의 네이티브 `Storage` 경로와 항목당 용량 한도는 실기기 확인이 필요합니다.
+- **근거:** `src/services/diaryStore.ts`
 
 ## 수동 회귀 확인
 

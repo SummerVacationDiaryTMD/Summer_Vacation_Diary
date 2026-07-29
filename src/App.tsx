@@ -6,6 +6,7 @@ import "./App.css";
 import { AiQuotaNotice, AiRecheckNotice } from "./components/AiQuotaNotice";
 import { DiaryButton } from "./components/DiaryButton";
 import { DiaryShareModal } from "./components/DiaryShareModal";
+import { GrapeCalendarView } from "./components/GrapeCalendarView";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
 import { PreviewStep } from "./components/PreviewStep";
 import { WriteStep } from "./components/WriteStep";
@@ -24,12 +25,16 @@ import {
 } from "./services/diaryInspection";
 import { composeDiaryImage } from "./utils/diaryImage";
 import { isAiConnected } from "./services/diaryAnalysis";
+import { DiaryStoreError, saveDiary } from "./services/diaryStore";
 import { isSketchAiConnected } from "./services/styleTransfer";
 
 // Plain state instead of a router: the flow is a strict 3-step wizard with no
 // deep links yet, so a router would add dependency weight without benefit.
 // If stage 2+ needs shareable URLs, this maps 1:1 onto routes later.
-type Step = "upload" | "write" | "preview";
+// The calendar is a destination, not a stage: it sits outside the wizard and
+// returns to the start rather than advancing to a next step.
+type Step = "upload" | "write" | "preview" | "calendar";
+type WizardStep = Exclude<Step, "calendar">;
 
 interface DiaryConfirmOptions {
   title: string;
@@ -62,9 +67,13 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
     title: "그림일기 미리보기",
     subtitle: "선생님의 한마디와 함께 확인해 보세요.",
   },
+  calendar: {
+    title: "포도 달력",
+    subtitle: "일기를 완성한 날마다 포도알이 익어요.",
+  },
 };
 
-const STEP_PROGRESS: Record<Step, { current: number; label: string }> = {
+const STEP_PROGRESS: Record<WizardStep, { current: number; label: string }> = {
   upload: { current: 1, label: "사진 고르기" },
   write: { current: 2, label: "일기 쓰기" },
   preview: { current: 3, label: "미리보기" },
@@ -107,17 +116,22 @@ const ONBOARDING_TITLE_LINES = [
 function AppBottomBar({
   children,
   double = false,
+  even = false,
 }: {
   children: ReactNode;
   double?: boolean;
+  /** Splits the bar down the middle instead of favouring the primary action. */
+  even?: boolean;
 }) {
+  const layout = even
+    ? " app-bottom-bar-content-even"
+    : double
+      ? " app-bottom-bar-content-double"
+      : "";
+
   return (
     <div className="app-bottom-bar">
-      <div
-        className={`app-bottom-bar-content${double ? " app-bottom-bar-content-double" : ""}`}
-      >
-        {children}
-      </div>
+      <div className={`app-bottom-bar-content${layout}`}>{children}</div>
     </div>
   );
 }
@@ -254,7 +268,8 @@ function App() {
   }, [openAlert, regionBlocked, showOnboarding]);
 
   const header = STEP_HEADERS[step];
-  const progress = STEP_PROGRESS[step];
+  // No step counter on the calendar: it is not on the way to anywhere.
+  const progress = step === "calendar" ? null : STEP_PROGRESS[step];
   const canWrite = draft.photoDataUrl !== null;
   // trim() on both fields so whitespace-only input can't pass validation.
   const canPreview = draft.title.trim() !== "" && draft.content.trim() !== "";
@@ -475,6 +490,30 @@ function App() {
         // saving twice in one day can't collide on an identical fileName.
         fileName: `summer-diary-${draft.date}-${clockSuffix()}.jpg`,
       });
+
+      // Ripens the bead on the grape calendar. Kept in its own catch because
+      // the finished image is already on screen: failing to archive it is
+      // worth telling the user about, but not worth taking that away or
+      // offering to re-run the composition that just succeeded.
+      try {
+        await saveDiary({
+          date: draft.date,
+          // Stored as typed. The empty-title fallback is a display choice, and
+          // baking it in here would make it impossible to tell apart from a
+          // diary the user actually named 제목 없는 일기.
+          title: draft.title,
+          content: draft.content,
+          weather: draft.weather,
+          imageDataUrl,
+          includesAiGeneratedContent,
+        });
+      } catch (error) {
+        toast.openToast(
+          error instanceof DiaryStoreError
+            ? error.userMessage
+            : "일기를 포도 달력에 담지 못했어요.",
+        );
+      }
     } catch {
       const message = "그림일기 이미지를 만들지 못했어요. 다시 시도해 주세요.";
       // Retry button keeps the failure recoverable in place instead of
@@ -525,33 +564,37 @@ function App() {
         }
       />
 
-      <div
-        className="summer-step-progress"
-        aria-label={`그림일기 만들기 ${progress.current}단계, ${progress.label}`}
-      >
-        <ol className="summer-step-list">
-          {STEP_LABELS.map((label, index) => {
-            const item = index + 1;
+      {progress !== null && (
+        <div
+          className="summer-step-progress"
+          aria-label={`그림일기 만들기 ${progress.current}단계, ${progress.label}`}
+        >
+          <ol className="summer-step-list">
+            {STEP_LABELS.map((label, index) => {
+              const item = index + 1;
 
-            return (
-              <li
-                key={label}
-                aria-current={item === progress.current ? "step" : undefined}
-                className={
-                  item === progress.current
-                    ? "is-current"
-                    : item < progress.current
-                      ? "is-complete"
-                      : ""
-                }
-              >
-                <span className="summer-step-marker" aria-hidden="true" />
-                <span className="summer-step-name">{label}</span>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
+              return (
+                <li
+                  key={label}
+                  aria-current={item === progress.current ? "step" : undefined}
+                  className={
+                    item === progress.current
+                      ? "is-current"
+                      : item < progress.current
+                        ? "is-complete"
+                        : ""
+                  }
+                >
+                  <span className="summer-step-marker" aria-hidden="true" />
+                  <span className="summer-step-name">{label}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {step === "calendar" && <GrapeCalendarView />}
 
       {step === "upload" && (
         <>
@@ -635,7 +678,7 @@ function App() {
       )}
 
       {step === "upload" && (
-        <AppBottomBar>
+        <AppBottomBar even>
           <DiaryButton
             stable
             feedbackDisabled
@@ -644,6 +687,27 @@ function App() {
             onClick={handleStartWriting}
           >
             {hasVisitedWrite ? "다시 일기 쓰러 가기" : "일기 쓰러 가기"}
+          </DiaryButton>
+
+          <DiaryButton
+            tone="secondary"
+            stable
+            fullWidth
+            onClick={() => setStep("calendar")}
+          >
+            포도 달력 보기
+          </DiaryButton>
+        </AppBottomBar>
+      )}
+      {step === "calendar" && (
+        <AppBottomBar>
+          <DiaryButton
+            tone="secondary"
+            stable
+            fullWidth
+            onClick={() => setStep("upload")}
+          >
+            돌아가기
           </DiaryButton>
         </AppBottomBar>
       )}
