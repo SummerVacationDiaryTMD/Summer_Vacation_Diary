@@ -17,6 +17,50 @@ interface WriteStepProps {
 // The form sits on a permanently cream sheet, so an adaptive token here would
 // resolve to a near-white ink in dark mode. Fixed, like the date input's color.
 const LABEL_INK = "#6B5E3F";
+const CONTENT_MAX_LINES = 5;
+const CONTENT_COUNTER_WIDTH = 48;
+
+function exceedsDiaryWritingArea(
+  value: string,
+  element: HTMLTextAreaElement,
+): boolean {
+  const styles = window.getComputedStyle(element);
+  const context = document.createElement("canvas").getContext("2d");
+  if (context === null) return false;
+
+  context.font = `${styles.fontWeight} ${styles.fontSize} ${styles.fontFamily}`;
+  const letterSpacing = Number.parseFloat(styles.letterSpacing) || 0;
+  const fullLineWidth = element.clientWidth;
+  let row = 0;
+  let lineWidth = 0;
+  const lines = value.split("\n");
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+    for (const character of Array.from(line)) {
+      const characterWidth = context.measureText(character).width + letterSpacing;
+      const lineLimit =
+        row === CONTENT_MAX_LINES - 1
+          ? fullLineWidth - CONTENT_COUNTER_WIDTH
+          : fullLineWidth;
+
+      if (lineWidth > 0 && lineWidth + characterWidth > lineLimit) {
+        row += 1;
+        lineWidth = 0;
+      }
+      if (row >= CONTENT_MAX_LINES) return true;
+      lineWidth += characterWidth;
+    }
+
+    row += 1;
+    lineWidth = 0;
+    if (row >= CONTENT_MAX_LINES && index < lines.length - 1) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 function formatDateValue(date: string): string {
   const [year, month, day] = date.split("-");
@@ -39,10 +83,19 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
   const titleLength = Array.from(draft.title).length;
   const titleAtLimit = titleLength >= TITLE_MAX_LENGTH;
   const contentLength = Array.from(draft.content).length;
-  const handleContentChange = (value: string) => {
-    const limitedContent = Array.from(value)
+  const handleContentChange = (value: string, element: HTMLTextAreaElement) => {
+    const limitedContent = Array.from(
+      value.split("\n").slice(0, CONTENT_MAX_LINES).join("\n"),
+    )
       .slice(0, CONTENT_MAX_LENGTH)
       .join("");
+
+    if (
+      element.scrollHeight > element.clientHeight + 1 ||
+      exceedsDiaryWritingArea(limitedContent, element)
+    ) {
+      return;
+    }
 
     if (
       Array.from(limitedContent).length >= CONTENT_MAX_LENGTH &&
@@ -99,17 +152,17 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
               help={titleBlank ? "공백 말고 제목을 입력해 주세요" : undefined}
               onChange={(event) => handleTitleChange(event.target.value)}
             />
-          </div>
-          <div
-            id="title-character-status"
-            className={`diary-character-status diary-character-status-title${
-              titleAtLimit ? " diary-character-status-complete" : ""
-            }`}
-            aria-live="polite"
-          >
-            <strong>
-              {titleLength}/{TITLE_MAX_LENGTH}
-            </strong>
+            <div
+              id="title-character-status"
+              className={`diary-character-status diary-character-status-title${
+                titleAtLimit ? " diary-character-status-complete" : ""
+              }`}
+              aria-live="polite"
+            >
+              <strong>
+                {titleLength}/{TITLE_MAX_LENGTH}
+              </strong>
+            </div>
           </div>
         </section>
 
@@ -216,23 +269,33 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
               aria-label="일기"
               aria-describedby="diary-character-status"
               placeholder="오늘의 이야기를 적어주세요"
-              height={138}
+              height={170}
               maxLength={CONTENT_MAX_LENGTH}
               value={draft.content}
-              onChange={(event) => handleContentChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  !event.nativeEvent.isComposing &&
+                  draft.content.split("\n").length >= CONTENT_MAX_LINES
+                ) {
+                  event.preventDefault();
+                }
+              }}
+              onChange={(event) =>
+                handleContentChange(event.target.value, event.currentTarget)
+              }
             />
-          </div>
-          <div
-            id="diary-character-status"
-            className={`diary-character-status${
-              contentAtLimit ? " diary-character-status-complete" : ""
-            }`}
-            aria-live="polite"
-          >
-            {contentAtLimit && <span>멋진 여름 이야기가 가득 찼어요</span>}
-            <strong>
-              {contentLength}/{CONTENT_MAX_LENGTH}
-            </strong>
+            <div
+              id="diary-character-status"
+              className={`diary-character-status diary-character-status-content${
+                contentAtLimit ? " diary-character-status-complete" : ""
+              }`}
+              aria-live="polite"
+            >
+              <strong>
+                {contentLength}/{CONTENT_MAX_LENGTH}
+              </strong>
+            </div>
           </div>
         </section>
       </div>
