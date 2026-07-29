@@ -153,20 +153,56 @@ function underlineDuration(length: number): number {
   return Math.max(UNDERLINE_MIN_DURATION_MS, length * UNDERLINE_MS_PER_CELL);
 }
 
-function markerEndColumn(annotation: UntimedAnnotation): number {
+const SENTENCE_END_PATTERN = /[.!?。！？]/u;
+
+function buildCellSentenceIndexes(
+  content: string,
+  columnCount: number,
+  visibleCellCount: number,
+): number[] {
+  const sentenceIndexes = Array<number>(visibleCellCount).fill(0);
+  let cellIndex = 0;
+  let sentenceIndex = 0;
+
+  for (const character of Array.from(content)) {
+    if (character === "\n") {
+      const remainder = cellIndex % columnCount;
+      if (remainder !== 0) {
+        cellIndex += columnCount - remainder;
+      }
+      sentenceIndex += 1;
+      continue;
+    }
+
+    if (cellIndex >= visibleCellCount) {
+      break;
+    }
+
+    sentenceIndexes[cellIndex] = sentenceIndex;
+    cellIndex += 1;
+
+    if (SENTENCE_END_PATTERN.test(character)) {
+      sentenceIndex += 1;
+    }
+  }
+
+  return sentenceIndexes;
+}
+
+function annotationStartColumn(annotation: UntimedAnnotation): number {
   if (annotation.placement !== undefined) {
-    return annotation.placement.column + 1;
+    return annotation.placement.column;
   }
   if (annotation.run !== undefined) {
-    return annotation.run.startColumn + annotation.run.length;
+    return annotation.run.startColumn;
   }
   return annotation.orderColumn;
 }
 
 /**
- * Builds one teacher-like pass over the manuscript: row by row, left to
- * right. An underline is split at every mark it encounters, so it can pause
- * for a circle or star and then continue without changing the final line.
+ * Builds one teacher-like pass over the manuscript, grouped by sentence.
+ * Sentences keep their reading order; inside each sentence the teacher
+ * finishes every underline before drawing circles, stars and profanity marks.
  */
 export function buildAnnotationTimeline(
   content: string,
@@ -194,11 +230,20 @@ export function buildAnnotationTimeline(
     columnCount * rowCount,
   );
 
-  const markers: UntimedAnnotation[] = [
+  const untimedEvents: UntimedAnnotation[] = [
+    ...underlines.map((run) => ({
+      kind: "underline" as const,
+      row: run.row,
+      orderColumn: run.startColumn,
+      priority: 0,
+      durationMs: underlineDuration(run.length),
+      run,
+      originalRun: run,
+    })),
     ...circles.map((run) => ({
       kind: "circle" as const,
       row: run.row,
-      orderColumn: run.startColumn + run.length,
+      orderColumn: run.startColumn,
       priority: 1,
       durationMs: CIRCLE_DURATION_MS,
       run,
@@ -206,7 +251,7 @@ export function buildAnnotationTimeline(
     ...stars.map((placement) => ({
       kind: "star" as const,
       row: placement.row,
-      orderColumn: placement.column + 1,
+      orderColumn: placement.column,
       priority: 2,
       durationMs: STAR_DURATION_MS,
       placement,
@@ -214,60 +259,30 @@ export function buildAnnotationTimeline(
     ...profanityRuns.map((run) => ({
       kind: "profanity" as const,
       row: run.row,
-      orderColumn: run.startColumn + run.length,
+      orderColumn: run.startColumn,
       priority: 3,
       durationMs: PROFANITY_DURATION_MS,
       run,
     })),
   ];
 
-  const untimedEvents: UntimedAnnotation[] = [...markers];
-
-  for (const underline of underlines) {
-    const underlineEnd = underline.startColumn + underline.length;
-    const breakColumns = [
-      ...new Set(
-        markers
-          .filter(
-            (marker) =>
-              marker.row === underline.row &&
-              markerEndColumn(marker) > underline.startColumn &&
-              markerEndColumn(marker) < underlineEnd,
-          )
-          .map(markerEndColumn),
-      ),
-      underlineEnd,
-    ].sort((first, second) => first - second);
-
-    let segmentStart = underline.startColumn;
-    for (const segmentEnd of breakColumns) {
-      if (segmentEnd <= segmentStart) {
-        continue;
-      }
-      const run: CorrectionRun = {
-        mark: "underline",
-        row: underline.row,
-        startColumn: segmentStart,
-        length: segmentEnd - segmentStart,
-      };
-      untimedEvents.push({
-        kind: "underline",
-        row: underline.row,
-        orderColumn: segmentEnd,
-        priority: 0,
-        durationMs: underlineDuration(run.length),
-        run,
-        originalRun: underline,
-      });
-      segmentStart = segmentEnd;
-    }
-  }
+  const sentenceIndexes = buildCellSentenceIndexes(
+    content,
+    columnCount,
+    columnCount * rowCount,
+  );
+  const sentenceOf = (annotation: UntimedAnnotation) =>
+    sentenceIndexes[
+      annotation.row * columnCount + annotationStartColumn(annotation)
+    ] ?? Number.MAX_SAFE_INTEGER;
 
   untimedEvents.sort(
     (first, second) =>
+      sentenceOf(first) - sentenceOf(second) ||
+      first.priority - second.priority ||
       first.row - second.row ||
       first.orderColumn - second.orderColumn ||
-      first.priority - second.priority,
+      first.durationMs - second.durationMs,
   );
 
   let cursorMs = FIRST_MARK_DELAY_MS;
