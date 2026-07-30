@@ -3164,7 +3164,7 @@ html:has(.diary-content-section textarea:focus) {
   animation: diary-processing-breathe 1.8s ease-in-out infinite;
 }
 
-.diary-processing-pencil {
+.diary-processing-icon {
   width: 46px;
   height: 46px;
   overflow: visible;
@@ -3175,14 +3175,18 @@ html:has(.diary-content-section textarea:focus) {
   stroke-linejoin: round;
 }
 
-.diary-processing-pencil path {
-  stroke-dasharray: 120;
-  stroke-dashoffset: 120;
-  animation: diary-processing-pencil-draw 2.4s ease-in-out infinite;
+.diary-processing-icon > * {
+  stroke-dasharray: 160;
+  stroke-dashoffset: 160;
+  animation: diary-processing-icon-draw 2.4s ease-in-out infinite;
 }
 
-.diary-processing-pencil path:last-child {
+.diary-processing-icon > *:nth-child(2) {
   animation-delay: 180ms;
+}
+
+.diary-processing-icon > *:nth-child(3) {
+  animation-delay: 360ms;
 }
 
 .diary-processing-spark {
@@ -3355,10 +3359,10 @@ html:has(.diary-content-section textarea:focus) {
   }
 }
 
-@keyframes diary-processing-pencil-draw {
+@keyframes diary-processing-icon-draw {
   0% {
     opacity: 0.35;
-    stroke-dashoffset: 120;
+    stroke-dashoffset: 160;
   }
   45%,
   78% {
@@ -3367,7 +3371,7 @@ html:has(.diary-content-section textarea:focus) {
   }
   100% {
     opacity: 0.35;
-    stroke-dashoffset: -120;
+    stroke-dashoffset: -160;
   }
 }
 
@@ -3863,7 +3867,7 @@ html:has(.diary-content-section textarea:focus) {
   .diary-processing-stage,
   .diary-processing-orbit,
   .diary-processing-badge,
-  .diary-processing-pencil path,
+  .diary-processing-icon > *,
   .diary-processing-steps .is-current > span,
   .diary-card-reveal {
     animation: none;
@@ -3886,7 +3890,7 @@ html:has(.diary-content-section textarea:focus) {
     opacity: 0.75;
   }
 
-  .diary-processing-pencil path {
+  .diary-processing-icon > * {
     stroke-dashoffset: 0;
   }
 

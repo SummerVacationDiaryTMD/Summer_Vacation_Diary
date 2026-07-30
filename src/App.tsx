@@ -185,6 +185,7 @@ function App() {
   const regionNoticeShownRef = useRef(false);
   const toast = useToast();
   const [saving, setSaving] = useState(false);
+  const [previewAnimationRunning, setPreviewAnimationRunning] = useState(false);
   const [finishedDiary, setFinishedDiary] = useState<{
     imageDataUrl: string;
     fileName: string;
@@ -259,7 +260,9 @@ function App() {
   // trim() on both fields so whitespace-only input can't pass validation.
   const canPreview = draft.title.trim() !== "" && draft.content.trim() !== "";
   const previewPreparing =
-    sketchState.status === "loading" || analysisState.status === "loading";
+    sketchState.status === "loading" ||
+    analysisState.status === "loading" ||
+    previewAnimationRunning;
   const includesAiGeneratedContent =
     (isSketchAiConnected && sketchState.status === "success") ||
     (isAiConnected && analysisState.status === "success");
@@ -612,6 +615,7 @@ function App() {
           onRetry={retryAnalysis}
           sketchState={sketchState}
           onSketchRetry={retryDrawing}
+          onProcessingVisibilityChange={setPreviewAnimationRunning}
         />
       )}
 
