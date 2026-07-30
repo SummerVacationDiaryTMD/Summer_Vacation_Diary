@@ -213,8 +213,17 @@ export function GrapeCalendarView() {
   } as CSSProperties;
 
   return (
-    <div className="step-body grape-calendar-view">
-      <div className="praise-grape-screen">
+    // The viewer is a sibling of the step body, not a child of it. .step-body
+    // is z-index 1, so anything inside it is stuck below the bottom bar at
+    // z-index 50 no matter how high its own z-index goes — the 돌아가기 button
+    // would sit on top of the diary, bright and still tappable. Out here the
+    // viewer shares .app-shell's stacking context and its z-index counts.
+    <>
+      <div className="step-body grape-calendar-view">
+        {/* The paper sits straight on the app's shared background. The ported
+            design wrapped it in a full-screen element that drew its own sky and
+            scrolled on its own, which read as a window floating on top of the
+            app rather than one of its steps. */}
         <section className="praise-grape-paper" aria-labelledby="grape-month">
           <div className="praise-grape-month-picker">
             <button
@@ -337,9 +346,8 @@ export function GrapeCalendarView() {
       </div>
 
       {current !== null && current !== undefined && (
-        // Covers the whole screen rather than sitting inside the scroll area:
-        // the blur has to take the header and the bottom bar with it, or the
-        // diary would look like it is floating on a half-dimmed page.
+        // Covers the whole screen, header and bottom bar included, so the only
+        // sharp and bright thing left is the diary itself.
         <div
           className="grape-viewer-layer"
           role="dialog"
@@ -446,6 +454,6 @@ export function GrapeCalendarView() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
