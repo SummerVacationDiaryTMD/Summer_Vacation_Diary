@@ -4275,400 +4275,406 @@ html:has(.diary-content-section textarea:focus) {
   }
 }
 /* ----------------------------------------------------------------------------
-   Grape calendar
-
-   Bunch layout, paper and bead visuals ported from feature/stevechan
-   (commit cb3977d). That branch also carried a second diary store and
-   gallery modal that duplicated src/services/diaryStore.ts; only the
-   styling is kept here.
-
-   Everything the ported design used to wrap the bunch in — a full-height
-   element with its own sky gradient, its own sun and cloud, its own scroll
-   container, its own header and back button — is gone. This screen is a step
-   like 사진 선택 or 일기 쓰기: the paper lies straight on the app's shared
-   summer background, under the shared Top header and bottom bar.
-
-   Note there is deliberately no `.app-shell-calendar` height rule. Pinning the
-   step to the viewport (as 사진 선택 and 미리보기 do) forces a scroll container
-   *inside* the step, and a page-within-a-page is exactly what looked wrong. The
-   bunch is sized to fit instead, and if it ever cannot, the document scrolls.
+   Picture-diary calendar
 ---------------------------------------------------------------------------- */
 
-.grape-calendar-view {
-  /* One knob drives the whole drawing; every size below is a multiple of it, so
-     the bunch keeps its proportions instead of needing a breakpoint per part.
-
-     The height term is what keeps the bunch on one screen. Nine rows overlapping
-     by 8% cost 8.36 beads of height, and the leaves above them another ~1.3, so
-     the drawing is ~9.7 beads tall. --grape-chrome is everything else already
-     spoken for: the Top header, the bottom bar clearance, the paper's own
-     padding, the month picker, and the message under the bunch — plus a little
-     slack, since the header's height comes from TDS and is not ours to measure.
-
-     Below 34px the day numbers stop being readable, so unusually short screens
-     scroll a little rather than shrink further. */
-  --grape-chrome: calc(var(--app-safe-top) + var(--app-safe-bottom) + 324px);
-  --grape-berry: clamp(
-    34px,
-    min(13vw, (100vh - var(--grape-chrome)) / 9.7),
-    52px
-  );
-  --grape-berry: clamp(
-    34px,
-    min(13vw, (100svh - var(--grape-chrome)) / 9.7),
-    52px
-  );
-
-  /* The bottom bar carries a single button here, so it needs less clearance
-     than the 120px every step reserves for two rows of them. */
+.diary-calendar-view {
   padding-bottom: calc(92px + var(--app-safe-bottom));
 }
 
-.praise-grape-arrow-icon {
-  display: block;
-  width: 24px;
-  height: 24px;
-  overflow: visible;
-  fill: none;
-  stroke: currentcolor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.6;
-}
-
-.praise-grape-month-picker button:focus-visible,
-.praise-grape-berry:focus-visible {
-  outline: 3px dashed rgba(107, 52, 123, 0.42);
-  outline-offset: 3px;
-}
-
-/* The margin and the deep bottom padding the ported design used to clear its
-   own header and back button are gone — the app's header and bottom bar are
-   outside the paper, and the space they needed is already reserved by
-   .step-body. Colour and font moved here from the deleted wrapper: the app's
-   base font is sans-serif, so the handwriting has to be asked for. */
-.praise-grape-paper {
+.diary-calendar-paper {
   position: relative;
+  isolation: isolate;
   width: 100%;
-  max-width: 440px;
+  max-width: 470px;
   box-sizing: border-box;
   margin: 8px auto 0;
-  padding: 10px clamp(8px, 3vw, 14px) 14px;
-  border: 2px solid rgba(217, 199, 164, 0.72);
-  border-radius: 30px 24px 28px 22px;
+  padding: 12px clamp(8px, 2.5vw, 14px) 18px;
+  border: 3px solid rgba(91, 78, 62, 0.58);
+  border-radius: 15px 9px 17px 11px / 10px 17px 9px 15px;
   background:
     linear-gradient(
       90deg,
       transparent 0 8%,
-      rgba(220, 124, 124, 0.12) 8% 8.4%,
+      rgba(220, 124, 124, 0.09) 8% 8.4%,
       transparent 8.4%
     ),
     repeating-linear-gradient(
       to bottom,
       transparent 0 31px,
-      rgba(83, 153, 183, 0.14) 32px,
+      rgba(83, 153, 183, 0.09) 32px,
       transparent 33px
     ),
-    rgba(255, 253, 245, 0.96);
+    #fffdf6;
   box-shadow:
-    inset 0 0 0 4px rgba(255, 255, 255, 0.62),
-    0 10px 24px rgba(88, 69, 39, 0.12);
-  color: #44374a;
+    inset 0 0 0 3px rgba(255, 255, 255, 0.72),
+    2px 3px 0 rgba(91, 78, 62, 0.22),
+    0 12px 26px rgba(69, 54, 35, 0.14);
+  color: #322f2d;
   font-family: "NanumCoDingHeuiMang", sans-serif;
+  clip-path: none;
+  transform: rotate(-0.18deg);
 }
 
-.praise-grape-month-picker {
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) 46px;
-  align-items: center;
-  margin: 0 2px 4px;
-}
-
-.praise-grape-month-picker h2 {
-  margin: 0;
-  color: #5d286a;
-  font-size: 23px;
-  line-height: 46px;
-  text-align: center;
-}
-
-.praise-grape-month-picker button {
-  display: inline-flex;
-  width: 38px;
-  height: 38px;
-  align-items: center;
-  justify-content: center;
-  justify-self: center;
-  padding: 0;
-  border: 1.5px solid rgba(111, 51, 125, 0.32);
-  border-radius: 14px 12px 13px 11px;
-  background:
-    radial-gradient(
-      circle at 28% 24%,
-      rgba(255, 255, 255, 0.95) 0 2px,
-      transparent 3px
-    ),
-    linear-gradient(145deg, #fffdf5 0%, #f6edcf 100%);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.62),
-    0 2px 0 rgba(111, 51, 125, 0.13),
-    0 4px 8px rgba(74, 45, 79, 0.07);
-  color: #6f337d;
-  cursor: pointer;
-  transition:
-    transform 140ms ease,
-    box-shadow 140ms ease,
-    background 140ms ease;
-}
-
-.praise-grape-month-picker button:first-child {
-  transform: rotate(-1.5deg);
-}
-
-.praise-grape-month-picker button:last-child {
-  transform: rotate(1.5deg);
-}
-
-.praise-grape-month-picker button:active {
-  transform: translateY(1px) scale(0.96);
-  background: linear-gradient(145deg, #fbf5df 0%, #eee0b9 100%);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.58),
-    0 1px 0 rgba(111, 51, 125, 0.12);
-}
-
-.praise-grape-month-picker .praise-grape-arrow-icon {
-  width: 21px;
-  height: 21px;
-  stroke-width: 2.4;
-}
-
-/* The padding is the room the leaves need above the first row of beads. */
-.praise-grape-illustration {
-  position: relative;
-  width: 100%;
-  padding-top: calc(var(--grape-berry) * 1.3);
-}
-
-.praise-grape-leaves {
-  position: absolute;
-  z-index: 0;
-  top: calc(var(--grape-berry) * -0.15);
-  left: 50%;
-  display: block;
-  width: calc(var(--grape-berry) * 4.2);
-  height: calc(var(--grape-berry) * 2.08);
-  overflow: visible;
-  transform: translateX(-51%);
-  filter: drop-shadow(0 3px 1px rgba(39, 83, 51, 0.16));
-}
-
-.praise-grape-leaves path:not(.praise-grape-stem, .praise-grape-leaf-line) {
-  fill: #70a67c;
-  stroke: #fffdf7;
-  stroke-width: 4;
-  stroke-linejoin: round;
-}
-
-.praise-grape-leaves .praise-grape-stem {
-  fill: none;
-  stroke: #765343;
-  stroke-linecap: round;
-  stroke-width: 13;
-}
-
-.praise-grape-leaves .praise-grape-leaf-line {
-  fill: none;
-  opacity: 0.4;
-  stroke: #397653;
-  stroke-linecap: round;
-  stroke-width: 3;
-}
-
-/* Hangs off the right shoulder of the bunch, so its offset is measured in beads
-   rather than pixels — otherwise it drifts over the beads as they shrink. */
-.praise-grape-sign {
-  position: absolute;
-  z-index: 5;
-  top: calc(var(--grape-berry) * 1.04);
-  left: calc(50% + var(--grape-berry) * 1.77);
-  width: var(--grape-berry);
-  padding: calc(var(--grape-berry) * 0.15) 2px;
-  border: 3px solid #fffdf7;
-  border-radius: 47% 53% 44% 56%;
-  background: #fffdf7;
-  box-shadow:
-    0 0 0 2px rgba(112, 54, 127, 0.15),
-    0 4px 6px rgba(70, 40, 75, 0.12);
-  color: #6d2e78;
-  font-size: calc(var(--grape-berry) * 0.33);
-  font-weight: 900;
-  line-height: 1.05;
-  text-align: center;
-  transform: rotate(7deg);
-}
-
-.praise-grape-cluster {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-bottom: 5px;
-}
-
-/* Rows tuck into each other by 8% of a bead, which is what makes the beads read
-   as one bunch. It is also the 8.36-bead cluster height --grape-berry is solved
-   against: 9 rows minus 8 overlaps. */
-.praise-grape-row {
-  display: flex;
-  justify-content: center;
-  gap: 1px;
-  margin-top: calc(var(--grape-berry) * -0.08);
-}
-
-.praise-grape-row:first-child {
-  margin-top: 0;
-}
-
-.praise-grape-berry {
-  position: relative;
-  display: inline-flex;
-  width: var(--grape-berry);
-  height: var(--grape-berry);
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: #7a3988;
-  box-shadow:
-    0 0 0 1px #7a3988,
-    0 2px 3px rgba(78, 32, 87, 0.17);
-  color: #8d8990;
-  font-family: "NanumCoDingHeuiMang", sans-serif;
-  cursor: pointer;
-  transition:
-    transform 140ms ease,
-    filter 140ms ease;
-}
-
-.praise-grape-berry::before {
+.diary-calendar-paper::after {
   content: "";
   position: absolute;
-  inset: 4px;
-  border-radius: inherit;
-  background: #fffdf7;
-  box-shadow: inset 0 1px 3px rgba(89, 66, 95, 0.1);
+  z-index: -1;
+  inset: 4px 3px 5px 4px;
+  border: 1px solid rgba(91, 78, 62, 0.2);
+  border-radius: 11px 15px 9px 14px / 14px 9px 16px 8px;
+  pointer-events: none;
+  transform: rotate(0.2deg);
 }
 
-.praise-grape-berry:not(:disabled):active {
-  z-index: 3;
-  transform: scale(0.92);
-  filter: brightness(0.96);
+.diary-calendar-month-picker {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  margin: 0 2px 10px;
 }
 
-.praise-grape-berry:disabled {
-  cursor: default;
+.diary-calendar-month-picker h2 {
+  margin: 0;
+  color: #282422;
+  font-size: clamp(22px, 6vw, 27px);
+  line-height: 44px;
+  text-align: center;
+  text-shadow:
+    0.6px 0 #282422,
+    -0.4px 0.7px rgba(40, 36, 34, 0.5);
+  transform: rotate(0.5deg);
 }
 
-.praise-grape-berry.has-diaries::before {
-  background: #fff9e8;
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 215, 102, 0.55),
-    inset 0 1px 3px rgba(89, 66, 95, 0.1);
+.diary-calendar-month-picker button {
+  width: 42px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  justify-self: center;
+  padding: 0 !important;
 }
 
-.praise-grape-day {
-  position: relative;
+.diary-calendar-month-picker button:first-child {
+  transform: rotate(-2deg);
+}
+
+.diary-calendar-month-picker button:last-child {
+  transform: rotate(2deg);
+}
+
+.diary-calendar-month-picker button:active {
+  transform: translateY(1px) scale(0.96) !important;
+}
+
+.diary-calendar-arrow-icon {
+  display: block;
+  width: 21px;
+  height: 21px;
+  overflow: visible;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.8;
+}
+
+.diary-calendar-month-picker button:focus-visible,
+.diary-calendar-cell:focus-visible {
   z-index: 2;
-  font-size: calc(var(--grape-berry) * 0.35);
-  line-height: 1;
+  outline: 3px dashed rgba(45, 117, 160, 0.58);
+  outline-offset: -5px;
 }
 
-/* Once a bead is stamped the date steps aside into a small tag, so the stamp
-   gets the middle. The floors keep both legible at the smallest bead. */
-.praise-grape-berry.has-diaries .praise-grape-day {
-  position: absolute;
-  right: 2px;
-  bottom: 1px;
-  display: inline-flex;
-  min-width: max(16px, calc(var(--grape-berry) * 0.37));
-  height: max(16px, calc(var(--grape-berry) * 0.37));
+.diary-calendar-grid {
+  position: relative;
+  overflow: hidden;
+  border: 4px solid #3f3935;
+  border-radius: 5px 9px 4px 7px / 8px 4px 9px 5px;
+  background: #fffdf6;
+  box-shadow:
+    2px 1px 0 rgba(31, 27, 25, 0.36),
+    -1px 2px 0 rgba(31, 27, 25, 0.22),
+    inset 1px 0 0 rgba(31, 27, 25, 0.22),
+    inset 0 0 10px rgba(96, 75, 48, 0.05);
+  clip-path: polygon(
+    0.6% 0.8%,
+    15% 0,
+    31% 0.65%,
+    48% 0.1%,
+    66% 0.7%,
+    83% 0.05%,
+    99.4% 0.6%,
+    100% 17%,
+    99.35% 35%,
+    100% 53%,
+    99.4% 72%,
+    99.9% 99.2%,
+    82% 100%,
+    65% 99.25%,
+    48% 100%,
+    31% 99.35%,
+    15% 100%,
+    0.35% 99.4%,
+    0.9% 80%,
+    0.1% 61%,
+    0.7% 42%,
+    0% 22%
+  );
+  transform: rotate(0.18deg) skewX(-0.12deg);
+}
+
+.diary-calendar-weekdays,
+.diary-calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.diary-calendar-weekday {
+  --crayon-color: #f0c52f;
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
-  padding: 1px 3px 0;
-  border: 1.5px solid #7a3988;
-  border-radius: 10px;
-  background: #fffdf7;
-  color: #63306e;
-  font-size: max(10px, calc(var(--grape-berry) * 0.23));
+  padding: 8px 0 7px;
+  border: 0;
+  border-right: 3px solid #3f3935;
+  background: #fffdf6;
+  color: #29231f;
+  font-size: clamp(16px, 4.8vw, 22px);
   font-weight: 900;
+  line-height: 1;
+  text-shadow:
+    0.5px 0.5px currentcolor,
+    -0.35px 0 currentcolor;
 }
 
-.praise-grape-stamp {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: calc(var(--grape-berry) * 0.75);
-  height: calc(var(--grape-berry) * 0.75);
-  object-fit: contain;
-  opacity: 0.94;
+.diary-calendar-weekday::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 4px 2px 3px 3px;
+  background:
+    repeating-linear-gradient(
+      166deg,
+      rgba(255, 255, 255, 0.32) 0 2px,
+      transparent 2px 5px
+    ),
+    repeating-linear-gradient(
+      7deg,
+      rgba(76, 48, 25, 0.09) 0 1px,
+      transparent 1px 4px
+    ),
+    var(--crayon-color);
+  clip-path: polygon(
+    0 16%,
+    12% 3%,
+    28% 10%,
+    44% 0,
+    61% 9%,
+    78% 2%,
+    100% 12%,
+    97% 80%,
+    82% 95%,
+    63% 87%,
+    47% 100%,
+    28% 89%,
+    9% 97%,
+    2% 82%
+  );
+  opacity: 0.88;
   pointer-events: none;
 }
 
-.praise-grape-count {
-  position: absolute;
-  z-index: 3;
-  top: -1px;
-  right: -1px;
-  display: inline-flex;
-  width: max(16px, calc(var(--grape-berry) * 0.35));
-  height: max(16px, calc(var(--grape-berry) * 0.35));
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #fffdf7;
-  border-radius: 50%;
-  background: #ed735e;
-  color: #ffffff;
-  font-family: sans-serif;
-  font-size: max(10px, calc(var(--grape-berry) * 0.21));
-  font-weight: 800;
-  line-height: 1;
+.diary-calendar-weekday::after {
+  display: none;
 }
 
-/* Smaller than the ported design set it. At 20px the empty-month line wraps to
-   three rows on a 360px screen, and the extra row is enough to push the bunch
-   off the bottom — the one part of this layout whose height depends on how the
-   text happens to break. Two rows at every width we support. */
-.praise-grape-message {
+.diary-calendar-weekday:nth-child(even)::after {
+  display: none;
+}
+
+.diary-calendar-weekday:nth-child(2) {
+  --crayon-color: #ed9b52;
+  transform: translateY(1px) rotate(0.5deg);
+}
+
+.diary-calendar-weekday:nth-child(3) {
+  --crayon-color: #82bd7c;
+  transform: translateY(-1px) rotate(-0.4deg);
+}
+
+.diary-calendar-weekday:nth-child(4) {
+  --crayon-color: #75b3d4;
+  transform: translateY(1px) rotate(0.35deg);
+}
+
+.diary-calendar-weekday:nth-child(5) {
+  --crayon-color: #aa8bc9;
+  color: #29231f;
+  transform: rotate(-0.45deg);
+}
+
+.diary-calendar-weekday:nth-child(6) {
+  --crayon-color: #e6a0ba;
+  color: #29231f;
+  transform: translateY(-1px) rotate(0.4deg);
+}
+
+.diary-calendar-weekday:nth-child(7) {
+  --crayon-color: #b58f73;
+
+  border-right: 0;
+  color: #29231f;
+  transform: translateY(1px) rotate(-0.35deg);
+}
+
+.diary-calendar-weekday:nth-child(7)::after {
+  display: none;
+}
+
+.diary-calendar-cell {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  aspect-ratio: 0.7;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-top: 3px solid #3f3935;
+  border-right: 3px solid #3f3935;
+  background: #fffdf6;
+  color: #2c2927;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.diary-calendar-cell::before,
+.diary-calendar-cell::after {
+  display: none;
+}
+
+.diary-calendar-cell:nth-child(7n) {
+  border-right: 0;
+}
+
+.diary-calendar-cell:nth-child(7n)::after {
+  display: none;
+}
+
+.diary-calendar-cell:disabled {
+  cursor: default;
+}
+
+.diary-calendar-cell.has-diaries {
+  background: #fffdf6;
+}
+
+.diary-calendar-cell.has-diaries:active {
+  transform: scale(0.94) rotate(-1deg);
+  background: #fff0b7;
+}
+
+.diary-calendar-day {
+  position: absolute;
+  z-index: 2;
+  top: 4px;
+  left: 6px;
+  font-size: clamp(14px, 4vw, 18px);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow:
+    0.45px 0.4px currentcolor,
+    -0.3px 0 currentcolor;
+  transform: rotate(-2deg);
+}
+
+.diary-calendar-cell:nth-child(3n) .diary-calendar-day {
+  transform: rotate(2deg);
+}
+
+.diary-calendar-cell:nth-child(4n + 1) .diary-calendar-day {
+  transform: rotate(-0.5deg) translateY(1px);
+}
+
+.diary-calendar-cell.weekday-6 .diary-calendar-day {
+  color: #dfa914;
+}
+
+.diary-calendar-cell.weekday-5 .diary-calendar-day {
+  color: #d45b87;
+}
+
+.diary-calendar-stamp {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  opacity: 0.92;
+  pointer-events: none;
+  transform: translate(-50%, -45%) rotate(-5deg);
+  filter: saturate(0.92);
+  mix-blend-mode: multiply;
+}
+
+.diary-calendar-count {
+  position: absolute;
+  z-index: 3;
+  right: 2px;
+  bottom: 2px;
+  display: inline-flex;
+  min-width: 17px;
+  height: 17px;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0 4px;
+  border: 1.5px solid #fffdf5;
+  border-radius: 10px;
+  background: #e56b55;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.diary-calendar-message {
   min-height: 22px;
-  margin: 8px 4px 0;
-  color: #6b6470;
-  font-size: clamp(17px, 4.6vw, 20px);
+  margin: 12px 4px 0;
+  color: #655e59;
+  font-size: clamp(16px, 4.4vw, 19px);
   font-weight: 700;
-  line-height: 1.45;
+  line-height: 1.4;
   text-align: center;
   word-break: keep-all;
 }
 
-.praise-grape-message-error {
+.diary-calendar-message-error {
   color: #c64d51;
 }
 
-/* The sign used to need its own offset here; it now rides on --grape-berry and
-   moves in with the beads on its own. */
 @media (max-width: 350px) {
-  .praise-grape-paper {
+  .diary-calendar-paper {
     padding-inline: 5px;
+  }
+
+  .diary-calendar-cell {
+    aspect-ratio: 0.7;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .praise-grape-berry {
-    animation: none;
+  .diary-calendar-cell,
+  .diary-calendar-month-picker button {
     transition: none;
   }
 }
@@ -4732,8 +4738,44 @@ html:has(.diary-content-section textarea:focus) {
   text-align: center;
 }
 
+.grape-viewer-day-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 4px;
+  padding: 5px 10px 4px;
+  border: 1.5px solid rgba(220, 203, 138, 0.82);
+  border-radius: 14px 11px 13px 10px;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 8px,
+      rgba(125, 174, 194, 0.1) 8px 9px
+    ),
+    #fffbea;
+  box-shadow: 1px 2px 0 rgba(92, 75, 35, 0.16);
+  color: #8a712e;
+  font-family: "NanumCoDingHeuiMang", sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  transform: rotate(-0.4deg);
+}
+
+.grape-viewer-day-badge strong {
+  display: inline-flex;
+  min-width: 31px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border-radius: 12px;
+  background: #f2d982;
+  color: #6f581c;
+  font-size: 13px;
+}
+
 .grape-viewer-date {
-  margin: 0;
+  margin: 3px 0 0;
   color: rgba(255, 255, 255, 0.78);
   font-size: 13px;
 }
@@ -4747,13 +4789,44 @@ html:has(.diary-content-section textarea:focus) {
 
 .grape-viewer-stage {
   display: flex;
+  position: relative;
   min-height: 0;
   flex: 1 1 auto;
   align-items: center;
   justify-content: center;
+  padding: 8px 10px;
+}
+
+.grape-viewer-stage.has-multiple::before,
+.grape-viewer-stage.has-multiple::after {
+  content: "";
+  position: absolute;
+  inset: 18px 24px;
+  border: 2px solid rgba(220, 203, 138, 0.76);
+  border-radius: 15px 11px 14px 10px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 25px,
+      rgba(125, 174, 194, 0.11) 26px,
+      transparent 27px
+    ),
+    #fffbea;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.grape-viewer-stage.has-multiple::before {
+  transform: translate(-7px, 3px) rotate(-2.2deg);
+}
+
+.grape-viewer-stage.has-multiple::after {
+  transform: translate(7px, 5px) rotate(2deg);
 }
 
 .grape-viewer-image {
+  position: relative;
+  z-index: 2;
   max-width: 100%;
   max-height: 100%;
   border-radius: 12px;
@@ -4762,6 +4835,8 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .grape-viewer-note {
+  position: relative;
+  z-index: 2;
   margin: 0;
   color: rgba(255, 255, 255, 0.85);
   font-size: 14px;
@@ -4779,7 +4854,7 @@ html:has(.diary-content-section textarea:focus) {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .grape-viewer-arrow {
@@ -4802,6 +4877,40 @@ html:has(.diary-content-section textarea:focus) {
   color: rgba(255, 255, 255, 0.85);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
+}
+
+.grape-viewer-position {
+  display: flex;
+  min-width: 76px;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.grape-viewer-dots {
+  display: flex;
+  max-width: 104px;
+  justify-content: center;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.grape-viewer-dots i {
+  display: block;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition:
+    width 160ms ease,
+    background 160ms ease;
+}
+
+.grape-viewer-dots i.is-current {
+  width: 18px;
+  border-radius: 4px;
+  background: #f2d982;
 }
 
 .grape-viewer-actions {
