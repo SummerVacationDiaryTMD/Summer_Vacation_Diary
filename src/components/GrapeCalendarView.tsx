@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
-// Only the "참 잘했어요" stamp is used: DiaryRecord does not keep which stamp a
-// diary earned, so the two-stamp legend from the ported design is left out
-// rather than shown with a distinction this screen cannot actually make.
-import { STAMP_IMAGE_URLS } from "../constants/stamp";
 import { formatKoreanDate, weatherLabel } from "../constants/diary";
 import { DiaryExportError, exportDiaryImage } from "../services/diaryExport";
 import {
@@ -16,12 +12,14 @@ import {
 import {
   daysInMonth,
   diariesByDay,
-  grapeRows,
   koreanMonth,
   monthKeyOf,
   moveMonth,
 } from "../utils/grapeCalendar";
 import { DiaryButton } from "./DiaryButton";
+
+const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"] as const;
+const DAILY_COMPLETE_STAMP_URL = "/stamps/daily-complete.png";
 
 // Below this a drag reads as a tap or a stray finger movement rather than an
 // intent to turn the page.
@@ -30,7 +28,7 @@ const SWIPE_THRESHOLD_PX = 48;
 function GrapeArrow({ direction }: { direction: "left" | "right" }) {
   return (
     <svg
-      className="praise-grape-arrow-icon"
+      className="diary-calendar-arrow-icon"
       viewBox="0 0 24 24"
       aria-hidden="true"
     >
@@ -75,8 +73,9 @@ export function GrapeCalendarView() {
   const [selectedMonth, setSelectedMonth] = useState(() =>
     monthKeyOf(new Date()),
   );
-  // Index into the chronological list, not into a single day: swiping crosses
-  // day and month boundaries.
+  // The viewer is a small album for one calendar date. It deliberately keeps
+  // its own list so a swipe can never spill into the previous or next day.
+  const [viewerEntries, setViewerEntries] = useState<DiarySummary[]>([]);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [popOrigin, setPopOrigin] = useState<PopOrigin>({ dx: 0, dy: 0 });
   const [record, setRecord] = useState<DiaryRecord | null>(null);
@@ -113,10 +112,7 @@ export function GrapeCalendarView() {
   }, []);
 
   const summaries = load.status === "ready" ? load.summaries : [];
-  // listDiaries returns newest first; reading a diary book runs the other way,
-  // so swiping right moves forward in time.
-  const chronological = [...summaries].reverse();
-  const current = viewerIndex === null ? null : chronological[viewerIndex];
+  const current = viewerIndex === null ? null : viewerEntries[viewerIndex];
 
   // The image lives in the entry, not the index, so it is fetched per page
   // instead of loading every diary's bytes up front.
@@ -157,7 +153,25 @@ export function GrapeCalendarView() {
     };
   }, [current]);
 
-  const rows = grapeRows(daysInMonth(selectedMonth));
+  const [selectedYear, selectedMonthNumber] = selectedMonth
+    .split("-")
+    .map(Number);
+  const firstDay = new Date(
+    selectedYear,
+    selectedMonthNumber - 1,
+    1,
+  ).getDay();
+  // JavaScript starts weeks on Sunday. The picture-diary calendar starts on
+  // Monday, so Sunday moves from index 0 to the last column.
+  const leadingBlankCount = (firstDay + 6) % 7;
+  const dayCount = daysInMonth(selectedMonth);
+  const calendarCells = [
+    ...Array.from({ length: leadingBlankCount }, () => null),
+    ...Array.from({ length: dayCount }, (_, index) => index + 1),
+  ];
+  while (calendarCells.length % 7 !== 0) {
+    calendarCells.push(null);
+  }
   const byDay = diariesByDay(summaries, selectedMonth);
   const monthIsEmpty = Object.keys(byDay).length === 0;
 
@@ -167,13 +181,12 @@ export function GrapeCalendarView() {
         return null;
       }
       const next = index + delta;
-      return next < 0 || next >= chronological.length ? index : next;
+      return next < 0 || next >= viewerEntries.length ? index : next;
     });
   };
 
-  const openDay = (id: string, bead: HTMLElement) => {
-    const index = chronological.findIndex((summary) => summary.id === id);
-    if (index === -1) {
+  const openDay = (entries: DiarySummary[], bead: HTMLElement) => {
+    if (entries.length === 0) {
       return;
     }
 
@@ -184,7 +197,9 @@ export function GrapeCalendarView() {
       dx: rect.left + rect.width / 2 - window.innerWidth / 2,
       dy: rect.top + rect.height / 2 - window.innerHeight / 2,
     });
-    setViewerIndex(index);
+    // listDiaries already orders entries on the same date newest first.
+    setViewerEntries([...entries]);
+    setViewerIndex(0);
   };
 
   const share = async () => {
@@ -219,118 +234,110 @@ export function GrapeCalendarView() {
     // would sit on top of the diary, bright and still tappable. Out here the
     // viewer shares .app-shell's stacking context and its z-index counts.
     <>
-      <div className="step-body grape-calendar-view">
-        {/* The paper sits straight on the app's shared background. The ported
-            design wrapped it in a full-screen element that drew its own sky and
-            scrolled on its own, which read as a window floating on top of the
-            app rather than one of its steps. */}
-        <section className="praise-grape-paper" aria-labelledby="grape-month">
-          <div className="praise-grape-month-picker">
-            <button
-              type="button"
+      <div className="step-body diary-calendar-view">
+        <section className="diary-calendar-paper" aria-labelledby="diary-month">
+          <div className="diary-calendar-month-picker">
+            <DiaryButton
+              tone="secondary"
+              stable
               aria-label="이전 달"
               onClick={() =>
                 setSelectedMonth((current) => moveMonth(current, -1))
               }
             >
               <GrapeArrow direction="left" />
-            </button>
-            <h2 id="grape-month">{koreanMonth(selectedMonth)}</h2>
-            <button
-              type="button"
+            </DiaryButton>
+            <h2 id="diary-month">{koreanMonth(selectedMonth)}</h2>
+            <DiaryButton
+              tone="secondary"
+              stable
               aria-label="다음 달"
               onClick={() =>
                 setSelectedMonth((current) => moveMonth(current, 1))
               }
             >
               <GrapeArrow direction="right" />
-            </button>
+            </DiaryButton>
           </div>
 
-          <div className="praise-grape-illustration">
-            <svg
-              className="praise-grape-leaves"
-              viewBox="0 0 220 110"
-              aria-hidden="true"
-            >
-              <path
-                className="praise-grape-stem"
-                d="M120 72c6-27 22-43 48-54"
-              />
-              <path d="M118 70C81 65 51 49 35 18c34-8 68 5 83 52Z" />
-              <path d="M125 68c6-31 28-53 58-62 4 31-13 56-58 62Z" />
-              <path
-                className="praise-grape-leaf-line"
-                d="M48 28c26 11 46 25 66 41M174 17c-22 15-35 31-45 49"
-              />
-            </svg>
-
-            <div className="praise-grape-sign" aria-hidden="true">
-              칭찬
-              <br />
-              포도
-            </div>
-
-            <div className="praise-grape-cluster">
-              {rows.map((row) => (
-                <div className="praise-grape-row" key={row[0]}>
-                  {row.map((day) => {
-                    const saved = byDay[day] ?? [];
-                    const first = saved[0];
-                    const ripe = first !== undefined;
-
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        className={`praise-grape-berry${ripe ? " has-diaries" : ""}`}
-                        disabled={!ripe}
-                        aria-label={
-                          ripe
-                            ? `${day}일, 저장된 일기 ${saved.length}개 보기`
-                            : `${day}일, 완성한 일기 없음`
-                        }
-                        onClick={(event) => {
-                          if (first !== undefined) {
-                            openDay(first.id, event.currentTarget);
-                          }
-                        }}
-                      >
-                        {ripe && (
-                          <img
-                            className="praise-grape-stamp"
-                            src={STAMP_IMAGE_URLS.great}
-                            alt=""
-                            aria-hidden="true"
-                            draggable={false}
-                          />
-                        )}
-                        <span className="praise-grape-day">{day}</span>
-                        {saved.length > 1 && (
-                          <span
-                            className="praise-grape-count"
-                            aria-hidden="true"
-                          >
-                            {saved.length}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+          <div className="diary-calendar-grid" role="grid">
+            <div className="diary-calendar-weekdays" role="row">
+              {WEEKDAYS.map((weekday, index) => (
+                <div
+                  key={weekday}
+                  className={`diary-calendar-weekday weekday-${index}`}
+                  role="columnheader"
+                >
+                  {weekday}
                 </div>
               ))}
+            </div>
+
+            <div className="diary-calendar-days">
+              {calendarCells.map((day, index) => {
+                if (day === null) {
+                  return (
+                    <span
+                      className="diary-calendar-cell is-empty"
+                      key={`empty-${index}`}
+                      aria-hidden="true"
+                    />
+                  );
+                }
+
+                const saved = byDay[day] ?? [];
+                const first = saved[0];
+                const hasDiaries = first !== undefined;
+                const weekdayIndex = index % 7;
+
+                return (
+                  <button
+                    key={day}
+                    type="button"
+                    role="gridcell"
+                    className={`diary-calendar-cell weekday-${weekdayIndex}${hasDiaries ? " has-diaries" : ""}`}
+                    disabled={!hasDiaries}
+                    aria-label={
+                      hasDiaries
+                        ? `${day}일, 저장된 일기 ${saved.length}개 보기`
+                        : `${day}일, 완성한 일기 없음`
+                    }
+                    onClick={(event) => {
+                      if (saved.length > 0) {
+                        openDay(saved, event.currentTarget);
+                      }
+                    }}
+                  >
+                    <span className="diary-calendar-day">{day}</span>
+                    {hasDiaries && (
+                      <img
+                        className="diary-calendar-stamp"
+                        src={DAILY_COMPLETE_STAMP_URL}
+                        alt=""
+                        aria-hidden="true"
+                        draggable={false}
+                      />
+                    )}
+                    {saved.length > 1 && (
+                      <span className="diary-calendar-count" aria-hidden="true">
+                        {saved.length}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {load.status === "loading" && (
-            <p className="praise-grape-message" role="status">
-              칭찬 포도를 불러오는 중…
+            <p className="diary-calendar-message" role="status">
+              일기 달력을 불러오는 중…
             </p>
           )}
 
           {load.status === "error" && (
             <p
-              className="praise-grape-message praise-grape-message-error"
+              className="diary-calendar-message diary-calendar-message-error"
               role="alert"
             >
               {load.message}
@@ -338,8 +345,8 @@ export function GrapeCalendarView() {
           )}
 
           {load.status === "ready" && monthIsEmpty && (
-            <p className="praise-grape-message">
-              이 달에는 아직 완성한 일기가 없어요. 첫 포도알을 채워 보세요!
+            <p className="diary-calendar-message">
+              이 달에는 아직 완성한 일기가 없어요. 첫 일기를 써 보세요!
             </p>
           )}
         </section>
@@ -352,7 +359,7 @@ export function GrapeCalendarView() {
           className="grape-viewer-layer"
           role="dialog"
           aria-modal="true"
-          aria-label="저장된 일기"
+          aria-label={`${formatKoreanDate(current.date)}에 저장된 일기 ${viewerEntries.length}편`}
           onTouchStart={(event) => {
             touchStartXRef.current = event.changedTouches[0].clientX;
           }}
@@ -373,16 +380,21 @@ export function GrapeCalendarView() {
               not again on every swipe. */}
           <div className="grape-viewer-card" style={popStyle}>
             <div className="grape-viewer-head">
-              <p className="grape-viewer-date">
-                {formatKoreanDate(current.date)} ·{" "}
-                {weatherLabel(current.weather)}
+              <p className="grape-viewer-day-badge">
+                {formatKoreanDate(current.date)}의 그림일기
+                <strong>{viewerEntries.length}편</strong>
               </p>
               <p className="grape-viewer-title">
                 {current.title.trim() === "" ? "제목 없는 일기" : current.title}
               </p>
+              <p className="grape-viewer-date">
+                {weatherLabel(current.weather)}
+              </p>
             </div>
 
-            <div className="grape-viewer-stage">
+            <div
+              className={`grape-viewer-stage${viewerEntries.length > 1 ? " has-multiple" : ""}`}
+            >
               {recordError !== null ? (
                 <p className="grape-viewer-note" role="alert">
                   {recordError}
@@ -404,21 +416,33 @@ export function GrapeCalendarView() {
                 className="grape-viewer-arrow"
                 disabled={viewerIndex === 0}
                 onClick={() => step(-1)}
-                aria-label="이전 일기"
+                aria-label="이 날의 이전 일기"
               >
                 ‹
               </button>
 
-              <span className="grape-viewer-count">
-                {(viewerIndex ?? 0) + 1} / {chronological.length}
-              </span>
+              <div className="grape-viewer-position">
+                <span className="grape-viewer-count">
+                  {(viewerIndex ?? 0) + 1} / {viewerEntries.length}
+                </span>
+                {viewerEntries.length > 1 && (
+                  <span className="grape-viewer-dots" aria-hidden="true">
+                    {viewerEntries.map((entry, index) => (
+                      <i
+                        key={entry.id}
+                        className={index === viewerIndex ? "is-current" : ""}
+                      />
+                    ))}
+                  </span>
+                )}
+              </div>
 
               <button
                 type="button"
                 className="grape-viewer-arrow"
-                disabled={viewerIndex === chronological.length - 1}
+                disabled={viewerIndex === viewerEntries.length - 1}
                 onClick={() => step(1)}
-                aria-label="다음 일기"
+                aria-label="이 날의 다음 일기"
               >
                 ›
               </button>

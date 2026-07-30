@@ -68,8 +68,8 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
     subtitle: "선생님의 한마디와 함께 확인해 보세요.",
   },
   calendar: {
-    title: "포도 달력",
-    subtitle: "일기를 완성한 날마다 포도알이 익어요.",
+    title: "일기 달력",
+    subtitle: "일기를 완성한 날짜에 도장을 모아 보세요.",
   },
 };
 
@@ -684,6 +684,15 @@ function App() {
       {step === "upload" && (
         <AppBottomBar even>
           <DiaryButton
+            tone="secondary"
+            stable
+            fullWidth
+            onClick={() => setStep("calendar")}
+          >
+            일기 모아서 보기
+          </DiaryButton>
+
+          <DiaryButton
             stable
             feedbackDisabled
             fullWidth
@@ -691,15 +700,6 @@ function App() {
             onClick={handleStartWriting}
           >
             {hasVisitedWrite ? "다시 일기 쓰러 가기" : "일기 쓰러 가기"}
-          </DiaryButton>
-
-          <DiaryButton
-            tone="secondary"
-            stable
-            fullWidth
-            onClick={() => setStep("calendar")}
-          >
-            포도 달력 보기
           </DiaryButton>
         </AppBottomBar>
       )}
