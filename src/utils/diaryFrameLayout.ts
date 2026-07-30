@@ -48,6 +48,38 @@ export const DIARY_COMMENT = {
 // The Instagram layout uses a fixed 13 × 5 manuscript grid.
 export const CONTENT_MAX_LENGTH = 65;
 
+/** Keeps typed content within the same 13×5 cells used by the preview. */
+export function fitDiaryContent(content: string): string {
+  const capacity = DIARY_FRAME.columns * DIARY_FRAME.maxRows;
+  let usedCells = 0;
+  let result = "";
+
+  for (const character of Array.from(content)) {
+    if (usedCells >= capacity) break;
+
+    if (character === "\n") {
+      usedCells += (DIARY_FRAME.columns - (usedCells % DIARY_FRAME.columns)) % DIARY_FRAME.columns;
+    } else {
+      usedCells += 1;
+    }
+    result += character;
+  }
+
+  return result;
+}
+
+export function diaryContentCellCount(content: string): number {
+  return Array.from(fitDiaryContent(content)).reduce(
+    (usedCells, character) =>
+      character === "\n"
+        ? usedCells +
+          ((DIARY_FRAME.columns - (usedCells % DIARY_FRAME.columns)) %
+            DIARY_FRAME.columns)
+        : usedCells + 1,
+    0,
+  );
+}
+
 export function getDiaryFrameLayout(
   content: string,
   commentLines = 1,
