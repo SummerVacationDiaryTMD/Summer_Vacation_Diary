@@ -199,6 +199,7 @@ function App() {
   const regionNoticeShownRef = useRef(false);
   const toast = useToast();
   const [saving, setSaving] = useState(false);
+  const archivedImageRef = useRef<string | null>(null);
   const [previewAnimationRunning, setPreviewAnimationRunning] = useState(false);
   const [finishedDiary, setFinishedDiary] = useState<{
     imageDataUrl: string;
@@ -498,24 +499,28 @@ function App() {
       // the finished image is already on screen: failing to archive it is
       // worth telling the user about, but not worth taking that away or
       // offering to re-run the composition that just succeeded.
-      try {
-        await saveDiary({
-          date: draft.date,
-          // Stored as typed. The empty-title fallback is a display choice, and
-          // baking it in here would make it impossible to tell apart from a
-          // diary the user actually named 제목 없는 일기.
-          title: draft.title,
-          content: draft.content,
-          weather: draft.weather,
-          imageDataUrl,
-          includesAiGeneratedContent,
-        });
-      } catch (error) {
-        toast.openToast(
-          error instanceof DiaryStoreError
-            ? error.userMessage
-            : "일기를 포도 달력에 담지 못했어요.",
-        );
+      if (archivedImageRef.current !== imageDataUrl) {
+        archivedImageRef.current = imageDataUrl;
+        try {
+          await saveDiary({
+            date: draft.date,
+            // Stored as typed. The empty-title fallback is a display choice, and
+            // baking it in here would make it impossible to tell apart from a
+            // diary the user actually named 제목 없는 일기.
+            title: draft.title,
+            content: draft.content,
+            weather: draft.weather,
+            imageDataUrl,
+            includesAiGeneratedContent,
+          });
+        } catch (error) {
+          archivedImageRef.current = null;
+          toast.openToast(
+            error instanceof DiaryStoreError
+              ? error.userMessage
+              : "일기를 포도 달력에 담지 못했어요.",
+          );
+        }
       }
     } catch {
       const message = "그림일기 이미지를 만들지 못했어요. 다시 시도해 주세요.";
@@ -670,6 +675,7 @@ function App() {
           onClose={() => setFinishedDiary(null)}
           onStartNew={() => {
             setFinishedDiary(null);
+            archivedImageRef.current = null;
             clearDraft();
 
             setHasVisitedWrite(false);

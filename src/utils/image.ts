@@ -163,8 +163,26 @@ export interface PixelCrop {
 export async function cropImageToThreeByTwo(
   imageDataUrl: string,
   crop: PixelCrop,
+  rotation = 0,
 ): Promise<string> {
   const image = await loadImageFromDataUrl(imageDataUrl);
+  const rotated = document.createElement("canvas");
+  const swapsDimensions = rotation % 180 !== 0;
+  rotated.width = swapsDimensions ? image.naturalHeight : image.naturalWidth;
+  rotated.height = swapsDimensions ? image.naturalWidth : image.naturalHeight;
+
+  const rotatedContext = rotated.getContext("2d");
+  if (!rotatedContext) {
+    throw new ImageProcessError("load-failed");
+  }
+  rotatedContext.translate(rotated.width / 2, rotated.height / 2);
+  rotatedContext.rotate((rotation * Math.PI) / 180);
+  rotatedContext.drawImage(
+    image,
+    -image.naturalWidth / 2,
+    -image.naturalHeight / 2,
+  );
+
   const canvas = document.createElement("canvas");
   canvas.width = CROPPED_IMAGE_WIDTH;
   canvas.height = CROPPED_IMAGE_HEIGHT;
@@ -179,7 +197,7 @@ export async function cropImageToThreeByTwo(
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
   context.drawImage(
-    image,
+    rotated,
     crop.x,
     crop.y,
     crop.width,
