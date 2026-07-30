@@ -1,9 +1,11 @@
+import { Modal } from "@toss/tds-mobile";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
-import { formatKoreanDate, weatherLabel } from "../constants/diary";
+import { formatKoreanDate } from "../constants/diary";
 import { DiaryExportError, exportDiaryImage } from "../services/diaryExport";
 import {
   DiaryStoreError,
+  deleteDiary,
   getDiary,
   listDiaries,
   type DiaryRecord,
@@ -24,6 +26,7 @@ const DAILY_COMPLETE_STAMP_URL = "/stamps/daily-complete.png";
 // Below this a drag reads as a tap or a stray finger movement rather than an
 // intent to turn the page.
 const SWIPE_THRESHOLD_PX = 48;
+type PageDirection = "forward" | "backward";
 
 function GrapeArrow({ direction }: { direction: "left" | "right" }) {
   return (
@@ -77,11 +80,16 @@ export function GrapeCalendarView() {
   // its own list so a swipe can never spill into the previous or next day.
   const [viewerEntries, setViewerEntries] = useState<DiarySummary[]>([]);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [pageDirection, setPageDirection] =
+    useState<PageDirection>("forward");
   const [popOrigin, setPopOrigin] = useState<PopOrigin>({ dx: 0, dy: 0 });
   const [record, setRecord] = useState<DiaryRecord | null>(null);
   const [recordError, setRecordError] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -122,9 +130,9 @@ export function GrapeCalendarView() {
     }
 
     let cancelled = false;
-    setRecord(null);
     setRecordError(null);
     setShareError(null);
+    setDeleteError(null);
 
     void (async () => {
       try {
@@ -181,7 +189,11 @@ export function GrapeCalendarView() {
         return null;
       }
       const next = index + delta;
-      return next < 0 || next >= viewerEntries.length ? index : next;
+      if (next < 0 || next >= viewerEntries.length) {
+        return index;
+      }
+      setPageDirection(delta > 0 ? "forward" : "backward");
+      return next;
     });
   };
 
@@ -199,11 +211,12 @@ export function GrapeCalendarView() {
     });
     // listDiaries already orders entries on the same date newest first.
     setViewerEntries([...entries]);
+    setPageDirection("forward");
     setViewerIndex(0);
   };
 
   const share = async () => {
-    if (record === null || sharing) {
+    if (record === null || record.id !== current?.id || sharing) {
       return;
     }
 
@@ -219,6 +232,47 @@ export function GrapeCalendarView() {
       );
     } finally {
       setSharing(false);
+    }
+  };
+
+  const removeCurrentDiary = async () => {
+    if (current === null || deleting) {
+      return;
+    }
+
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteDiary(current.id);
+      const remaining = viewerEntries.filter((entry) => entry.id !== current.id);
+      setLoad((state) =>
+        state.status === "ready"
+          ? {
+              status: "ready",
+              summaries: state.summaries.filter(
+                (summary) => summary.id !== current.id,
+              ),
+            }
+          : state,
+      );
+      setViewerEntries(remaining);
+
+      if (remaining.length === 0) {
+        setRecord(null);
+        setViewerIndex(null);
+      } else {
+        setViewerIndex((index) =>
+          index === null ? null : Math.min(index, remaining.length - 1),
+        );
+      }
+    } catch (error) {
+      setDeleteError(
+        error instanceof DiaryStoreError
+          ? error.userMessage
+          : "일기를 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.",
+      );
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -374,21 +428,34 @@ export function GrapeCalendarView() {
           {/* Mounts once per open, so the pop animation plays on opening and
               not again on every swipe. */}
           <div className="grape-viewer-card" style={popStyle}>
-            <div className="grape-viewer-head">
-              <p className="grape-viewer-day-badge">
-                {formatKoreanDate(current.date)}의 그림일기
-                <strong>{viewerEntries.length}편</strong>
-              </p>
-              <p className="grape-viewer-title">
-                {current.title.trim() === "" ? "제목 없는 일기" : current.title}
-              </p>
-              <p className="grape-viewer-date">
-                {weatherLabel(current.weather)}
-              </p>
+            <div className="grape-viewer-nav">
+              <DiaryButton
+                tone="secondary"
+                stable
+                disabled={viewerIndex === 0}
+                onClick={() => step(-1)}
+                aria-label="이 날의 이전 일기"
+              >
+                <GrapeArrow direction="left" />
+              </DiaryButton>
+
+              <span className="grape-viewer-count">
+                {(viewerIndex ?? 0) + 1} / {viewerEntries.length}
+              </span>
+
+              <DiaryButton
+                tone="secondary"
+                stable
+                disabled={viewerIndex === viewerEntries.length - 1}
+                onClick={() => step(1)}
+                aria-label="이 날의 다음 일기"
+              >
+                <GrapeArrow direction="right" />
+              </DiaryButton>
             </div>
 
             <div
-              className={`grape-viewer-stage${viewerEntries.length > 1 ? " has-multiple" : ""}`}
+              className={`grape-viewer-stage stack-${Math.min(viewerEntries.length, 3)}`}
             >
               {recordError !== null ? (
                 <p className="grape-viewer-note" role="alert">
@@ -398,49 +465,12 @@ export function GrapeCalendarView() {
                 <p className="grape-viewer-note">일기를 펴는 중이에요…</p>
               ) : (
                 <img
-                  className="grape-viewer-image"
+                  key={record.id}
+                  className={`grape-viewer-image grape-page-${pageDirection}`}
                   src={record.imageDataUrl}
                   alt={`${formatKoreanDate(record.date)}에 쓴 그림일기`}
                 />
               )}
-            </div>
-
-            <div className="grape-viewer-nav">
-              <button
-                type="button"
-                className="grape-viewer-arrow"
-                disabled={viewerIndex === 0}
-                onClick={() => step(-1)}
-                aria-label="이 날의 이전 일기"
-              >
-                ‹
-              </button>
-
-              <div className="grape-viewer-position">
-                <span className="grape-viewer-count">
-                  {(viewerIndex ?? 0) + 1} / {viewerEntries.length}
-                </span>
-                {viewerEntries.length > 1 && (
-                  <span className="grape-viewer-dots" aria-hidden="true">
-                    {viewerEntries.map((entry, index) => (
-                      <i
-                        key={entry.id}
-                        className={index === viewerIndex ? "is-current" : ""}
-                      />
-                    ))}
-                  </span>
-                )}
-              </div>
-
-              <button
-                type="button"
-                className="grape-viewer-arrow"
-                disabled={viewerIndex === viewerEntries.length - 1}
-                onClick={() => step(1)}
-                aria-label="이 날의 다음 일기"
-              >
-                ›
-              </button>
             </div>
 
             {shareError !== null && (
@@ -448,12 +478,27 @@ export function GrapeCalendarView() {
                 {shareError}
               </p>
             )}
+            {deleteError !== null && (
+              <p className="grape-viewer-error" role="alert">
+                {deleteError}
+              </p>
+            )}
 
             <div className="grape-viewer-actions">
               <DiaryButton
+                tone="secondary"
                 stable
                 fullWidth
-                disabled={record === null || sharing}
+                disabled={sharing || deleting}
+                onClick={() => setViewerIndex(null)}
+              >
+                달력으로 돌아가기
+              </DiaryButton>
+
+              <DiaryButton
+                stable
+                fullWidth
+                disabled={sharing || deleting}
                 aria-busy={sharing}
                 onClick={() => void share()}
               >
@@ -461,18 +506,63 @@ export function GrapeCalendarView() {
               </DiaryButton>
 
               <DiaryButton
-                tone="secondary"
+                tone="danger"
                 stable
                 fullWidth
-                disabled={sharing}
-                onClick={() => setViewerIndex(null)}
+                disabled={deleting}
+                aria-busy={deleting}
+                onClick={() => setDeleteConfirmOpen(true)}
               >
-                달력으로 돌아가기
+                일기 삭제
               </DiaryButton>
             </div>
           </div>
         </div>
       )}
+
+      <Modal open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <Modal.Overlay />
+        <Modal.Content
+          className="app-modal-panel grape-delete-modal"
+          aria-labelledby="grape-delete-title"
+          aria-describedby="grape-delete-description"
+        >
+          <div className="app-modal-layout grape-delete-modal-layout">
+            <div className="grape-delete-modal-body">
+              <h2 id="grape-delete-title" className="app-modal-title">
+                이 일기를 삭제할까요?
+              </h2>
+              <p id="grape-delete-description">
+                삭제한 일기는 다시 복원할 수 없어요.
+              </p>
+            </div>
+            <div className="app-modal-footer grape-delete-modal-actions">
+              <DiaryButton
+                tone="secondary"
+                stable
+                fullWidth
+                disabled={deleting}
+                onClick={() => setDeleteConfirmOpen(false)}
+              >
+                취소
+              </DiaryButton>
+              <DiaryButton
+                tone="danger"
+                stable
+                fullWidth
+                disabled={deleting}
+                aria-busy={deleting}
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  void removeCurrentDiary();
+                }}
+              >
+                삭제하기
+              </DiaryButton>
+            </div>
+          </div>
+        </Modal.Content>
+      </Modal>
     </>
   );
 }

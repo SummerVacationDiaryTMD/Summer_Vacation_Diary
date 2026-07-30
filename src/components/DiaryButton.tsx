@@ -7,7 +7,7 @@ type DiaryButtonProps = Omit<
   TdsButtonProps,
   "className" | "color" | "display" | "variant"
 > & {
-  tone?: "primary" | "secondary";
+  tone?: "primary" | "secondary" | "danger";
   placement?: "dialog" | "guide";
   stable?: boolean;
   feedbackDisabled?: boolean;
