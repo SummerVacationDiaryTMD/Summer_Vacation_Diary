@@ -8,7 +8,10 @@ import { DiaryButton } from "./components/DiaryButton";
 import { DiaryShareModal } from "./components/DiaryShareModal";
 import { GrapeCalendarView } from "./components/GrapeCalendarView";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
-import { PreviewStep } from "./components/PreviewStep";
+import {
+  PreviewStep,
+  type RenderedDiaryPreview,
+} from "./components/PreviewStep";
 import { WriteStep } from "./components/WriteStep";
 import {
   isAiQuotaSpent,
@@ -23,7 +26,10 @@ import {
   createDiaryInspectionContext,
   type DiaryInspectionContext,
 } from "./services/diaryInspection";
-import { composeDiaryImage } from "./utils/diaryImage";
+import {
+  composeDiaryImage,
+  type DiaryImageInput,
+} from "./utils/diaryImage";
 import { isAiConnected } from "./services/diaryAnalysis";
 import { DiaryStoreError, saveDiary } from "./services/diaryStore";
 import { isSketchAiConnected } from "./services/styleTransfer";
@@ -41,6 +47,21 @@ interface DiaryConfirmOptions {
   description: string;
   confirmLabel: string;
   cancelLabel: string;
+}
+
+function sameDiaryImageInput(
+  left: DiaryImageInput,
+  right: DiaryImageInput,
+): boolean {
+  return (
+    left.imageDataUrl === right.imageDataUrl &&
+    left.title === right.title &&
+    left.content === right.content &&
+    left.date === right.date &&
+    left.weather === right.weather &&
+    left.analysis === right.analysis &&
+    left.includesAiGeneratedContent === right.includesAiGeneratedContent
+  );
 }
 
 // HHMMSS from the local clock, appended to the saved file name so two saves
@@ -200,6 +221,8 @@ function App() {
   const toast = useToast();
   const [saving, setSaving] = useState(false);
   const archivedImageRef = useRef<string | null>(null);
+  const [renderedDiaryPreview, setRenderedDiaryPreview] =
+    useState<RenderedDiaryPreview | null>(null);
   const [previewAnimationRunning, setPreviewAnimationRunning] = useState(false);
   const [finishedDiary, setFinishedDiary] = useState<{
     imageDataUrl: string;
@@ -478,7 +501,7 @@ function App() {
 
     setSaving(true);
     try {
-      const { dataUrl: imageDataUrl } = await composeDiaryImage({
+      const imageInput: DiaryImageInput = {
         imageDataUrl: draft.sketchDataUrl ?? draft.photoDataUrl,
         title: draft.title.trim() || "제목 없는 일기",
         content: draft.content,
@@ -487,7 +510,12 @@ function App() {
         analysis:
           analysisState.status === "success" ? analysisState.analysis : null,
         includesAiGeneratedContent,
-      });
+      };
+      const imageDataUrl =
+        renderedDiaryPreview !== null &&
+        sameDiaryImageInput(renderedDiaryPreview.input, imageInput)
+          ? renderedDiaryPreview.dataUrl
+          : (await composeDiaryImage(imageInput)).dataUrl;
       setFinishedDiary({
         imageDataUrl,
         // ASCII name (some Android managers mangle Korean) + a time suffix so
@@ -664,6 +692,7 @@ function App() {
           sketchState={sketchState}
           onSketchRetry={retryDrawing}
           onProcessingVisibilityChange={setPreviewAnimationRunning}
+          onRenderedImageChange={setRenderedDiaryPreview}
         />
       )}
 

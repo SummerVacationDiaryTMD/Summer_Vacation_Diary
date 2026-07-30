@@ -25,6 +25,7 @@ import { isAiTestMode } from "../services/supabaseEdge";
 import {
   composeDiaryImage,
   type ComposedDiaryImage,
+  type DiaryImageInput,
 } from "../utils/diaryImage";
 import {
   DIARY_FRAME,
@@ -57,6 +58,12 @@ interface PreviewStepProps {
   sketchState: SketchState;
   onSketchRetry: () => void;
   onProcessingVisibilityChange: (visible: boolean) => void;
+  onRenderedImageChange: (preview: RenderedDiaryPreview | null) => void;
+}
+
+export interface RenderedDiaryPreview {
+  dataUrl: string;
+  input: DiaryImageInput;
 }
 
 const PREVIEW_PROCESSING_STEPS = [
@@ -382,6 +389,7 @@ export function PreviewStep({
   sketchState,
   onSketchRetry,
   onProcessingVisibilityChange,
+  onRenderedImageChange,
 }: PreviewStepProps) {
   const analysis =
     analysisState.status === "success" ? analysisState.analysis : null;
@@ -482,7 +490,8 @@ export function PreviewStep({
 
     let cancelled = false;
     setRenderedPreview(null);
-    void composeDiaryImage({
+    onRenderedImageChange(null);
+    const input: DiaryImageInput = {
       imageDataUrl,
       title: draft.title.trim() || "제목 없는 일기",
       content: draft.content,
@@ -490,20 +499,25 @@ export function PreviewStep({
       weather: draft.weather,
       analysis,
       includesAiGeneratedContent,
-    })
+    };
+    void composeDiaryImage(input)
       .then((result) => {
-        if (!cancelled) setRenderedPreview(result);
+        if (!cancelled) {
+          setRenderedPreview(result);
+          onRenderedImageChange({ dataUrl: result.dataUrl, input });
+        }
       })
       .catch(() => {
         if (!cancelled) {
           setRenderedPreview(null);
+          onRenderedImageChange(null);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [analysis, draft, includesAiGeneratedContent]);
+  }, [analysis, draft, includesAiGeneratedContent, onRenderedImageChange]);
 
   useEffect(() => {
     if (isAiRequestLoading) {
