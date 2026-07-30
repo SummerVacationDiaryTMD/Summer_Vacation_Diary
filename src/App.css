@@ -4261,145 +4261,412 @@ html:has(.diary-content-section textarea:focus) {
     padding-block: 14px;
   }
 }
-
 /* ----------------------------------------------------------------------------
-   Grape calendar (temporary layout)
-   Bunch = month, bead = day. Plain circles and flex rows on purpose: the real
-   grape stylesheet will replace this, so nothing here should be worth keeping.
+   Grape calendar
+
+   Bunch layout, paper and bead visuals ported from feature/stevechan
+   (commit cb3977d). That branch also carried a second diary store and
+   gallery modal that duplicated src/services/diaryStore.ts; only the
+   styling is kept here.
+
+   Everything the ported design used to wrap the bunch in — a full-height
+   element with its own sky gradient, its own sun and cloud, its own scroll
+   container, its own header and back button — is gone. This screen is a step
+   like 사진 선택 or 일기 쓰기: the paper lies straight on the app's shared
+   summer background, under the shared Top header and bottom bar.
+
+   Note there is deliberately no `.app-shell-calendar` height rule. Pinning the
+   step to the viewport (as 사진 선택 and 미리보기 do) forces a scroll container
+   *inside* the step, and a page-within-a-page is exactly what looked wrong. The
+   bunch is sized to fit instead, and if it ever cannot, the document scrolls.
 ---------------------------------------------------------------------------- */
 
-.app-shell-calendar {
-  display: flex;
-  height: 100vh;
-  height: 100dvh;
-  min-height: 0;
-  flex-direction: column;
-  overscroll-behavior: none;
-}
-
 .grape-calendar-view {
-  display: flex;
-  min-height: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
+  /* One knob drives the whole drawing; every size below is a multiple of it, so
+     the bunch keeps its proportions instead of needing a breakpoint per part.
+
+     The height term is what keeps the bunch on one screen. Nine rows overlapping
+     by 8% cost 8.36 beads of height, and the leaves above them another ~1.3, so
+     the drawing is ~9.7 beads tall. --grape-chrome is everything else already
+     spoken for: the Top header, the bottom bar clearance, the paper's own
+     padding, the month picker, and the message under the bunch — plus a little
+     slack, since the header's height comes from TDS and is not ours to measure.
+
+     Below 34px the day numbers stop being readable, so unusually short screens
+     scroll a little rather than shrink further. */
+  --grape-chrome: calc(var(--app-safe-top) + var(--app-safe-bottom) + 324px);
+  --grape-berry: clamp(
+    34px,
+    min(13vw, (100vh - var(--grape-chrome)) / 9.7),
+    52px
+  );
+  --grape-berry: clamp(
+    34px,
+    min(13vw, (100svh - var(--grape-chrome)) / 9.7),
+    52px
+  );
+
+  /* The bottom bar carries a single button here, so it needs less clearance
+     than the 120px every step reserves for two rows of them. */
+  padding-bottom: calc(92px + var(--app-safe-bottom));
 }
 
-.grape-calendar-scroll {
-  min-height: 0;
-  flex: 1 1 auto;
-  padding-bottom: 96px;
-  overflow-y: auto;
+.praise-grape-arrow-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+  fill: none;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.6;
 }
 
-.grape-calendar-description {
-  margin: 0 0 8px;
-  color: #5d6b68;
-  font-size: 14px;
-  line-height: 1.5;
-  text-align: center;
+.praise-grape-month-picker button:focus-visible,
+.praise-grape-berry:focus-visible {
+  outline: 3px dashed rgba(107, 52, 123, 0.42);
+  outline-offset: 3px;
 }
 
-.grape-calendar-note {
-  margin: 0;
-  padding: 12px 0;
-  color: #5d6b68;
-  font-size: 14px;
-  text-align: center;
-}
-
-.grape-bunch {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 8px 0 20px;
-}
-
-.grape-bunch-title {
-  margin: 0 0 4px;
-  color: #4a3364;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.grape-stem {
-  display: flex;
-  height: 20px;
-  align-items: center;
-  justify-content: center;
-}
-
-.grape-stem-stick {
-  width: 4px;
-  height: 18px;
-  border-radius: 2px;
-  background: #7a5c3e;
-}
-
-.grape-leaf {
-  width: 26px;
-  height: 16px;
-  margin-left: -2px;
-  border-radius: 0 100% 0 100%;
-  background: #4c9a52;
-}
-
-.grape-cluster {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* Rows overlap slightly so the beads read as one bunch rather than a grid. */
-.grape-row {
-  display: flex;
-  margin-top: -6px;
-  justify-content: center;
-}
-
-.grape-bead {
-  display: flex;
+/* The margin and the deep bottom padding the ported design used to clear its
+   own header and back button are gone — the app's header and bottom bar are
+   outside the paper, and the space they needed is already reserved by
+   .step-body. Colour and font moved here from the deleted wrapper: the app's
+   base font is sans-serif, so the handwriting has to be asked for. */
+.praise-grape-paper {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 100%;
+  max-width: 440px;
+  box-sizing: border-box;
+  margin: 8px auto 0;
+  padding: 10px clamp(8px, 3vw, 14px) 14px;
+  border: 2px solid rgba(217, 199, 164, 0.72);
+  border-radius: 30px 24px 28px 22px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0 8%,
+      rgba(220, 124, 124, 0.12) 8% 8.4%,
+      transparent 8.4%
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 31px,
+      rgba(83, 153, 183, 0.14) 32px,
+      transparent 33px
+    ),
+    rgba(255, 253, 245, 0.96);
+  box-shadow:
+    inset 0 0 0 4px rgba(255, 255, 255, 0.62),
+    0 10px 24px rgba(88, 69, 39, 0.12);
+  color: #44374a;
+  font-family: "NanumCoDingHeuiMang", sans-serif;
+}
+
+.praise-grape-month-picker {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 46px;
+  align-items: center;
+  margin: 0 2px 4px;
+}
+
+.praise-grape-month-picker h2 {
+  margin: 0;
+  color: #5d286a;
+  font-size: 23px;
+  line-height: 46px;
+  text-align: center;
+}
+
+.praise-grape-month-picker button {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
   align-items: center;
   justify-content: center;
-  margin: 0 -2px;
+  justify-self: center;
   padding: 0;
-  border: 2px solid #8e6bb5;
-  border-radius: 50%;
-  background: #fdfcff;
-  color: #6b4f8a;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.grape-bead-stamped {
-  border-color: #6b3fa0;
-  background: #8e5bd0;
-  color: #fff;
+  border: 1.5px solid rgba(111, 51, 125, 0.32);
+  border-radius: 14px 12px 13px 11px;
+  background:
+    radial-gradient(
+      circle at 28% 24%,
+      rgba(255, 255, 255, 0.95) 0 2px,
+      transparent 3px
+    ),
+    linear-gradient(145deg, #fffdf5 0%, #f6edcf 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.62),
+    0 2px 0 rgba(111, 51, 125, 0.13),
+    0 4px 8px rgba(74, 45, 79, 0.07);
+  color: #6f337d;
   cursor: pointer;
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease;
 }
 
-.grape-bead-day {
+.praise-grape-month-picker button:first-child {
+  transform: rotate(-1.5deg);
+}
+
+.praise-grape-month-picker button:last-child {
+  transform: rotate(1.5deg);
+}
+
+.praise-grape-month-picker button:active {
+  transform: translateY(1px) scale(0.96);
+  background: linear-gradient(145deg, #fbf5df 0%, #eee0b9 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.58),
+    0 1px 0 rgba(111, 51, 125, 0.12);
+}
+
+.praise-grape-month-picker .praise-grape-arrow-icon {
+  width: 21px;
+  height: 21px;
+  stroke-width: 2.4;
+}
+
+/* The padding is the room the leaves need above the first row of beads. */
+.praise-grape-illustration {
+  position: relative;
+  width: 100%;
+  padding-top: calc(var(--grape-berry) * 1.3);
+}
+
+.praise-grape-leaves {
+  position: absolute;
+  z-index: 0;
+  top: calc(var(--grape-berry) * -0.15);
+  left: 50%;
+  display: block;
+  width: calc(var(--grape-berry) * 4.2);
+  height: calc(var(--grape-berry) * 2.08);
+  overflow: visible;
+  transform: translateX(-51%);
+  filter: drop-shadow(0 3px 1px rgba(39, 83, 51, 0.16));
+}
+
+.praise-grape-leaves path:not(.praise-grape-stem, .praise-grape-leaf-line) {
+  fill: #70a67c;
+  stroke: #fffdf7;
+  stroke-width: 4;
+  stroke-linejoin: round;
+}
+
+.praise-grape-leaves .praise-grape-stem {
+  fill: none;
+  stroke: #765343;
+  stroke-linecap: round;
+  stroke-width: 13;
+}
+
+.praise-grape-leaves .praise-grape-leaf-line {
+  fill: none;
+  opacity: 0.4;
+  stroke: #397653;
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+/* Hangs off the right shoulder of the bunch, so its offset is measured in beads
+   rather than pixels — otherwise it drifts over the beads as they shrink. */
+.praise-grape-sign {
+  position: absolute;
+  z-index: 5;
+  top: calc(var(--grape-berry) * 1.04);
+  left: calc(50% + var(--grape-berry) * 1.77);
+  width: var(--grape-berry);
+  padding: calc(var(--grape-berry) * 0.15) 2px;
+  border: 3px solid #fffdf7;
+  border-radius: 47% 53% 44% 56%;
+  background: #fffdf7;
+  box-shadow:
+    0 0 0 2px rgba(112, 54, 127, 0.15),
+    0 4px 6px rgba(70, 40, 75, 0.12);
+  color: #6d2e78;
+  font-size: calc(var(--grape-berry) * 0.33);
+  font-weight: 900;
+  line-height: 1.05;
+  text-align: center;
+  transform: rotate(7deg);
+}
+
+.praise-grape-cluster {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 5px;
+}
+
+/* Rows tuck into each other by 8% of a bead, which is what makes the beads read
+   as one bunch. It is also the 8.36-bead cluster height --grape-berry is solved
+   against: 9 rows minus 8 overlaps. */
+.praise-grape-row {
+  display: flex;
+  justify-content: center;
+  gap: 1px;
+  margin-top: calc(var(--grape-berry) * -0.08);
+}
+
+.praise-grape-row:first-child {
+  margin-top: 0;
+}
+
+.praise-grape-berry {
+  position: relative;
+  display: inline-flex;
+  width: var(--grape-berry);
+  height: var(--grape-berry);
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #7a3988;
+  box-shadow:
+    0 0 0 1px #7a3988,
+    0 2px 3px rgba(78, 32, 87, 0.17);
+  color: #8d8990;
+  font-family: "NanumCoDingHeuiMang", sans-serif;
+  cursor: pointer;
+  transition:
+    transform 140ms ease,
+    filter 140ms ease;
+}
+
+.praise-grape-berry::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: inherit;
+  background: #fffdf7;
+  box-shadow: inset 0 1px 3px rgba(89, 66, 95, 0.1);
+}
+
+.praise-grape-berry:not(:disabled):active {
+  z-index: 3;
+  transform: scale(0.92);
+  filter: brightness(0.96);
+}
+
+.praise-grape-berry:disabled {
+  cursor: default;
+}
+
+.praise-grape-berry.has-diaries::before {
+  background: #fff9e8;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 215, 102, 0.55),
+    inset 0 1px 3px rgba(89, 66, 95, 0.1);
+}
+
+.praise-grape-day {
+  position: relative;
+  z-index: 2;
+  font-size: calc(var(--grape-berry) * 0.35);
+  line-height: 1;
+}
+
+/* Once a bead is stamped the date steps aside into a small tag, so the stamp
+   gets the middle. The floors keep both legible at the smallest bead. */
+.praise-grape-berry.has-diaries .praise-grape-day {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  display: inline-flex;
+  min-width: max(16px, calc(var(--grape-berry) * 0.37));
+  height: max(16px, calc(var(--grape-berry) * 0.37));
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 1px 3px 0;
+  border: 1.5px solid #7a3988;
+  border-radius: 10px;
+  background: #fffdf7;
+  color: #63306e;
+  font-size: max(10px, calc(var(--grape-berry) * 0.23));
+  font-weight: 900;
+}
+
+.praise-grape-stamp {
   position: relative;
   z-index: 1;
+  display: block;
+  width: calc(var(--grape-berry) * 0.75);
+  height: calc(var(--grape-berry) * 0.75);
+  object-fit: contain;
+  opacity: 0.94;
+  pointer-events: none;
 }
 
-.grape-bead-stamp {
+.praise-grape-count {
   position: absolute;
-  z-index: 2;
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  opacity: 0.92;
-  pointer-events: none;
+  z-index: 3;
+  top: -1px;
+  right: -1px;
+  display: inline-flex;
+  width: max(16px, calc(var(--grape-berry) * 0.35));
+  height: max(16px, calc(var(--grape-berry) * 0.35));
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fffdf7;
+  border-radius: 50%;
+  background: #ed735e;
+  color: #ffffff;
+  font-family: sans-serif;
+  font-size: max(10px, calc(var(--grape-berry) * 0.21));
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Smaller than the ported design set it. At 20px the empty-month line wraps to
+   three rows on a 360px screen, and the extra row is enough to push the bunch
+   off the bottom — the one part of this layout whose height depends on how the
+   text happens to break. Two rows at every width we support. */
+.praise-grape-message {
+  min-height: 22px;
+  margin: 8px 4px 0;
+  color: #6b6470;
+  font-size: clamp(17px, 4.6vw, 20px);
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.praise-grape-message-error {
+  color: #c64d51;
+}
+
+/* The sign used to need its own offset here; it now rides on --grape-berry and
+   moves in with the beads on its own. */
+@media (max-width: 350px) {
+  .praise-grape-paper {
+    padding-inline: 5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .praise-grape-berry {
+    animation: none;
+    transition: none;
+  }
 }
 
 /* Covers everything, including the header and the bottom bar, so the only
    sharp and bright thing on screen is the diary itself. The solid tint is the
    fallback: without backdrop-filter the page still goes dark, just not blurry.
-   z-index clears .app-bottom-bar at 50. */
+
+   The z-index clears .app-bottom-bar at 50, but only because GrapeCalendarView
+   renders this outside .step-body — that element is z-index 1, and a z-index
+   inside it cannot reach past its parent's place in the stack. */
 .grape-viewer-layer {
   display: flex;
   position: fixed;

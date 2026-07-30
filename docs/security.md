@@ -17,7 +17,7 @@
 | 날짜               | 작성 화면                | draft                                | 전송하지 않음                      |
 | 날씨               | 작성 화면                | draft                                | 전송하지 않음                      |
 | 분석 결과          | mock 또는 Edge 응답      | React 메모리 캐시                    | 추가 전송 없음                     |
-| 완성 JPEG          | Canvas                   | React 메모리, 사용자가 저장하면 기기 | 공유 payload에는 포함하지 않음     |
+| 완성 JPEG          | Canvas                   | IndexedDB, 사용자가 저장하면 기기    | 공유 payload에는 포함하지 않음     |
 | Toss 익명 key      | Toss runtime             | 앱이 별도 저장하지 않음              | `x-diary-client-id`                |
 | 브라우저 설치 UUID | Web Crypto               | localStorage                         | `x-diary-client-id`                |
 | quota snapshot     | Edge 응답                | localStorage                         | 서버에서 수신                      |
@@ -38,6 +38,8 @@ draft는 400ms debounce와 page hide flush로 기록됩니다. 저장 용량이 
 `diary-index`와 `diary` key는 토스 앱 안에서는 localStorage가 아니라 네이티브 `Storage` 브리지에, 브라우저 개발 환경에서는 localStorage에 기록됩니다. 이 모듈은 아직 화면과 연결되어 있지 않아 현재 실제 사용자 흐름에서는 기록되지 않습니다.
 
 앱은 시작 시 `restoreOnStart: false`라 이전 draft를 UI에 복원하지 않지만, `새 일기 쓰기` 전까지 저장 key 자체가 남아 있을 수 있습니다.
+
+완성 일기는 IndexedDB `summer-vacation-diary` 데이터베이스의 `completed-diaries` 요약 store와 `completed-diary-images` 이미지 store에 날짜·생성 시각·평가 도장과 함께 저장됩니다. 날짜별 최대 3개이며 자동 만료는 없습니다. 앱 데이터 또는 브라우저 데이터를 지우면 함께 삭제되고, 서버나 다른 기기로 동기화되지 않습니다.
 
 ## 외부 전송
 
