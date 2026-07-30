@@ -52,15 +52,22 @@ export const CONTENT_MAX_LENGTH = 65;
 export function fitDiaryContent(content: string): string {
   const capacity = DIARY_FRAME.columns * DIARY_FRAME.maxRows;
   let usedCells = 0;
+  let charactersSinceNewline = 0;
   let result = "";
 
   for (const character of Array.from(content)) {
     if (usedCells >= capacity) break;
 
     if (character === "\n") {
-      usedCells += (DIARY_FRAME.columns - (usedCells % DIARY_FRAME.columns)) % DIARY_FRAME.columns;
+      usedCells +=
+        charactersSinceNewline === 0
+          ? DIARY_FRAME.columns
+          : (DIARY_FRAME.columns - (usedCells % DIARY_FRAME.columns)) %
+            DIARY_FRAME.columns;
+      charactersSinceNewline = 0;
     } else {
       usedCells += 1;
+      charactersSinceNewline += 1;
     }
     result += character;
   }
@@ -69,15 +76,24 @@ export function fitDiaryContent(content: string): string {
 }
 
 export function diaryContentCellCount(content: string): number {
-  return Array.from(fitDiaryContent(content)).reduce(
-    (usedCells, character) =>
-      character === "\n"
-        ? usedCells +
-          ((DIARY_FRAME.columns - (usedCells % DIARY_FRAME.columns)) %
-            DIARY_FRAME.columns)
-        : usedCells + 1,
-    0,
-  );
+  let usedCells = 0;
+  let charactersSinceNewline = 0;
+
+  for (const character of Array.from(fitDiaryContent(content))) {
+    if (character === "\n") {
+      usedCells +=
+        charactersSinceNewline === 0
+          ? DIARY_FRAME.columns
+          : (DIARY_FRAME.columns - (usedCells % DIARY_FRAME.columns)) %
+            DIARY_FRAME.columns;
+      charactersSinceNewline = 0;
+    } else {
+      usedCells += 1;
+      charactersSinceNewline += 1;
+    }
+  }
+
+  return usedCells;
 }
 
 export function getDiaryFrameLayout(

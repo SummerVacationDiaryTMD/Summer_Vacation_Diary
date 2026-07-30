@@ -20,6 +20,7 @@ export function PhotoCropModal({
 }: PhotoCropModalProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -46,6 +47,7 @@ export function PhotoCropModal({
       const dataUrl = await cropImageToThreeByTwo(
         imageDataUrl,
         croppedAreaPixels,
+        rotation,
       );
       onConfirm(dataUrl);
     } catch {
@@ -86,6 +88,7 @@ export function PhotoCropModal({
           image={imageDataUrl}
           crop={crop}
           zoom={zoom}
+          rotation={rotation}
           aspect={3 / 2}
           minZoom={1}
           maxZoom={3}
@@ -104,6 +107,14 @@ export function PhotoCropModal({
       </div>
 
       <div className="photo-crop-controls">
+        <button
+          type="button"
+          className="photo-crop-rotate"
+          disabled={saving}
+          onClick={() => setRotation((current) => (current + 90) % 360)}
+        >
+          ↻ 90° 회전
+        </button>
         <label htmlFor="photo-crop-zoom">사진 확대</label>
         <input
           id="photo-crop-zoom"

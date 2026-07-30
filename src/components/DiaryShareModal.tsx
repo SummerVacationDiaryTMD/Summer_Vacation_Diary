@@ -107,7 +107,7 @@ export function DiaryShareModal({
               <DiaryButton
                 stable
                 fullWidth
-                disabled={busyAction !== null && busyAction !== "save"}
+                disabled={busyAction !== null}
                 aria-busy={busyAction === "save"}
                 onClick={() => void run("save")}
               >

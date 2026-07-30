@@ -81,6 +81,7 @@ const CONTENT_FONT_SIZE = 54;
 const CONTENT_FONT = `400 ${CONTENT_FONT_SIZE}px ${DIARY_FONT_STACK}`;
 const COMMENT_LABEL_FONT = `700 18px ${SYSTEM_FONT_STACK}`;
 const COMMENT_FONT_SIZE = 42;
+const COMMENT_MAX_FONT_SIZE = 56;
 const commentFont = (size: number) =>
   `700 ${size}px ${TEACHER_COMMENT_FONT_STACK}`;
 const COMMENT_FONT = commentFont(COMMENT_FONT_SIZE);
@@ -372,11 +373,26 @@ function drawComment(
 
   context.font = COMMENT_FONT;
   if (context.measureText(comment).width <= contentWidth) {
+    for (let size = COMMENT_MAX_FONT_SIZE; size >= COMMENT_FONT_SIZE; size -= 1) {
+      context.font = commentFont(size);
+      const metrics = context.measureText(comment);
+      const ascent = metrics.actualBoundingBoxAscent || size * 0.8;
+      const descent = metrics.actualBoundingBoxDescent || size * 0.2;
+      if (
+        metrics.width <= contentWidth &&
+        ascent <= 46 &&
+        descent <= height - 82
+      ) {
+        break;
+      }
+    }
+
+    const fittedFont = context.font;
     context.font = COMMENT_LABEL_FONT;
     context.fillStyle = LABEL_COLOR;
     context.fillText("선생님 한마디", x + paddingX, y + 27);
 
-    context.font = COMMENT_FONT;
+    context.font = fittedFont;
     context.fillStyle = COMMENT_COLOR;
     context.fillText(comment, x + paddingX, y + 82);
     context.restore();
@@ -395,14 +411,34 @@ function drawComment(
   let firstLine = "";
   let secondLine = "";
 
-  for (const character of Array.from(comment)) {
+  for (let size = COMMENT_MAX_FONT_SIZE; size >= 1; size -= 1) {
+    context.font = commentFont(size);
+    firstLine = "";
+    secondLine = "";
+
+    for (const character of Array.from(comment)) {
+      if (
+        secondLine === "" &&
+        context.measureText(firstLine + character).width <= firstLineWidth
+      ) {
+        firstLine += character;
+      } else {
+        secondLine += character;
+      }
+    }
+
+    const metrics = context.measureText(
+      firstLine.length >= secondLine.length ? firstLine : secondLine,
+    );
+    const ascent = metrics.actualBoundingBoxAscent || size * 0.8;
+    const descent = metrics.actualBoundingBoxDescent || size * 0.2;
     if (
-      secondLine === "" &&
-      context.measureText(firstLine + character).width <= firstLineWidth
+      context.measureText(secondLine).width <= contentWidth &&
+      ascent <= 40 &&
+      descent <= height - 95 &&
+      ascent + descent <= 50
     ) {
-      firstLine += character;
-    } else {
-      secondLine += character;
+      break;
     }
   }
 

@@ -98,15 +98,24 @@ export function buildDiaryCells(
           analysis.highlightSentence,
         );
   const cells: DiaryCell[] = [];
+  let charactersSinceNewline = 0;
 
   for (const segment of segments) {
     for (const character of Array.from(segment.text)) {
       if (character === "\n") {
-        while (cells.length % columnCount !== 0) {
-          cells.push({ text: "", mark: null });
+        if (charactersSinceNewline === 0) {
+          for (let column = 0; column < columnCount; column += 1) {
+            cells.push({ text: "", mark: null });
+          }
+        } else {
+          while (cells.length % columnCount !== 0) {
+            cells.push({ text: "", mark: null });
+          }
         }
+        charactersSinceNewline = 0;
       } else {
         cells.push({ text: character, mark: segment.mark });
+        charactersSinceNewline += 1;
       }
     }
   }

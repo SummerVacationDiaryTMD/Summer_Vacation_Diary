@@ -301,6 +301,15 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
               height={170}
               maxLength={CONTENT_MAX_LENGTH}
               value={draft.content}
+              onFocus={(event) => {
+                const textarea = event.currentTarget;
+                window.setTimeout(() => {
+                  textarea.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                  });
+                }, 300);
+              }}
               onKeyDown={(event) => {
                 if (
                   event.key === "Enter" &&

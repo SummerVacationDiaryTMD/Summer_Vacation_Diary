@@ -40,6 +40,7 @@ import type { WeatherValue } from "../constants/diary";
 
 const INDEX_STORAGE_KEY = "summer-vacation-diary:diary-index:v1";
 const ENTRY_STORAGE_KEY_PREFIX = "summer-vacation-diary:diary:v1:";
+const MAX_DIARIES_PER_DATE = 3;
 
 function entryStorageKey(id: string): string {
   return `${ENTRY_STORAGE_KEY_PREFIX}${id}`;
@@ -65,7 +66,10 @@ export interface DiaryRecord extends DiarySummary {
 
 export type SaveDiaryInput = Omit<DiaryRecord, "id" | "savedAt">;
 
-export type DiaryStoreErrorCode = "storage-full" | "read-failed";
+export type DiaryStoreErrorCode =
+  | "storage-full"
+  | "read-failed"
+  | "daily-limit";
 
 export class DiaryStoreError extends Error {
   constructor(
@@ -88,6 +92,13 @@ function readFailedError(): DiaryStoreError {
   return new DiaryStoreError(
     "read-failed",
     "저장된 일기를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+  );
+}
+
+function dailyLimitError(): DiaryStoreError {
+  return new DiaryStoreError(
+    "daily-limit",
+    "하루에는 일기를 최대 3개까지 저장할 수 있어요.",
   );
 }
 
@@ -260,6 +271,45 @@ function clamp(text: string, maxLength: number): string {
  */
 export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
   return withLock(async () => {
+    let index: DiarySummary[];
+    try {
+      index = await readIndex();
+    } catch {
+      throw readFailedError();
+    }
+
+    let diariesOnDate = 0;
+    for (const summary of index) {
+      if (summary.date !== input.date) {
+        continue;
+      }
+
+      let raw: string | null;
+      try {
+        raw = await getBackend().getItem(entryStorageKey(summary.id));
+      } catch {
+        throw readFailedError();
+      }
+      let existing: unknown = null;
+      try {
+        existing = raw === null ? null : JSON.parse(raw);
+      } catch {
+        // Corrupt entries are absent and do not consume the daily limit.
+      }
+
+      if (!isRecord(existing)) {
+        continue;
+      }
+      if (existing.imageDataUrl === input.imageDataUrl) {
+        return existing;
+      }
+      diariesOnDate += 1;
+    }
+
+    if (diariesOnDate >= MAX_DIARIES_PER_DATE) {
+      throw dailyLimitError();
+    }
+
     const record: DiaryRecord = {
       id: createDiaryId(),
       date: input.date,
@@ -282,7 +332,6 @@ export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
     }
 
     try {
-      const index = await readIndex();
       await writeIndex([...index, toSummary(record)]);
     } catch {
       try {
