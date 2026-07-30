@@ -80,8 +80,7 @@ export function GrapeCalendarView() {
   // its own list so a swipe can never spill into the previous or next day.
   const [viewerEntries, setViewerEntries] = useState<DiarySummary[]>([]);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-  const [pageDirection, setPageDirection] =
-    useState<PageDirection>("forward");
+  const [pageDirection, setPageDirection] = useState<PageDirection>("forward");
   const [popOrigin, setPopOrigin] = useState<PopOrigin>({ dx: 0, dy: 0 });
   const [record, setRecord] = useState<DiaryRecord | null>(null);
   const [recordError, setRecordError] = useState<string | null>(null);
@@ -164,11 +163,7 @@ export function GrapeCalendarView() {
   const [selectedYear, selectedMonthNumber] = selectedMonth
     .split("-")
     .map(Number);
-  const firstDay = new Date(
-    selectedYear,
-    selectedMonthNumber - 1,
-    1,
-  ).getDay();
+  const firstDay = new Date(selectedYear, selectedMonthNumber - 1, 1).getDay();
   // JavaScript starts weeks on Sunday. The picture-diary calendar starts on
   // Monday, so Sunday moves from index 0 to the last column.
   const leadingBlankCount = (firstDay + 6) % 7;
@@ -244,7 +239,9 @@ export function GrapeCalendarView() {
     setDeleteError(null);
     try {
       await deleteDiary(current.id);
-      const remaining = viewerEntries.filter((entry) => entry.id !== current.id);
+      const remaining = viewerEntries.filter(
+        (entry) => entry.id !== current.id,
+      );
       setLoad((state) =>
         state.status === "ready"
           ? {
@@ -486,13 +483,14 @@ export function GrapeCalendarView() {
 
             <div className="grape-viewer-actions">
               <DiaryButton
-                tone="secondary"
+                tone="danger"
                 stable
                 fullWidth
-                disabled={sharing || deleting}
-                onClick={() => setViewerIndex(null)}
+                disabled={deleting}
+                aria-busy={deleting}
+                onClick={() => setDeleteConfirmOpen(true)}
               >
-                달력으로 돌아가기
+                일기 삭제
               </DiaryButton>
 
               <DiaryButton
@@ -506,14 +504,13 @@ export function GrapeCalendarView() {
               </DiaryButton>
 
               <DiaryButton
-                tone="danger"
+                tone="secondary"
                 stable
                 fullWidth
-                disabled={deleting}
-                aria-busy={deleting}
-                onClick={() => setDeleteConfirmOpen(true)}
+                disabled={sharing || deleting}
+                onClick={() => setViewerIndex(null)}
               >
-                일기 삭제
+                뒤로가기
               </DiaryButton>
             </div>
           </div>
