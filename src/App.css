@@ -1734,6 +1734,38 @@ html:has(.diary-content-section textarea:focus) {
   background: #ffffff;
 }
 
+.preview-error-modal {
+  height: auto !important;
+}
+
+.preview-error-modal-layout {
+  height: auto;
+}
+
+.preview-error-modal-body {
+  padding: 24px var(--app-modal-bezel) 20px;
+}
+
+.preview-error-modal-body p {
+  margin: 10px 0 0;
+  color: #5a5147;
+  font-size: 15px;
+  line-height: 1.55;
+  white-space: pre-line;
+  word-break: keep-all;
+}
+
+.preview-error-modal-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  padding: 14px var(--app-modal-bezel) var(--app-modal-bezel);
+}
+
+.preview-error-modal-actions.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .modal-scroll-body {
   min-height: 0;
   overflow-x: hidden;
@@ -3910,21 +3942,6 @@ html:has(.diary-content-section textarea:focus) {
 
 /* --- Stage 3: photo → colored-pencil drawing --- */
 
-.sketch-error,
-.preview-status-panel {
-  display: flex;
-  flex-direction: column;
-  padding: 5px 20px;
-  border-top: 2px dashed #d8c7ab;
-  background-color: #f5eee3;
-}
-
-.sketch-error-actions {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 /* Standard screen-reader-only pattern: rendered (so live-region changes are
    announced) but occupies no visible space. display:none would silence it. */
 .visually-hidden {
@@ -3941,16 +3958,6 @@ html:has(.diary-content-section textarea:focus) {
 
 .comment-error {
   display: block;
-}
-
-.preview-mode-note {
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: #f7f3e9;
-  color: #6b5e3f;
-  font-size: 13px;
-  line-height: 1.45;
-  text-align: center;
 }
 
 /* Usage is a decision-driving status, not passive helper copy. Keep the
@@ -4603,48 +4610,27 @@ html:has(.diary-content-section textarea:focus) {
 }
 
 .diary-calendar-cell.weekday-6 .diary-calendar-day {
-  color: #dfa914;
+  color: #d54b4b;
 }
 
 .diary-calendar-cell.weekday-5 .diary-calendar-day {
-  color: #d45b87;
+  color: #397bc5;
 }
 
 .diary-calendar-stamp {
   position: absolute;
   z-index: 1;
-  top: 50%;
+  top: 57%;
   left: 50%;
   display: block;
-  width: 82%;
-  height: 82%;
+  width: 116%;
+  height: 116%;
   object-fit: contain;
   opacity: 0.92;
   pointer-events: none;
-  transform: translate(-50%, -45%) rotate(-5deg);
+  transform: translate(-50%, -46%) rotate(-5deg);
   filter: saturate(0.92);
   mix-blend-mode: multiply;
-}
-
-.diary-calendar-count {
-  position: absolute;
-  z-index: 3;
-  right: 2px;
-  bottom: 2px;
-  display: inline-flex;
-  min-width: 17px;
-  height: 17px;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  padding: 0 4px;
-  border: 1.5px solid #fffdf5;
-  border-radius: 10px;
-  background: #e56b55;
-  color: #fff;
-  font-family: sans-serif;
-  font-size: 10px;
-  font-weight: 800;
 }
 
 .diary-calendar-message {

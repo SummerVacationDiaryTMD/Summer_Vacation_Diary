@@ -318,11 +318,6 @@ export function GrapeCalendarView() {
                         draggable={false}
                       />
                     )}
-                    {saved.length > 1 && (
-                      <span className="diary-calendar-count" aria-hidden="true">
-                        {saved.length}
-                      </span>
-                    )}
                   </button>
                 );
               })}
