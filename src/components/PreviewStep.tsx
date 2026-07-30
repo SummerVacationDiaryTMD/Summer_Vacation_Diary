@@ -65,8 +65,8 @@ const PREVIEW_PROCESSING_STEPS = [
 ] as const;
 // Move through the first two narrative steps quickly, then wait for the real
 // request in step 3. Even a fast response shows the finishing animation once.
-const PROCESSING_READ_STEP_DELAY_MS = 1_600;
-const PROCESSING_FINISH_STEP_DELAY_MS = 3_400;
+const PROCESSING_READ_STEP_DELAY_MS = 2_500;
+const PROCESSING_FINISH_STEP_DELAY_MS = 5_500;
 const PROCESSING_FINISH_MIN_VISIBLE_MS = 1_200;
 
 function DiaryProcessingIcon({ step }: { step: number }) {
