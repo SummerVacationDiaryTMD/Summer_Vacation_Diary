@@ -8,6 +8,7 @@ import {
 } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
+import { diaryContentCellCount, fitDiaryContent } from "../utils/diaryFrameLayout";
 
 interface WriteStepProps {
   draft: DiaryDraft;
@@ -83,13 +84,11 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
   const [contentLimitShakeCount, setContentLimitShakeCount] = useState(0);
   const titleLength = Array.from(draft.title).length;
   const titleAtLimit = titleLength >= TITLE_MAX_LENGTH;
-  const contentLength = Array.from(draft.content).length;
+  const contentLength = diaryContentCellCount(draft.content);
   const handleContentChange = (value: string, element: HTMLTextAreaElement) => {
-    const limitedContent = Array.from(
+    const limitedContent = fitDiaryContent(
       value.split("\n").slice(0, CONTENT_MAX_LINES).join("\n"),
-    )
-      .slice(0, CONTENT_MAX_LENGTH)
-      .join("");
+    );
 
     if (
       element.scrollHeight > element.clientHeight + 1 ||
