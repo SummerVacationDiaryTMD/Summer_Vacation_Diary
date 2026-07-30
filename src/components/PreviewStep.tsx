@@ -1,5 +1,6 @@
-import { Paragraph } from "@toss/tds-mobile";
+import { Modal, Paragraph } from "@toss/tds-mobile";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -384,6 +385,19 @@ export function PreviewStep({
 }: PreviewStepProps) {
   const analysis =
     analysisState.status === "success" ? analysisState.analysis : null;
+  const modeNotice = isAiTestMode
+    ? {
+        title: "테스트 모드 안내",
+        description: isAiConnected
+          ? "원본 사진으로 분석만 진행해요. 그림 변환 모델은 호출하지 않아요."
+          : "원본 사진과 예시 분석을 보여드려요.",
+      }
+    : !isAiConnected
+      ? {
+          title: "체험 모드 안내",
+          description: "예시 분석과 간단한 그림 효과를 보여드려요.",
+        }
+      : null;
 
   const sketchUrl =
     sketchState.status === "success" && !isAiTestMode
@@ -395,6 +409,26 @@ export function PreviewStep({
     (isAiConnected && analysisState.status === "success");
   const isAiRequestLoading =
     analysisState.status === "loading" || sketchState.status === "loading";
+  const analysisRetryable =
+    analysisState.status === "error" && analysisState.retryable;
+  const sketchRetryable =
+    sketchState.status === "error" && sketchState.retryable;
+  const hasRetryableError = analysisRetryable || sketchRetryable;
+  const errorMessages = [
+    analysisState.status === "error" ? analysisState.message : null,
+    sketchState.status === "error" ? sketchState.message : null,
+  ].filter((message): message is string => message !== null);
+  const errorMessageText = errorMessages.join("\n\n");
+  const errorDialogKey = `${analysisState.status === "error" ? analysisState.message : ""}|${sketchState.status === "error" ? sketchState.message : ""}`;
+  const errorDialogKeyRef = useRef<string | null>(null);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
+  const [modeModalOpen, setModeModalOpen] = useState(
+    () => modeNotice !== null,
+  );
+  const retryFailedRequests = useCallback(() => {
+    if (analysisRetryable) onRetry();
+    if (sketchRetryable) onSketchRetry();
+  }, [analysisRetryable, onRetry, onSketchRetry, sketchRetryable]);
   const [renderedPreview, setRenderedPreview] =
     useState<ComposedDiaryImage | null>(null);
   const [processingStep, setProcessingStep] = useState(0);
@@ -419,6 +453,25 @@ export function PreviewStep({
     Math.max(animatedAnalysis?.comment.length ?? 0, 1) * 180;
   const commentDelayMs = annotationTimeline.totalDurationMs + 350;
   const stampDelayMs = commentDelayMs + commentWriteDurationMs + 300;
+
+  useEffect(() => {
+    if (errorMessages.length === 0) {
+      errorDialogKeyRef.current = null;
+      return;
+    }
+
+    if (errorDialogKeyRef.current === errorDialogKey) {
+      return;
+    }
+    errorDialogKeyRef.current = errorDialogKey;
+
+    setErrorModalOpen(true);
+  }, [
+    errorDialogKey,
+    errorMessageText,
+    errorMessages.length,
+    hasRetryableError,
+  ]);
 
   useEffect(() => {
     const imageDataUrl = draft.sketchDataUrl ?? draft.photoDataUrl;
@@ -739,63 +792,88 @@ export function PreviewStep({
             )}
           </div>
 
-          {analysisState.status === "error" && (
-            <div className="preview-status-panel" role="alert">
-              <Paragraph typography="t7" color="#6b5e3f">
-                {analysisState.message}
-              </Paragraph>
-              {/* Hidden once the daily budget is gone: the button would be an
-                invitation to press something that cannot succeed today. */}
-              {analysisState.retryable && (
-                <DiaryButton
-                  tone="secondary"
-                  stable
-                  size="small"
-                  onClick={onRetry}
-                >
-                  한마디 다시 시도
-                </DiaryButton>
-              )}
-            </div>
-          )}
+        </div>
+      )}
 
-          {/* Keep mode guidance outside the fixed-ratio paper. Content placed in
-            the printed comment box must scale with it and cannot grow freely. */}
-          {(isAiTestMode || !isAiConnected) && (
-            <div className="preview-mode-note">
-              {isAiTestMode
-                ? isAiConnected
-                  ? "테스트 모드 · 원본 사진으로 분석만 진행해요"
-                  : "테스트 모드 · 원본 사진과 예시 분석이 보여요"
-                : "체험 모드 · 예시 분석과 간단한 그림 효과가 보여요"}
+      <Modal open={errorModalOpen} onOpenChange={setErrorModalOpen}>
+        <Modal.Overlay />
+        <Modal.Content
+          className="app-modal-panel preview-error-modal"
+          aria-labelledby="preview-error-title"
+          aria-describedby="preview-error-description"
+        >
+          <div className="app-modal-layout preview-error-modal-layout">
+            <div className="preview-error-modal-body">
+              <h2 id="preview-error-title" className="app-modal-title">
+                연결을 다시 확인해 주세요
+              </h2>
+              <p id="preview-error-description">{errorMessageText}</p>
             </div>
-          )}
-
-          {sketchState.status === "error" && (
-            <div className="sketch-error">
-              <Paragraph typography="t7" color="#5A442C">
-                {sketchState.message}
-              </Paragraph>
-              {!sketchState.retryable && (
-                <Paragraph as="span" typography="t7" color="#5A442C">
-                  원본 사진으로도 완성할 수 있어요
-                </Paragraph>
-              )}
-              <div className="sketch-error-actions">
-                {sketchState.retryable && (
+            <div
+              className={`app-modal-footer preview-error-modal-actions${hasRetryableError ? "" : " is-single"}`}
+            >
+              {hasRetryableError ? (
+                <>
                   <DiaryButton
                     tone="secondary"
                     stable
-                    size="small"
-                    onClick={onSketchRetry}
+                    fullWidth
+                    onClick={() => setErrorModalOpen(false)}
+                  >
+                    닫기
+                  </DiaryButton>
+                  <DiaryButton
+                    stable
+                    fullWidth
+                    onClick={() => {
+                      setErrorModalOpen(false);
+                      retryFailedRequests();
+                    }}
                   >
                     다시 시도
                   </DiaryButton>
-                )}
+                </>
+              ) : (
+                <DiaryButton
+                  stable
+                  fullWidth
+                  onClick={() => setErrorModalOpen(false)}
+                >
+                  확인
+                </DiaryButton>
+              )}
+            </div>
+          </div>
+        </Modal.Content>
+      </Modal>
+
+      {modeNotice !== null && (
+        <Modal open={modeModalOpen} onOpenChange={setModeModalOpen}>
+          <Modal.Overlay />
+          <Modal.Content
+            className="app-modal-panel preview-error-modal"
+            aria-labelledby="preview-mode-title"
+            aria-describedby="preview-mode-description"
+          >
+            <div className="app-modal-layout preview-error-modal-layout">
+              <div className="preview-error-modal-body">
+                <h2 id="preview-mode-title" className="app-modal-title">
+                  {modeNotice.title}
+                </h2>
+                <p id="preview-mode-description">{modeNotice.description}</p>
+              </div>
+              <div className="app-modal-footer preview-error-modal-actions is-single">
+                <DiaryButton
+                  stable
+                  fullWidth
+                  onClick={() => setModeModalOpen(false)}
+                >
+                  확인
+                </DiaryButton>
               </div>
             </div>
-          )}
-        </div>
+          </Modal.Content>
+        </Modal>
       )}
     </div>
   );

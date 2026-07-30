@@ -689,7 +689,7 @@ function App() {
             fullWidth
             onClick={() => setStep("calendar")}
           >
-            일기 모아서 보기
+            나의 기록 보기
           </DiaryButton>
 
           <DiaryButton
