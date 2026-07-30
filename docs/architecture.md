@@ -4,7 +4,7 @@
 
 ## 시스템 개요
 
-이 프로젝트는 React 단일 페이지 WebView 앱입니다. 라우터·전역 상태 라이브러리·일기 보관용 서버 데이터베이스 없이 `App.tsx`가 온보딩과 3단계 제작 흐름을 조정합니다. 완성 일기는 기기 IndexedDB에 보관하고, 별도 Supabase Edge Function과 사용량 제한 테이블이 서버 경계를 담당합니다.
+이 프로젝트는 React 단일 페이지 WebView 앱입니다. 라우터·전역 상태 라이브러리·일기 보관용 데이터베이스 없이 `App.tsx`가 온보딩과 3단계 제작 흐름을 조정합니다. 별도 Supabase Edge Function과 사용량 제한 테이블이 서버 경계를 담당합니다.
 
 외부 기능은 두 경로로 분리됩니다.
 
@@ -20,7 +20,6 @@ flowchart TD
     App --> Write["WriteStep<br/>일기 입력"]
     App --> Preview["PreviewStep<br/>첨삭·미리보기"]
     App --> ShareModal["DiaryShareModal<br/>저장·공유"]
-    App --> Praise["PraiseGrapeScreen<br/>날짜별 도장·갤러리"]
 
     App --> Draft["useDiaryDraft"]
     App --> Sketch["useSketch"]
@@ -28,7 +27,6 @@ flowchart TD
     App --> Quota["useAiQuota"]
 
     Draft <--> Local[("localStorage")]
-    Praise <--> Archive[("IndexedDB<br/>완성 일기")]
     Sketch --> Transfer["styleTransfer"]
     Analysis --> Analyzer["diaryAnalysis"]
     Quota --> EdgeClient["supabaseEdge"]
@@ -91,14 +89,6 @@ interface DiaryDraft {
   date: string;
   weather: "sunny" | "partly-cloudy" | "cloudy" | "rainy" | "stormy";
 }
-
-interface CompletedDiary {
-  id: string;
-  date: string;
-  createdAt: number;
-  imageDataUrl: string;
-  stamp: "great" | "effort" | null;
-}
 ```
 
 `useDiaryDraft`가 React 상태와 `localStorage`를 동기화합니다.
@@ -111,6 +101,15 @@ interface CompletedDiary {
 - 현재 `App.tsx`는 `restoreOnStart: false`이므로 앱 시작 시 저장본을 복원하지 않음
 
 이는 데이터베이스 모델이 아니라 한 기기의 작업 사본입니다.
+
+## 완성 일기 보관
+
+`src/services/diaryStore.ts`는 완성한 일기를 기기에 보관하는 서비스 계층입니다. 작업 사본인 draft와 달리, 다시 만들 수 없는 결과물을 다루므로 저장 실패를 조용히 넘기지 않고 `DiaryStoreError`로 알립니다. 아직 어떤 화면과도 연결되어 있지 않습니다.
+
+- 저장 위치: 토스 앱에서는 Apps in Toss `Storage` 브리지, 브라우저 개발 환경에서는 localStorage. WebView의 웹 저장소는 미니앱 URL 기준으로 분리되고 OS가 정리할 수 있어 네이티브 저장소를 기본 경로로 둡니다. 그 결과 같은 토스 앱 안에서도 draft와 보관 일기의 보존 수명이 다릅니다.
+- key 구조: 목록용 `summer-vacation-diary:diary-index:v1`(이미지 없는 요약 배열)과 일기별 `summer-vacation-diary:diary:v1:<id>`. 목록 조회가 이미지 바이트를 읽지 않고, 저장이 기존 일기를 다시 쓰지 않도록 나눴습니다.
+- 일관성: 저장은 항목 → index 순으로 씁니다. 중간에 실패하면 화면에 보이지 않는 항목만 남고, 목록에 있는데 열 수 없는 일기는 생기지 않습니다. index에 남은 끊어진 참조는 `getDiary`가 발견할 때 정리합니다.
+- 정렬은 저장이 아니라 조회 시점에 날짜·저장 시각 내림차순으로 수행합니다.
 
 ## 사진 처리 흐름
 
@@ -132,8 +131,8 @@ sequenceDiagram
     App->>Sketch: 업로드 단계 종료
     Sketch->>Service: transferPhotoToSketch
     alt Supabase + 실제 모드
-        Service->>Edge: sketch action
-        Edge-->>Service: imageBase64 + quota
+        Service->>Edge: inspect action
+        Edge-->>Service: imageBase64 + analysis + quota
         Service->>Image: JPEG 재압축
     else Supabase 미설정
         Service->>Service: Canvas 연필 필터
@@ -148,7 +147,7 @@ sequenceDiagram
 
 ## 일기 검사 흐름
 
-`검사 받기`가 명시적으로 `runAnalysis()`를 호출합니다. 입력 signature는 사진, 제목, 본문, 날씨의 JSON 배열이며 날짜는 분석 입력에 영향을 주지 않아 제외합니다.
+`검사 받기`가 명시적으로 `runAnalysis()`를 호출합니다. 입력 signature는 사진과 본문의 JSON 배열입니다. 제목·날짜·날씨는 분석 입력이 아니므로 수정해도 기존 결과를 재사용합니다.
 
 - 같은 signature의 진행 중 Promise 재사용
 - 성공 결과 최근 3개 메모리 캐시
@@ -158,6 +157,17 @@ sequenceDiagram
 - 비속어가 포함된 키워드·첨삭 대상 제외
 
 실패 격리는 분석 상태 안에서 이루어져, 분석이 없어도 사용자는 그림일기를 완성할 수 있습니다.
+
+## 통합 AI 검사 기회
+
+사용자에게 사진 변환과 일기 분석 횟수를 따로 노출하지 않습니다.
+`useAiQuota`는 서버 snapshot의 공통 `all` counter를 통합 기회의
+유일한 권위값으로 사용합니다. 그림 요청 진행 중에는 sketch ledger를
+`all` 사용량에 선반영하고, 통합 잔여량이 0이면 두 작업을 함께 선차단합니다.
+
+클라이언트는 필요한 그림·분석 작업을 하나의 `inspect` 요청으로 모읍니다.
+서버 RPC는 사용자 `all`과 IP를 요청당 한 번만 원자적으로 증가시키고,
+서비스 전체 사용량은 실제 실행한 sketch·analyze 작업만 각각 증가시킵니다.
 
 ## 완성 이미지 흐름
 
@@ -175,13 +185,12 @@ Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 �
 
 | 대상                | 전송 또는 저장 데이터                                                               | 경계                      |
 | ------------------- | ----------------------------------------------------------------------------------- | ------------------------- |
-| Supabase `diary-ai` | sketch: 사진, analyze: 사진·제목·본문·날씨, quota: 익명 식별 header                 | `supabaseEdge.ts`         |
+| Supabase `diary-ai` | inspect: 필요한 사진 변환·사진/본문 분석, quota: 익명 식별 header                  | `supabaseEdge.ts`         |
 | Supabase PostgreSQL | scope·식별자 hash·action·window별 요청 횟수                                         | `diary_ai_rate_limits`    |
 | OpenAI              | 클라이언트가 직접 호출하지 않음. 별도 Edge Function 뒤의 실제 전달은 서버 확인 필요 | 저장소 밖                 |
-| Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지                                     | web-framework runtime API |
-| localStorage        | draft, quota snapshot, 브라우저 설치 ID                                             | 기기 내                   |
-| IndexedDB           | 날짜, 완성 JPEG, 평가 도장(하루 최대 3개)                                           | 기기 내                   |
-| 메모리              | 분석 캐시, 그림 캐시, 진행 요청 ledger, 현재 완성 JPEG                              | 현재 앱 실행              |
+| Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지, 완성 일기 보관(`Storage`, 화면 미연결) | web-framework runtime API |
+| localStorage        | draft, quota snapshot, 브라우저 설치 ID, 완성 일기 보관의 브라우저 대체 경로        | 기기 내                   |
+| 메모리              | 분석 캐시, 그림 캐시, 진행 요청 ledger, 완성 JPEG                                   | 현재 앱 실행              |
 
 ## 인증·인가
 
@@ -223,7 +232,6 @@ flowchart LR
 - **라우터 없음:** deep link 없는 엄격한 wizard라 의존성 추가 이점이 없다는 `App.tsx` 주석
 - **HTML 파일 입력:** 브라우저와 Toss WebView 모두 동작하고 Granite 사진 권한이 필요 없다는 `PhotoUploadStep.tsx` 주석
 - **data URL + localStorage:** 백엔드 없이 작업 사본을 유지하되 JPEG 압축과 단계적 용량 저하로 quota 오류를 완화
-- **IndexedDB 완성 보관:** localStorage 용량을 차지하지 않고 날짜별 최대 3장의 완성 JPEG와 도장을 기기에 유지
 - **공유 링크만 전달:** 완성 사진을 public URL로 업로드하는 서버가 없어 이미지가 아닌 앱 링크를 공유
 
 ## 알려진 제약
@@ -233,7 +241,7 @@ flowchart LR
 - Supabase 사용량 테이블 DDL은 확인됐지만 versioned migration 파일은 저장소에 없습니다.
 - 서버 rate limit 값, 해시 방식, 보존 기간, 환불 정책은 확인할 수 없습니다.
 - 자동 테스트와 CI 품질 gate가 없습니다.
-- 완성 일기는 기기 로컬에만 있으며 계정 동기화와 PDF 내보내기가 없습니다.
+- 완성 일기 목록, 계정 동기화, PDF 내보내기가 없습니다.
 - 브라우저 저장·공유 fallback과 Toss 실제 동작은 각각 별도 환경 검증이 필요합니다.
 
 ## 관련 문서

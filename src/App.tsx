@@ -3,15 +3,15 @@ import { SafeAreaInsets } from "@apps-in-toss/web-framework";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import "./App.css";
-import { AnalyzeQuotaNotice } from "./components/AiQuotaNotice";
+import { AiQuotaNotice, AiRecheckNotice } from "./components/AiQuotaNotice";
 import { DiaryButton } from "./components/DiaryButton";
 import { DiaryShareModal } from "./components/DiaryShareModal";
+import { GrapeCalendarView } from "./components/GrapeCalendarView";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
-import { PraiseGrapeScreen } from "./components/PraiseGrapeScreen";
 import { PreviewStep } from "./components/PreviewStep";
 import { WriteStep } from "./components/WriteStep";
 import {
-  isActionSpent,
+  isAiQuotaSpent,
   isRegionBlocked,
   refreshAiQuota,
   useAiQuota,
@@ -19,19 +19,22 @@ import {
 import { useDiaryAnalysis } from "./hooks/useDiaryAnalysis";
 import { useDiaryDraft } from "./hooks/useDiaryDraft";
 import { useSketch } from "./hooks/useSketch";
+import {
+  createDiaryInspectionContext,
+  type DiaryInspectionContext,
+} from "./services/diaryInspection";
 import { composeDiaryImage } from "./utils/diaryImage";
 import { isAiConnected } from "./services/diaryAnalysis";
+import { DiaryStoreError, saveDiary } from "./services/diaryStore";
 import { isSketchAiConnected } from "./services/styleTransfer";
-import {
-  canAddCompletedDiary,
-  CompletedDiaryLimitError,
-  saveCompletedDiary,
-} from "./services/completedDiaryStore";
 
 // Plain state instead of a router: the flow is a strict 3-step wizard with no
 // deep links yet, so a router would add dependency weight without benefit.
 // If stage 2+ needs shareable URLs, this maps 1:1 onto routes later.
-type Step = "upload" | "write" | "preview";
+// The calendar is a destination, not a stage: it sits outside the wizard and
+// returns to the start rather than advancing to a next step.
+type Step = "upload" | "write" | "preview" | "calendar";
+type WizardStep = Exclude<Step, "calendar">;
 
 interface DiaryConfirmOptions {
   title: string;
@@ -64,9 +67,13 @@ const STEP_HEADERS: Record<Step, { title: string; subtitle: string }> = {
     title: "그림일기 미리보기",
     subtitle: "선생님의 한마디와 함께 확인해 보세요.",
   },
+  calendar: {
+    title: "포도 달력",
+    subtitle: "일기를 완성한 날마다 포도알이 익어요.",
+  },
 };
 
-const STEP_PROGRESS: Record<Step, { current: number; label: string }> = {
+const STEP_PROGRESS: Record<WizardStep, { current: number; label: string }> = {
   upload: { current: 1, label: "사진 고르기" },
   write: { current: 2, label: "일기 쓰기" },
   preview: { current: 3, label: "미리보기" },
@@ -109,17 +116,22 @@ const ONBOARDING_TITLE_LINES = [
 function AppBottomBar({
   children,
   double = false,
+  even = false,
 }: {
   children: ReactNode;
   double?: boolean;
+  /** Splits the bar down the middle instead of favouring the primary action. */
+  even?: boolean;
 }) {
+  const layout = even
+    ? " app-bottom-bar-content-even"
+    : double
+      ? " app-bottom-bar-content-double"
+      : "";
+
   return (
     <div className="app-bottom-bar">
-      <div
-        className={`app-bottom-bar-content${double ? " app-bottom-bar-content-double" : ""}`}
-      >
-        {children}
-      </div>
+      <div className={`app-bottom-bar-content${layout}`}>{children}</div>
     </div>
   );
 }
@@ -127,7 +139,6 @@ function AppBottomBar({
 function App() {
   const isAndroid = /Android/i.test(navigator.userAgent);
   const [showOnboarding, setShowOnboarding] = useState(true);
-  const [showPraiseGrape, setShowPraiseGrape] = useState(false);
   const [step, setStep] = useState<Step>("upload");
   // Always open on a fresh diary. Draft persistence remains available in the
   // hook, but this flow must not restore a previous visit's photo or text.
@@ -138,21 +149,23 @@ function App() {
   // versioning the draft shape for something that dies with the session anyway.
   const [photoSourceHash, setPhotoSourceHash] = useState<string | null>(null);
   const [weatherEffectKey, setWeatherEffectKey] = useState(0);
+  const [inspectionContext, setInspectionContext] =
+    useState<DiaryInspectionContext>();
   const quota = useAiQuota();
   // Refused outright by country, which unlike the daily budgets never comes
   // back — so it gates both operations rather than one.
   const regionBlocked = isRegionBlocked(quota);
+  const aiQuotaSpent = isAiQuotaSpent(quota);
   // Gate on "would this actually reach the server". Mock and test mode never
   // do, so they must never be blocked by a counter they don't spend.
   const sketchAllowed =
-    !isSketchAiConnected || (!regionBlocked && !isActionSpent(quota, "sketch"));
-  const analyzeAllowed =
-    !isAiConnected || (!regionBlocked && !isActionSpent(quota, "analyze"));
+    !isSketchAiConnected || (!regionBlocked && !aiQuotaSpent);
+  const analyzeAllowed = !isAiConnected || (!regionBlocked && !aiQuotaSpent);
 
   // Analysis is triggered explicitly by 검사 받기, not by opening the preview:
-  // at five checks a day, re-running on every edit would spend the budget on
-  // typo fixes. Results are cached by input inside the hook, so asking again
-  // without editing is free.
+  // with three bundled checks a day, re-running on every edit would spend the
+  // budget on typo fixes. Results are cached by input inside the hook, so
+  // asking again without editing is free.
   const { state: analysisState, run: runAnalysis } = useDiaryAnalysis(draft);
   // Photo conversion and diary analysis both start only after 검사 받기. This
   // preserves the user's limited drawing opportunities when they leave midway
@@ -168,6 +181,7 @@ function App() {
     step === "preview",
     sketchAllowed,
     photoSourceHash,
+    inspectionContext,
   );
   const { openAlert, openConfirm } = useDialog();
   const openDiaryConfirm = ({
@@ -189,9 +203,6 @@ function App() {
     imageDataUrl: string;
     fileName: string;
   } | null>(null);
-  // Re-completing after "계속 보기" updates the same archive entry. A new
-  // diary gets a new id only through the explicit "새 일기 쓰기" action.
-  const [currentArchiveId, setCurrentArchiveId] = useState<string | null>(null);
 
   const [hasVisitedWrite, setHasVisitedWrite] = useState(false);
   const [hasVisitedPreview, setHasVisitedPreview] = useState(false);
@@ -257,7 +268,8 @@ function App() {
   }, [openAlert, regionBlocked, showOnboarding]);
 
   const header = STEP_HEADERS[step];
-  const progress = STEP_PROGRESS[step];
+  // No step counter on the calendar: it is not on the way to anywhere.
+  const progress = step === "calendar" ? null : STEP_PROGRESS[step];
   const canWrite = draft.photoDataUrl !== null;
   // trim() on both fields so whitespace-only input can't pass validation.
   const canPreview = draft.title.trim() !== "" && draft.content.trim() !== "";
@@ -315,10 +327,6 @@ function App() {
     );
   }
 
-  if (showPraiseGrape) {
-    return <PraiseGrapeScreen onClose={() => setShowPraiseGrape(false)} />;
-  }
-
   const handleStartWriting = () => {
     if (!canWrite) {
       toast.openToast("먼저 사진을 올려주세요.", {
@@ -354,30 +362,49 @@ function App() {
 
     setHasVisitedPreview(true);
 
+    const runSketchAi =
+      isSketchAiConnected && draft.sketchDataUrl === null && sketchAllowed;
+    const runAnalyzeAi =
+      isAiConnected && analysisState.status !== "success" && analyzeAllowed;
+    const inspection =
+      runSketchAi || runAnalyzeAi
+        ? createDiaryInspectionContext(runSketchAi, runAnalyzeAi)
+        : undefined;
+    setInspectionContext(inspection);
+
     // Navigation is never gated on the budget: unavailable AI results fall
     // back to the original photo or an uncommented diary, and 완성하기 still
     // works from there.
-    // A success state belongs to the CURRENT AI input signature. Date is not
-    // part of that signature, so date-only edits return to the completed
-    // preview without calling the server or consuming another opportunity.
+    // A success state belongs to the CURRENT AI input signature. Only the
+    // photo and body are part of it, so title/date/weather-only edits return
+    // to the completed preview without spending another opportunity.
     if (analyzeAllowed && analysisState.status !== "success") {
-      runAnalysis();
+      runAnalysis(inspection);
     }
 
-    const sketchOpportunitySpent =
-      isActionSpent(quota, "sketch") && draft.sketchDataUrl === null;
-    const analysisOpportunitySpent =
-      isActionSpent(quota, "analyze") && analysisState.status !== "success";
-
-    if (sketchOpportunitySpent && analysisOpportunitySpent) {
-      toast.openToast("오늘 사진 변환과 일기 검사 기회를 모두 사용했어요.");
-    } else if (sketchOpportunitySpent) {
-      toast.openToast("오늘 사진을 그림으로 바꿀 기회는 다 사용했어요.");
-    } else if (analysisOpportunitySpent) {
-      toast.openToast("오늘 일기 검사 기회는 다 사용했어요.");
+    const needsAiWork =
+      draft.sketchDataUrl === null || analysisState.status !== "success";
+    if (aiQuotaSpent && needsAiWork) {
+      toast.openToast("오늘 AI 검사 기회를 모두 사용했어요.");
     }
 
     setStep("preview");
+  };
+
+  const retryAnalysis = () => {
+    const inspection = isAiConnected
+      ? createDiaryInspectionContext(false, true)
+      : undefined;
+    setInspectionContext(inspection);
+    runAnalysis(inspection);
+  };
+
+  const retryDrawing = () => {
+    const inspection = isSketchAiConnected
+      ? createDiaryInspectionContext(true, false)
+      : undefined;
+    setInspectionContext(inspection);
+    retrySketch();
   };
 
   // Stage 4: compose the finished diary once, then let the result sheet reuse
@@ -425,7 +452,7 @@ function App() {
         cancelLabel: "이대로 저장",
       });
       if (retry) {
-        runAnalysis();
+        retryAnalysis();
         return;
       }
     } else if (analysisState.status === "idle" && analyzeAllowed) {
@@ -440,27 +467,9 @@ function App() {
         cancelLabel: "이대로 저장",
       });
       if (check) {
-        runAnalysis();
+        retryAnalysis();
         return;
       }
-    }
-
-    try {
-      const canArchive = await canAddCompletedDiary(
-        draft.date,
-        currentArchiveId,
-      );
-      if (!canArchive) {
-        toast.openToast(
-          "이 날짜에는 일기를 3개까지 쓸 수 있어요. 다른 날짜를 골라 주세요.",
-        );
-        return;
-      }
-    } catch {
-      toast.openToast(
-        "칭찬 포도 저장소를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.",
-      );
-      return;
     }
 
     setSaving(true);
@@ -475,27 +484,38 @@ function App() {
           analysisState.status === "success" ? analysisState.analysis : null,
         includesAiGeneratedContent,
       });
-      const archivedDiary = await saveCompletedDiary({
-        id: currentArchiveId ?? undefined,
-        date: draft.date,
-        imageDataUrl,
-        stamp:
-          analysisState.status === "success"
-            ? analysisState.analysis.stamp
-            : null,
-      });
-      setCurrentArchiveId(archivedDiary.id);
       setFinishedDiary({
         imageDataUrl,
         // ASCII name (some Android managers mangle Korean) + a time suffix so
         // saving twice in one day can't collide on an identical fileName.
         fileName: `summer-diary-${draft.date}-${clockSuffix()}.jpg`,
       });
-    } catch (error) {
-      const message =
-        error instanceof CompletedDiaryLimitError
-          ? "이 날짜에는 일기를 3개까지 쓸 수 있어요. 다른 날짜를 골라 주세요."
-          : "완성 일기를 만들거나 칭찬 포도에 담지 못했어요. 다시 시도해 주세요.";
+
+      // Ripens the bead on the grape calendar. Kept in its own catch because
+      // the finished image is already on screen: failing to archive it is
+      // worth telling the user about, but not worth taking that away or
+      // offering to re-run the composition that just succeeded.
+      try {
+        await saveDiary({
+          date: draft.date,
+          // Stored as typed. The empty-title fallback is a display choice, and
+          // baking it in here would make it impossible to tell apart from a
+          // diary the user actually named 제목 없는 일기.
+          title: draft.title,
+          content: draft.content,
+          weather: draft.weather,
+          imageDataUrl,
+          includesAiGeneratedContent,
+        });
+      } catch (error) {
+        toast.openToast(
+          error instanceof DiaryStoreError
+            ? error.userMessage
+            : "일기를 포도 달력에 담지 못했어요.",
+        );
+      }
+    } catch {
+      const message = "그림일기 이미지를 만들지 못했어요. 다시 시도해 주세요.";
       // Retry button keeps the failure recoverable in place instead of
       // vanishing with the 3s toast.
       toast.openToast(message, {
@@ -511,10 +531,10 @@ function App() {
 
   return (
     <main
-      className={`app-shell app-shell-${step} weather-${draft.weather}${isAndroid ? " app-shell-android" : ""}`}
+      className={`app-shell app-shell-${step} weather-${draft.weather} time-${draft.timeOfDay}${isAndroid ? " app-shell-android" : ""}`}
     >
       <div
-        key={`${draft.weather}-${weatherEffectKey}`}
+        key={`${draft.weather}-${draft.timeOfDay}-${weatherEffectKey}`}
         className="summer-sky-accent"
         aria-hidden="true"
       >
@@ -544,76 +564,83 @@ function App() {
         }
       />
 
-      <div
-        className="summer-step-progress"
-        aria-label={`그림일기 만들기 ${progress.current}단계, ${progress.label}`}
-      >
-        <ol className="summer-step-list">
-          {STEP_LABELS.map((label, index) => {
-            const item = index + 1;
+      {progress !== null && (
+        <div
+          className="summer-step-progress"
+          aria-label={`그림일기 만들기 ${progress.current}단계, ${progress.label}`}
+        >
+          <ol className="summer-step-list">
+            {STEP_LABELS.map((label, index) => {
+              const item = index + 1;
 
-            return (
-              <li
-                key={label}
-                aria-current={item === progress.current ? "step" : undefined}
-                className={
-                  item === progress.current
-                    ? "is-current"
-                    : item < progress.current
-                      ? "is-complete"
-                      : ""
-                }
-              >
-                <span className="summer-step-marker" aria-hidden="true" />
-                <span className="summer-step-name">{label}</span>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
+              return (
+                <li
+                  key={label}
+                  aria-current={item === progress.current ? "step" : undefined}
+                  className={
+                    item === progress.current
+                      ? "is-current"
+                      : item < progress.current
+                        ? "is-complete"
+                        : ""
+                  }
+                >
+                  <span className="summer-step-marker" aria-hidden="true" />
+                  <span className="summer-step-name">{label}</span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {step === "calendar" && <GrapeCalendarView />}
 
       {step === "upload" && (
-        <PhotoUploadStep
-          photoDataUrl={draft.photoDataUrl}
-          canRedraw={sketchAllowed}
-          isDrawingInProgress={isDrawingInProgress}
-          onPhotoChange={({
-            dataUrl,
-            sourceHash,
-            reusedSketchDataUrl,
-            redraw,
-          }) => {
-            setPhotoSourceHash(sourceHash);
-            // 다시 그리기 means the previous drawing is gone for good. Clearing
-            // the draft below is not enough: the caches would hand it straight
-            // back and the ledger would still count this photo as paid for, so
-            // the new request could never go out.
-            if (redraw === true) {
-              discardSketch(dataUrl, sourceHash);
-            }
-            // A sketch belongs to exactly one photo — replacing the photo
-            // must drop the old drawing in the same state update, or the
-            // preview could pair the new photo with the previous sketch. The
-            // one exception is a drawing the user explicitly asked to reuse,
-            // which also keeps the sketch hook from spending a request.
-            updateDraft({
-              photoDataUrl: dataUrl,
-              sketchDataUrl: reusedSketchDataUrl ?? null,
-            });
-          }}
-        />
+        <>
+          <AiQuotaNotice />
+          <PhotoUploadStep
+            photoDataUrl={draft.photoDataUrl}
+            canRedraw={sketchAllowed}
+            isDrawingInProgress={isDrawingInProgress}
+            onPhotoChange={({
+              dataUrl,
+              sourceHash,
+              reusedSketchDataUrl,
+              redraw,
+            }) => {
+              setPhotoSourceHash(sourceHash);
+              // 다시 그리기 means the previous drawing is gone for good. Clearing
+              // the draft below is not enough: the caches would hand it straight
+              // back and the ledger would still count this photo as paid for, so
+              // the new request could never go out.
+              if (redraw === true) {
+                discardSketch(dataUrl, sourceHash);
+              }
+              // A sketch belongs to exactly one photo — replacing the photo
+              // must drop the old drawing in the same state update, or the
+              // preview could pair the new photo with the previous sketch. The
+              // one exception is a drawing the user explicitly asked to reuse,
+              // which also keeps the sketch hook from spending a request.
+              updateDraft({
+                photoDataUrl: dataUrl,
+                sketchDataUrl: reusedSketchDataUrl ?? null,
+              });
+            }}
+          />
+        </>
       )}
       {step === "write" && (
         <>
-          <AnalyzeQuotaNotice
-            showRecheckNotice={
-              analyzeRecheckNoticeVisible && analysisState.status !== "success"
-            }
-          />
+          {analyzeRecheckNoticeVisible &&
+            analysisState.status !== "success" && <AiRecheckNotice />}
           <WriteStep
             draft={draft}
             onChange={(patch) => {
-              if (patch.weather !== undefined) {
+              if (
+                patch.weather !== undefined ||
+                patch.timeOfDay !== undefined
+              ) {
                 setWeatherEffectKey((key) => key + 1);
               }
               updateDraft(patch);
@@ -625,9 +652,9 @@ function App() {
         <PreviewStep
           draft={draft}
           analysisState={analysisState}
-          onRetry={runAnalysis}
+          onRetry={retryAnalysis}
           sketchState={sketchState}
-          onSketchRetry={retrySketch}
+          onSketchRetry={retryDrawing}
         />
       )}
 
@@ -644,7 +671,6 @@ function App() {
             setHasVisitedWrite(false);
             setHasVisitedPreview(false);
             setAnalyzeRecheckNoticeVisible(false);
-            setCurrentArchiveId(null);
 
             setStep("upload");
           }}
@@ -652,16 +678,7 @@ function App() {
       )}
 
       {step === "upload" && (
-        <AppBottomBar double>
-          <DiaryButton
-            tone="secondary"
-            stable
-            fullWidth
-            onClick={() => setShowPraiseGrape(true)}
-          >
-            칭찬 포도
-          </DiaryButton>
-
+        <AppBottomBar even>
           <DiaryButton
             stable
             feedbackDisabled
@@ -670,6 +687,27 @@ function App() {
             onClick={handleStartWriting}
           >
             {hasVisitedWrite ? "다시 일기 쓰러 가기" : "일기 쓰러 가기"}
+          </DiaryButton>
+
+          <DiaryButton
+            tone="secondary"
+            stable
+            fullWidth
+            onClick={() => setStep("calendar")}
+          >
+            포도 달력 보기
+          </DiaryButton>
+        </AppBottomBar>
+      )}
+      {step === "calendar" && (
+        <AppBottomBar>
+          <DiaryButton
+            tone="secondary"
+            stable
+            fullWidth
+            onClick={() => setStep("upload")}
+          >
+            돌아가기
           </DiaryButton>
         </AppBottomBar>
       )}

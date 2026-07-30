@@ -30,8 +30,12 @@
 | `summer-vacation-diary:draft:v2`     | 사진, 그림, 제목, 본문, 날짜, 날씨 | `새 일기 쓰기` 시 삭제 시도; OS·사용자가 앱 데이터 삭제 가능 |
 | `summer-vacation-diary:client-id:v1` | 무작위 브라우저 UUID               | 자동 만료 없음                                               |
 | `summer-vacation-diary:quota:v1`     | 사용량, reset, 차단·지역 상태      | reset 시각 경과 또는 testMode snapshot이면 삭제              |
+| `summer-vacation-diary:diary-index:v1` | 보관된 일기의 id, 날짜, 저장 시각, 제목, 날씨 | `deleteDiary` 시 해당 항목 제거; 자동 만료 없음 |
+| `summer-vacation-diary:diary:v1:<id>` | 보관된 일기 한 편 전체: 본문, 완성 JPEG data URL, AI 생성 여부 | `deleteDiary` 시 삭제; 자동 만료 없음 |
 
 draft는 400ms debounce와 page hide flush로 기록됩니다. 저장 용량이 부족하면 그림과 사진을 제거한 더 작은 draft로 재시도합니다.
+
+`diary-index`와 `diary` key는 토스 앱 안에서는 localStorage가 아니라 네이티브 `Storage` 브리지에, 브라우저 개발 환경에서는 localStorage에 기록됩니다. 이 모듈은 아직 화면과 연결되어 있지 않아 현재 실제 사용자 흐름에서는 기록되지 않습니다.
 
 앱은 시작 시 `restoreOnStart: false`라 이전 draft를 UI에 복원하지 않지만, `새 일기 쓰기` 전까지 저장 key 자체가 남아 있을 수 있습니다.
 
@@ -129,7 +133,13 @@ Supabase에는 사용량 제한용 `public.diary_ai_rate_limits` 테이블이 �
 
 클라이언트는 raw 값을 `x-diary-client-id`로 보냅니다. 서버가 이를 salt/hash 처리하는지, IP를 어떤 형식과 기간으로 저장하는지는 서버 소스가 없어 확인 필요입니다.
 
-quota snapshot은 UI 표시와 선차단 용도입니다. 클라이언트 값을 수정해도 서버 강제가 유지되어야 하지만, 실제 원자적 차감·환불 구현은 확인할 수 없습니다.
+quota snapshot은 UI 표시와 선차단 용도입니다. 클라이언트는 공통 `all`
+카운터만 통합 AI 검사 기회로 사용합니다. 실제 강제는 `inspect` 요청을
+원자적으로 차감·환불하는 서버 RPC가 담당합니다.
+
+제목·날짜·날씨는 완성 이미지 구성에만 사용하며 외부 분석 요청에는
+포함하지 않습니다. 따라서 이 세 값만 수정한 경우 기존 분석 결과를
+그대로 사용하고 검사 기회를 추가로 소진하지 않습니다.
 
 서버 사용량 집계 구조는 [ERD](./erd.md)에 정리되어 있습니다.
 

@@ -32,8 +32,7 @@ export interface QuotaRegion {
 }
 
 export interface QuotaSnapshot {
-  sketch: QuotaCounter;
-  analyze: QuotaCounter;
+  all: QuotaCounter;
   /** ISO timestamp of the next daily reset (00:00 UTC = 09:00 KST). */
   resetAt: string;
   blocked: QuotaBlockedReason | null;
@@ -143,9 +142,8 @@ export function parseQuotaSnapshot(body: unknown): QuotaSnapshot | null {
   }
 
   const record = quota as Record<string, unknown>;
-  const sketch = parseCounter(record.sketch);
-  const analyze = parseCounter(record.analyze);
-  if (sketch === null || analyze === null) {
+  const all = parseCounter(record.all);
+  if (all === null) {
     return null;
   }
   if (
@@ -161,13 +159,10 @@ export function parseQuotaSnapshot(body: unknown): QuotaSnapshot | null {
   }
 
   return {
-    sketch,
-    analyze,
+    all,
     resetAt: record.resetAt,
     blocked: blocked as QuotaBlockedReason | null,
     region: parseRegion(record.region),
-    // Older Function deployments omit this field and must retain their normal
-    // quota behavior rather than accidentally hiding the counter.
     testMode: record.testMode === true,
   };
 }

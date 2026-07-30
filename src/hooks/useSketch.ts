@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import { refreshAiQuota } from "./useAiQuota";
+import type { DiaryInspectionContext } from "../services/diaryInspection";
 import { putCachedSketch, removeCachedSketch } from "../services/sketchCache";
 import {
   forgetSettledSketchTicket,
@@ -26,7 +27,7 @@ import {
 import type { DiaryDraft } from "./useDiaryDraft";
 
 // Shown when the daily budget is already spent, so no request is ever made.
-const QUOTA_SPENT_MESSAGE = sketchCauseMessage("sketch-daily-limit-exceeded");
+const QUOTA_SPENT_MESSAGE = sketchCauseMessage("daily-limit-exceeded");
 
 export type SketchState =
   | { status: "idle" }
@@ -68,6 +69,7 @@ export function useSketch(
   allowed: boolean,
   /** SHA-256 of the file the photo came from; keys the cross-session cache. */
   sourceHash: string | null,
+  inspection?: DiaryInspectionContext,
 ) {
   const { photoDataUrl, sketchDataUrl } = draft;
 
@@ -162,7 +164,7 @@ export function useSketch(
     const source = photoDataUrl;
     let pending = pendingRef.current.get(source);
     if (pending === undefined) {
-      pending = transferPhotoToSketch(source);
+      pending = transferPhotoToSketch(source, inspection);
       pendingRef.current.set(source, pending);
       if (sourceHash !== null) {
         pendingSourceRef.current.set(source, sourceHash);
@@ -236,6 +238,7 @@ export function useSketch(
     photoDataUrl,
     sketchDataUrl,
     sourceHash,
+    inspection,
   ]);
 
   const retry = useCallback(() => {

@@ -4,10 +4,10 @@
 
 ## 문서 범위
 
-이 저장소에는 HTTP 서버 구현이나 OpenAPI 파일이 없습니다. 아래 명세는 클라이언트가 실제로 호출하고 검증하는 Supabase Edge Function 계약입니다.
+아래 명세는 클라이언트가 실제로 호출하고 검증하는 Supabase Edge Function 계약과 제공된 서버 구현을 기준으로 합니다.
 
 - **확인된 범위:** endpoint 조합, method, headers, action별 요청 body, 클라이언트가 읽는 응답 필드, 클라이언트 오류 매핑
-- **확인 필요:** 서버의 요청 validator, 정확한 성공 status, action별 제한값, 원자적 차감·환불 구현, OpenAI 요청, 로그·보존 정책
+- **확인 필요:** 운영 배포 상태, OpenAI 응답 품질, 로그·보존 정책
 - **근거:** `src/services/supabaseEdge.ts`, `src/services/diaryAnalysis.ts`, `src/services/styleTransfer.ts`, `src/services/aiQuotaStore.ts`, `src/hooks/useAiQuota.ts`
 
 이 API는 이 앱의 내부 외부-service 경계이며, 저장소가 공개 HTTP API로 제공하는 서버 구현은 아닙니다.
@@ -34,15 +34,10 @@
 ```json
 {
   "quota": {
-    "sketch": {
+    "all": {
       "used": 0,
-      "limit": 0,
-      "remaining": 0
-    },
-    "analyze": {
-      "used": 0,
-      "limit": 0,
-      "remaining": 0
+      "limit": 3,
+      "remaining": 3
     },
     "resetAt": "2026-07-29T00:00:00.000Z",
     "blocked": null,
@@ -57,14 +52,17 @@
 
 | 필드                | 타입·제약                                                   |
 | ------------------- | ----------------------------------------------------------- |
-| `sketch`, `analyze` | `used`, `limit`, `remaining`이 모두 number                  |
+| `all`               | 필수 통합 AI 검사 카운터                                    |
 | `resetAt`           | 파싱 가능한 ISO date string                                 |
 | `blocked`           | `null`, `device`, `ip-burst`, `ip-daily`, `service` 중 하나 |
 | `region.allowed`    | boolean. 누락 시 클라이언트는 `true`로 호환 처리            |
 | `region.country`    | ISO 3166-1 alpha-2 string 또는 `null`로 기대                |
 | `testMode`          | `true`일 때만 true, 누락 시 false                           |
 
-정확한 limit 숫자는 서버 소스가 없어 `확인 필요`입니다.
+클라이언트는 `quota.all`만 통합 `AI 검사 기회`의 권위값으로 사용합니다.
+서버는 필요한 작업을 하나의 `inspect` 요청으로 묶고, 사용자 `all`
+counter와 IP counter를 요청당 한 번만 원자적으로 차감합니다. 서비스
+counter는 실제 실행한 sketch·analyze 작업별로 유지합니다.
 
 ## A-01 사용량 조회
 
@@ -76,7 +74,7 @@
 }
 ```
 
-- **목적:** 작업을 차감하지 않고 현재 사용량과 지역 상태를 조회
+- **목적:** 작업을 차감하지 않고 통합 AI 검사 사용량과 지역 상태를 조회
 - **timeout:** 10초
 - **Path·Query parameter:** 없음
 - **권한:** 공통 publishable key와 익명 식별 header
@@ -93,38 +91,52 @@
 - **관련 기능:** F-01, F-10
 - **구현 파일:** `src/hooks/useAiQuota.ts`, `src/services/supabaseEdge.ts`
 
-## A-02 사진 그림 변환
+## A-02 통합 AI 검사
 
 ### 요청
 
 ```json
 {
-  "action": "sketch",
-  "photoDataUrl": "data:image/jpeg;base64,..."
+  "action": "inspect",
+  "runSketch": true,
+  "runAnalyze": true,
+  "photoDataUrl": "data:image/jpeg;base64,...",
+  "input": {
+    "photoDataUrl": "data:image/jpeg;base64,...",
+    "content": "가족과 계곡에서 물놀이를 해서 정말 즐거웠다."
+  }
 }
 ```
 
-| 필드           | 타입   | 클라이언트 조건             |
-| -------------- | ------ | --------------------------- |
-| `action`       | string | 항상 `sketch`               |
-| `photoDataUrl` | string | F-03에서 만든 JPEG data URL |
+| 필드                 | 타입             | 클라이언트 조건                          |
+| -------------------- | ---------------- | ---------------------------------------- |
+| `action`             | string           | 항상 `inspect`                           |
+| `runSketch`          | boolean          | 새 그림이 필요할 때 true                 |
+| `runAnalyze`         | boolean          | 새 본문 분석이 필요할 때 true            |
+| `photoDataUrl`       | string           | `runSketch=true`일 때 JPEG data URL      |
+| `input.photoDataUrl` | string 또는 null | `runAnalyze=true`일 때 현재 사진         |
+| `input.content`      | string           | `runAnalyze=true`일 때 현재 일기 본문    |
 
-- **timeout:** 120초
+- 두 실행 값 중 하나 이상이 true여야 합니다.
+- **timeout:** 150초
 - **Path·Query parameter:** 없음
 - **권한:** 공통 publishable key와 익명 식별 header
 - **서버 validation:** MIME·Base64·크기·콘텐츠 검사 규칙은 확인 필요
-- **rate limit:** 제한 존재를 전제로 클라이언트가 오류 code와 quota를 처리하지만 숫자는 확인 필요
+- **rate limit:** 사용자 통합 3회, IP burst 20회/10분, IP 100회/일. 서비스 한도는 sketch 150회/일, analyze 250회/일
 
 ### 성공 응답
 
 ```ts
-interface SketchResponse {
-  imageBase64: string;
+interface InspectionResponse {
+  imageBase64?: string;
+  analysis?: Record<string, unknown>;
   quota: QuotaSnapshot;
 }
 ```
 
-- `imageBase64`는 비어 있지 않은 string이어야 합니다.
+- 요청한 작업의 결과만 응답에 포함됩니다.
+- `runSketch=true`이면 `imageBase64`는 비어 있지 않은 string이어야 합니다.
+- `runAnalyze=true`이면 `analysis` 객체가 있어야 합니다.
 - 클라이언트는 `data:image/jpeg;base64,` prefix를 붙여 디코딩한 뒤 최대 1280px, 품질 0.85 JPEG로 재압축합니다.
 - 누락·빈 값·디코딩 실패는 `invalid-response`입니다.
 
@@ -158,7 +170,6 @@ invalid-image
 model-unavailable
 rate-limited
 region-blocked
-sketch-daily-limit-exceeded
 ip-burst-limit-exceeded
 ip-daily-limit-exceeded
 service-daily-limit-exceeded
@@ -169,35 +180,24 @@ api-error
 invalid-response
 ```
 
-`content-blocked`, `invalid-image`는 클라이언트 ledger에서 차감된 결과로 간주합니다. 실제 서버 환불 정책은 확인 필요합니다.
+`content-blocked`, `invalid-image`는 사용자 입력 오류이므로 차감을 유지하고, 그 밖의 서버·네트워크 계열 실패는 서버가 차감을 환불합니다.
 
 - **관련 기능:** F-05, F-10
 - **구현 파일:** `src/services/styleTransfer.ts`, `src/services/supabaseEdge.ts`, `src/services/sketchLedger.ts`
 
-## A-03 일기 분석
+## A-03 일기 분석 결과
 
-### 요청
+### 통합 요청의 분석 입력
 
-```json
-{
-  "action": "analyze",
-  "input": {
-    "photoDataUrl": "data:image/jpeg;base64,...",
-    "content": "가족과 계곡에서 물놀이를 해서 정말 즐거웠다."
-  }
-}
-```
+분석 입력은 A-02의 `inspect` 요청 안에 포함되며 `runAnalyze=true`일 때만
+전송됩니다. 결과는 최상위 `analysis` 객체로 반환됩니다.
 
-| 필드                 | 타입             | 클라이언트 조건                  |
-| -------------------- | ---------------- | -------------------------------- |
-| `action`             | string           | 항상 `analyze`                   |
-| `input.photoDataUrl` | string 또는 null | 현재 사진 data URL               |
-| `input.content`      | string           | 화면 최대 65자, 공백만 입력 불가 |
+제목·날짜·날씨는 완성 이미지에만 사용하며 분석 API에는 전송하지 않습니다.
 
-- **timeout:** 30초
+- **timeout:** 통합 요청 기준 150초
 - **Path·Query parameter:** 없음
 - **권한:** 공통 publishable key와 익명 식별 header
-- **서버 validation·rate limit:** 구현과 정확한 값은 확인 필요
+- **서버 validation·rate limit:** A-02의 통합 요청 정책과 동일
 
 ### 성공 응답
 
@@ -211,7 +211,6 @@ interface AnalyzeResponse {
   star_words?: unknown;
   comment?: unknown;
   stamp?: unknown;
-  quota: QuotaSnapshot;
 }
 ```
 
@@ -238,7 +237,6 @@ network
 invalid-key
 rate-limited
 region-blocked
-analyze-daily-limit-exceeded
 ip-burst-limit-exceeded
 ip-daily-limit-exceeded
 service-daily-limit-exceeded

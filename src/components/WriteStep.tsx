@@ -38,7 +38,8 @@ function exceedsDiaryWritingArea(
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index] ?? "";
     for (const character of Array.from(line)) {
-      const characterWidth = context.measureText(character).width + letterSpacing;
+      const characterWidth =
+        context.measureText(character).width + letterSpacing;
       const lineLimit =
         row === CONTENT_MAX_LINES - 1
           ? fullLineWidth - CONTENT_COUNTER_WIDTH
@@ -214,8 +215,39 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
             typography="t7"
             color={LABEL_INK}
           >
-            날씨
+            날씨와 배경
           </Paragraph>
+          <div className="time-theme-row">
+            <span className="time-theme-label">배경 분위기</span>
+            <div
+              className="time-theme-options"
+              role="radiogroup"
+              aria-label="배경 분위기"
+            >
+              {(["day", "night"] as const).map((timeOfDay) => {
+                const isSelected = draft.timeOfDay === timeOfDay;
+                const isDay = timeOfDay === "day";
+                return (
+                  <button
+                    key={timeOfDay}
+                    type="button"
+                    className={`time-theme-option${isSelected ? " is-selected" : ""}`}
+                    role="radio"
+                    aria-checked={isSelected}
+                    onClick={() => onChange({ timeOfDay })}
+                  >
+                    <img
+                      className="time-theme-icon"
+                      src={isDay ? "/weather/day.webp" : "/weather/night.webp"}
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    {isDay ? "낮" : "밤"}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <div className="weather-options" role="radiogroup" aria-label="날씨">
             {WEATHER_OPTIONS.map((option) => {
               const isSelected = draft.weather === option.value;
@@ -230,14 +262,12 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
                     onChange({ weather: option.value as WeatherValue })
                   }
                 >
-                  {option.value !== "unknown" && (
-                    <img
-                      className="weather-option-icon"
-                      src={option.iconUrl}
-                      alt=""
-                      aria-hidden="true"
-                    />
-                  )}
+                  <img
+                    className="weather-option-icon"
+                    src={option.iconUrl}
+                    alt=""
+                    aria-hidden="true"
+                  />
                   <span className="weather-option-label">{option.label}</span>
                 </button>
               );
