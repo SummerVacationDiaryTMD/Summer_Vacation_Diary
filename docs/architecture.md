@@ -6,6 +6,8 @@
 
 이 프로젝트는 React 단일 페이지 WebView 앱입니다. 라우터·전역 상태 라이브러리 없이 `App.tsx`가 온보딩, 3단계 제작 흐름과 일기 달력을 조정합니다. 완성 일기는 기기 저장소에 보관하고, 별도 Supabase Edge Function과 사용량 제한 테이블이 서버 경계를 담당합니다.
 
+사용자가 보는 주요 상태는 온보딩 → 사진 업로드 → 일기 작성 → 미리보기 → 달력·저장 일기 상세이며, 사진 처리 동의·날짜별 저장 한도·저장 및 공유는 모달 또는 다이얼로그로 분리됩니다. 실제 화면 예시는 [README 화면 갤러리](../README.md#동작-화면)에서 확인할 수 있습니다.
+
 외부 기능은 두 경로로 분리됩니다.
 
 - Supabase 공개 설정이 있으면 별도 배포된 `diary-ai` Edge Function에 사진 변환·일기 분석·사용량 조회를 요청합니다.
@@ -77,7 +79,7 @@ step=write
         ↓ 제목 + 공백이 아닌 본문
 step=preview
         ↓ Canvas 합성 성공
-saveDiary → calendarReveal={date,diaryId}
+saveDiary → calendarReveal={date, diaryId}
         ↓
 step=calendar → 도장 표시 후 저장 기록 열람
 ```
@@ -134,7 +136,7 @@ sequenceDiagram
 
     User->>Upload: 동의 후 사진 선택
     Upload->>Image: MIME·용량·크기 검사
-    Upload->>Image: 3:2 자르기와 JPEG 변환
+    Upload->>Image: cover 기반 3:2 자르기·회전과 JPEG 변환
     Upload->>App: photoDataUrl + sourceHash
     User->>App: 검사 받기
     App->>Sketch: 미리보기 단계 진입
@@ -152,7 +154,7 @@ sequenceDiagram
     Sketch-->>App: draft 갱신
 ```
 
-그림 생성과 분석은 `검사 받기`를 누른 뒤 시작합니다. 하나의 검사 context로 필요한 작업만 통합 요청하며, 실패는 자동 재시도하지 않고 원본 사진을 유지합니다.
+자르기 모달은 원본 파일을 임시 data URL로 디코딩해 `cover` 방식의 3:2 선택 영역에 맞추고, 이동·1~3배 확대·90° 회전 좌표를 원본 픽셀에 적용한 뒤 1278×852 JPEG만 초안에 저장합니다. 그림 생성과 분석은 `검사 받기`를 누른 뒤 시작합니다. 하나의 검사 context로 필요한 작업만 통합 요청하며, 실패는 자동 재시도하지 않고 원본 사진을 유지합니다.
 
 ## 일기 검사 흐름
 
@@ -175,8 +177,7 @@ sequenceDiagram
 `all` 사용량에 선반영하고, 통합 잔여량이 0이면 두 작업을 함께 선차단합니다.
 
 클라이언트는 필요한 그림·분석 작업을 하나의 `inspect` 요청으로 모읍니다.
-서버 RPC는 사용자 `all`과 IP를 요청당 한 번만 원자적으로 증가시키고,
-서비스 전체 사용량은 실제 실행한 sketch·analyze 작업만 각각 증가시킵니다.
+Edge Function은 사용자 `all`과 IP를 요청당 한 번 예약하고 실제 실행할 sketch·analyze service counter만 증가시키는 `consume_diary_ai_inspection_quota` RPC를 호출합니다. 이 계약의 실제 원자성은 운영 DB에 설치된 RPC SQL 본문을 확인해야 합니다.
 
 ## 완성 이미지 흐름
 
@@ -191,23 +192,25 @@ sequenceDiagram
 
 Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 실패해도 원본 사진으로 합성할 수 있습니다.
 
+미리보기 하단 작업 바는 처리 중에도 mount 상태를 유지합니다. `App.tsx`가 진입 시 처리 잠금을 먼저 설정하고, `PreviewStep`이 카드·첨삭·도장 공개 애니메이션 종료를 알린 뒤 잠금을 해제하므로 사용자가 완성되지 않은 프레임을 저장하는 것을 막습니다. `prefers-reduced-motion: reduce`에서는 애니메이션 대기 없이 해제합니다. 첨삭 체크·별표는 투명도와 원본 질감을 보존하는 PNG 자산을 사용합니다.
+
 ## 외부 서비스와 저장소
 
-| 대상                | 전송 또는 저장 데이터                                                               | 경계                      |
-| ------------------- | ----------------------------------------------------------------------------------- | ------------------------- |
-| Supabase `diary-ai` | inspect: 필요한 사진 변환·사진/본문 분석, quota: 익명 식별 header                   | `supabaseEdge.ts`         |
-| Supabase PostgreSQL | scope·식별자 hash·action·window별 요청 횟수                                         | `diary_ai_rate_limits`    |
-| OpenAI              | 클라이언트가 직접 호출하지 않음. 별도 Edge Function 뒤의 실제 전달은 서버 확인 필요 | 저장소 밖                 |
-| Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지, 완성 일기 보관(`Storage`)          | web-framework runtime API |
-| localStorage        | draft, quota snapshot, 브라우저 설치 ID, 완성 일기 보관의 브라우저 대체 경로        | 기기 내                   |
-| 메모리              | 분석 캐시, 그림 캐시, 진행 요청 ledger, 완성 JPEG                                   | 현재 앱 실행              |
+| 대상                | 전송 또는 저장 데이터                                                        | 경계                      |
+| ------------------- | ---------------------------------------------------------------------------- | ------------------------- |
+| Supabase `diary-ai` | inspect: 필요한 사진 변환·사진/본문 분석, quota: 익명 식별 header            | `supabaseEdge.ts`         |
+| Supabase PostgreSQL | scope·식별자 hash·action·window별 요청 횟수                                  | `diary_ai_rate_limits`    |
+| OpenAI              | 분석은 Chat Completions, 그림은 Images Edits로 사진·본문 전송                | 외부 `diary-ai/index.ts`  |
+| Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지, 완성 일기 보관(`Storage`)   | web-framework runtime API |
+| localStorage        | draft, quota snapshot, 브라우저 설치 ID, 완성 일기 보관의 브라우저 대체 경로 | 기기 내                   |
+| 메모리              | 분석 캐시, 그림 캐시, 진행 요청 ledger, 완성 JPEG                            | 현재 앱 실행              |
 
 ## 인증·인가
 
 - 사용자 계정, login session, 역할, route guard가 없습니다.
 - Supabase 호출에는 공개 publishable key를 `apikey` header로 보냅니다.
 - Toss 익명 key 또는 무작위 브라우저 UUID는 `x-diary-client-id`로 보내지만 인증 수단이 아니라 남용 제한용 식별 힌트입니다.
-- 실제 서버 인가, key 검증, 지역·사용량 강제는 저장소에 서버 코드가 없어 확인 필요합니다.
+- 제공된 Edge Function은 client ID·IP를 salt 포함 SHA-256으로 hash하고, 한국 외 확인된 국가를 차단한 뒤 DB RPC로 quota를 예약합니다. Supabase gateway의 JWT 검증 설정과 table/RPC role grant는 스냅샷만으로 확인할 수 없습니다.
 
 ## 비동기 처리와 실패 격리
 
@@ -248,9 +251,9 @@ flowchart LR
 ## 알려진 제약
 
 - 시작 시 저장된 draft를 복원하지 않습니다.
-- Edge Function 서버 소스와 모델 프롬프트가 저장소에 없습니다.
+- Edge Function `index.ts` 스냅샷은 제공되었지만 소스·prompt·DB RPC가 저장소에서 version 관리되지 않습니다.
 - Supabase 사용량 테이블 DDL은 확인됐지만 versioned migration 파일은 저장소에 없습니다.
-- 서버 rate limit 값, 해시 방식, 보존 기간, 환불 정책은 확인할 수 없습니다.
+- 제공된 스냅샷에서 rate limit 값, SHA-256 식별자 hash와 환불 분기는 확인됐지만 운영 배포 일치 여부와 보존 기간은 확인할 수 없습니다.
 - 자동 테스트와 CI 품질 gate가 없습니다.
 - 계정 동기화, 클라우드 백업, PDF 내보내기가 없습니다.
 - 브라우저 저장·공유 fallback과 Toss 실제 동작은 각각 별도 환경 검증이 필요합니다.

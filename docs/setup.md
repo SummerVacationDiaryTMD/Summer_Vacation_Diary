@@ -17,8 +17,8 @@
 ## 설치
 
 ```bash
-git clone https://github.com/SummerVacationDiaryTMD/summer-vacation-diary.git
-cd summer-vacation-diary
+git clone https://github.com/TossHackathonTMD/SummerVacationDiary.git
+cd SummerVacationDiary
 npm ci
 ```
 
@@ -68,7 +68,7 @@ VITE_AI_TEST_MODE=true
 금지: OpenAI API key, Supabase secret/service-role key
 ```
 
-실제 `diary-ai` Function 서버 소스와 secret 설정은 이 저장소에 없습니다. 호환 Function을 연결할 때는 [API 명세](./api-specification.md)의 클라이언트 계약과 실제 서버 설정을 별도로 대조해야 합니다.
+`diary-ai/index.ts`의 외부 스냅샷은 문서에 반영했지만 Function·prompt·quota RPC와 secret 설정은 이 저장소에서 version 관리되지 않습니다. 호환 Function을 연결할 때는 [API 명세](./api-specification.md), [ERD](./erd.md)의 RPC 계약과 실제 서버 설정을 대조해야 합니다.
 
 ## 실행 모드 선택
 
@@ -176,7 +176,7 @@ npm run build
 
 ## 기능별 로컬 확인 순서
 
-1. 사진 동의 → 선택 → 3:2 자르기
+1. 사진 동의 → 세로·가로 사진 선택 → 3:2 이동·확대·90° 회전 자르기
 2. 제목·날짜·날씨·낮/밤 배경·본문 입력
 3. `검사 받기` 후 그림·첨삭 미리보기 확인
 4. `일기 완성하기` 후 JPEG 자동 보관과 `일기가 달력에 저장되었어요! (현재 개수/3)` 토스트 확인
