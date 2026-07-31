@@ -5077,6 +5077,13 @@ html:has(.diary-content-section textarea:focus) {
   contain: layout paint;
 }
 
+/* Keep the controls visually unchanged during the brief delete/load handoff.
+   Native `disabled` styling repaints the coral share button as pale paper,
+   which reads as a white flash immediately before the viewer closes. */
+.diary-viewer-actions [data-interaction-disabled="true"] {
+  pointer-events: none;
+}
+
 @keyframes diary-page-forward {
   from {
     transform: translateX(52px);

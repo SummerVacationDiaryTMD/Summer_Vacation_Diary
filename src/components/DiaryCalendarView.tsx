@@ -18,7 +18,6 @@ import {
   moveMonth,
 } from "../utils/diaryCalendar";
 import { DiaryButton } from "./DiaryButton";
-import { DiaryShareModal } from "./DiaryShareModal";
 
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"] as const;
 const DAILY_COMPLETE_STAMP_URL = "/stamps/daily-complete.png";
@@ -34,10 +33,16 @@ export interface CalendarRevealRequest {
   diaryId: string;
 }
 
+export interface CalendarShareRequest {
+  imageDataUrl: string;
+  fileName: string;
+}
+
 interface DiaryCalendarViewProps {
   initialDate?: string;
   reveal?: CalendarRevealRequest | null;
   onRevealComplete?: () => void;
+  onShareRequest: (request: CalendarShareRequest) => void;
 }
 
 function CalendarArrow({ direction }: { direction: "left" | "right" }) {
@@ -85,6 +90,7 @@ export function DiaryCalendarView({
   initialDate,
   reveal = null,
   onRevealComplete,
+  onShareRequest,
 }: DiaryCalendarViewProps) {
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
   // One calendar month is on screen at a time, so it is view state rather than
@@ -105,7 +111,6 @@ export function DiaryCalendarView({
   const [popOrigin, setPopOrigin] = useState<PopOrigin>({ dx: 0, dy: 0 });
   const [record, setRecord] = useState<DiaryRecord | null>(null);
   const [recordError, setRecordError] = useState<string | null>(null);
-  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -242,7 +247,6 @@ export function DiaryCalendarView({
 
     let cancelled = false;
     setRecordError(null);
-    setShareModalOpen(false);
     setDeleteError(null);
 
     void (async () => {
@@ -370,6 +374,8 @@ export function DiaryCalendarView({
     "--diary-pop-dx": `${popOrigin.dx}px`,
     "--diary-pop-dy": `${popOrigin.dy}px`,
   } as CSSProperties;
+  const shareUnavailable =
+    deleting || record === null || record.id !== current?.id;
 
   return (
     // The viewer is a sibling of the step body, not a child of it. .step-body
@@ -577,7 +583,7 @@ export function DiaryCalendarView({
               </p>
             )}
 
-            <div className="diary-viewer-actions">
+            <div className="diary-viewer-actions" aria-busy={deleting}>
               <DiaryButton
                 tone="danger"
                 stable
@@ -593,10 +599,16 @@ export function DiaryCalendarView({
                 <DiaryButton
                   stable
                   fullWidth
-                  disabled={
-                    deleting || record === null || record.id !== current.id
-                  }
-                  onClick={() => setShareModalOpen(true)}
+                  data-interaction-disabled={shareUnavailable || undefined}
+                  tabIndex={shareUnavailable ? -1 : undefined}
+                  onClick={() => {
+                    if (!shareUnavailable && record !== null) {
+                      onShareRequest({
+                        imageDataUrl: record.imageDataUrl,
+                        fileName: diaryFileName(record),
+                      });
+                    }
+                  }}
                 >
                   저장 및 공유
                 </DiaryButton>
@@ -606,8 +618,12 @@ export function DiaryCalendarView({
                 tone="secondary"
                 stable
                 fullWidth
-                disabled={deleting}
+                data-interaction-disabled={deleting || undefined}
+                tabIndex={deleting ? -1 : undefined}
                 onClick={() => {
+                  if (deleting) {
+                    return;
+                  }
                   setManageOnly(false);
                   setViewerIndex(null);
                 }}
@@ -617,15 +633,6 @@ export function DiaryCalendarView({
             </div>
           </div>
         </div>
-      )}
-
-      {record !== null && (
-        <DiaryShareModal
-          open={shareModalOpen}
-          imageDataUrl={record.imageDataUrl}
-          fileName={diaryFileName(record)}
-          onClose={() => setShareModalOpen(false)}
-        />
       )}
 
       <Modal open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>

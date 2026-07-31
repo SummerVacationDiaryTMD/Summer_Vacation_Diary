@@ -102,7 +102,6 @@ export function WriteStep({
 }: WriteStepProps) {
   const toast = useToast();
   const { openConfirm } = useDialog();
-  const dateGuidanceShownRef = useRef(false);
   const dateCheckIdRef = useRef(0);
   const checkedEntryIdRef = useRef<number | null>(null);
   const [titleLimitShakeCount, setTitleLimitShakeCount] = useState(0);
@@ -302,10 +301,6 @@ export function WriteStep({
               // user-activated or unsupported, so a failure just leaves the
               // native behaviour in place.
               onClick={(event) => {
-                if (!dateGuidanceShownRef.current) {
-                  dateGuidanceShownRef.current = true;
-                  toast.openToast("오늘 날짜까지만 일기를 쓸 수 있어요.");
-                }
                 try {
                   event.currentTarget.showPicker();
                 } catch {
