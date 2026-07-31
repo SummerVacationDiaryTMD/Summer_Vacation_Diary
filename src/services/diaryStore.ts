@@ -43,7 +43,7 @@ import type { WeatherValue } from "../constants/diary";
 
 const INDEX_STORAGE_KEY = "summer-vacation-diary:diary-index:v1";
 const ENTRY_STORAGE_KEY_PREFIX = "summer-vacation-diary:diary:v1:";
-const MAX_DIARIES_PER_DATE = 3;
+const MAX_DIARIES_PER_DATE = 5;
 
 function entryStorageKey(id: string): string {
   return `${ENTRY_STORAGE_KEY_PREFIX}${id}`;
@@ -82,6 +82,12 @@ export type SaveDiaryInput = Omit<
   revisionKey: string;
 };
 
+export interface SaveDiaryResult {
+  record: DiaryRecord;
+  diariesOnDate: number;
+  limit: number;
+}
+
 export type DiaryStoreErrorCode =
   "storage-full" | "read-failed" | "daily-limit";
 
@@ -112,7 +118,7 @@ function readFailedError(): DiaryStoreError {
 function dailyLimitError(): DiaryStoreError {
   return new DiaryStoreError(
     "daily-limit",
-    "하루에는 일기를 최대 3개까지 저장할 수 있어요.",
+    `하루에는 일기를 최대 ${MAX_DIARIES_PER_DATE}개까지 저장할 수 있어요.`,
   );
 }
 
@@ -283,13 +289,13 @@ function clamp(text: string, maxLength: number): string {
 }
 
 /**
- * Stores one finished diary and returns exactly what was written.
+ * Stores one finished diary and returns it with the target date's saved count.
  *
  * The entry is written before the index on purpose. If the second write fails
  * the leftover is an entry nothing references — invisible to every screen. The
  * other order would leave a diary in the list that can never be opened.
  */
-export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
+export function saveDiary(input: SaveDiaryInput): Promise<SaveDiaryResult> {
   return withLock(async () => {
     let index: DiarySummary[];
     try {
@@ -398,7 +404,11 @@ export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
       }
     }
 
-    return record;
+    return {
+      record,
+      diariesOnDate: diariesOnDate + 1,
+      limit: MAX_DIARIES_PER_DATE,
+    };
   });
 }
 
