@@ -4,13 +4,14 @@
 
 ## 범위
 
-이 문서는 저장소에서 확인할 수 있는 클라이언트 보안·데이터 흐름을 설명합니다. 별도 배포된 `diary-ai` 서버의 내부 구현과 법적 개인정보 보존 정책은 저장소에 없으므로 `확인 필요`로 구분합니다.
+이 문서는 저장소의 클라이언트와 2026-07-31에 별도로 제공된 `diary-ai/index.ts` 스냅샷에서 확인한 보안·데이터 흐름을 설명합니다. Edge Function·prompt·DB migration은 저장소에서 version 관리되지 않으며 운영 배포 일치 여부와 법적 보존 정책은 `확인 필요`로 구분합니다.
 
 ## 처리 데이터
 
 | 데이터             | 발생 위치                | 로컬 저장                                                | 외부 전송                              |
 | ------------------ | ------------------------ | -------------------------------------------------------- | -------------------------------------- |
-| 원본을 자른 사진   | 파일 선택·Canvas         | draft의 JPEG data URL                                    | sketch, analyze 요청                   |
+| 원본 파일          | 파일 선택·자르기 모달    | 영구 저장하지 않음                                       | 전송하지 않음                          |
+| 원본을 자른 사진   | 3:2 자르기·Canvas        | draft의 1278×852 JPEG data URL                           | sketch, analyze 요청                   |
 | 그림 변환 이미지   | 로컬 필터 또는 Edge 응답 | draft의 JPEG data URL                                    | 추가 전송 없음                         |
 | 제목               | 작성 화면                | draft                                                    | 전송하지 않음                          |
 | 본문               | 작성 화면                | draft                                                    | analyze 요청                           |
@@ -28,7 +29,7 @@
 
 | key                                     | 내용                                                          | 삭제·만료                                                           |
 | --------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `summer-vacation-diary:draft:v2`        | 초안 ID, 사진, 그림, 제목, 본문, 날짜, 날씨, 낮·밤            | OS·사용자가 앱 데이터 삭제 가능                                      |
+| `summer-vacation-diary:draft:v2`        | 초안 ID, 사진, 그림, 제목, 본문, 날짜, 날씨, 낮·밤            | OS·사용자가 앱 데이터 삭제 가능                                     |
 | `summer-vacation-diary:client-id:v1`    | 무작위 브라우저 UUID                                          | 자동 만료 없음                                                      |
 | `summer-vacation-diary:quota:v1`        | 사용량, reset, 차단·지역 상태                                 | reset 시각 경과 또는 testMode snapshot이면 삭제                     |
 | `summer-vacation-diary:sketch-cache:v1` | 원본 파일 SHA-256와 변환 그림, 최대 3개                       | 다시 그리기·캐시 교체·앱 데이터 삭제 시 제거 가능                   |
@@ -52,10 +53,12 @@ flowchart LR
     User["사용자 입력"] --> Client["React 클라이언트"]
     Client -->|HTTPS POST<br/>사진·본문| Edge["Supabase diary-ai"]
     Client -->|apikey + 익명 client id| Edge
-    Edge --> Unknown["서버 내부 처리<br/>확인 필요"]
+    Edge -->|사진 low detail·본문| Chat["OpenAI Chat Completions"]
+    Edge -->|사진·그림 prompt| Image["OpenAI Images Edits"]
+    Edge -->|salt hash 식별자·counter| DB["Supabase PostgreSQL"]
 ```
 
-클라이언트는 OpenAI를 직접 호출하지 않습니다. 동의 모달은 Supabase Edge Function을 거쳐 OpenAI로 전송된다고 안내하지만, 이 저장소에는 Function source가 없어 실제 model 요청, 로그, 삭제 시점은 코드로 검증할 수 없습니다.
+클라이언트는 OpenAI를 직접 호출하지 않습니다. 제공된 Edge Function은 분석 시 본문과 선택 사진을 low detail image input으로 Chat Completions에 보내고, 그림 생성 시 사진과 `SKETCH_PROMPT`를 Images Edits에 보냅니다. prompt 파일 내용, OpenAI 측 보존, 운영 배포본과의 일치 여부는 제공 자료만으로 확인할 수 없습니다.
 
 Supabase가 설정되지 않은 경우 사진·일기 내용은 외부 분석 서버로 전송하지 않고 브라우저 안에서 처리합니다.
 
@@ -82,7 +85,7 @@ Supabase가 설정되지 않은 경우 사진·일기 내용은 외부 분석 �
 
 `VITE_*`는 빌드 결과에 포함됩니다. OpenAI API key, Supabase secret/service-role key를 넣으면 안 됩니다.
 
-서버 secret 이름과 설정 위치는 이 저장소에서 검증할 수 없습니다. `.env.example`은 `OPENAI_API_KEY`와 Supabase secret/service-role key를 `VITE_*`에 넣지 말라고만 명시합니다.
+외부 서버 스냅샷은 `OPENAI_API_KEY`, `RATE_LIMIT_SALT`, `SUPABASE_URL`, `SUPABASE_SECRET_KEYS` 또는 legacy `SUPABASE_SERVICE_ROLE_KEY`를 필수 경로로 사용합니다. model·이미지 품질은 `OPENAI_MODEL`, `OPENAI_IMAGE_MODEL`, `OPENAI_IMAGE_QUALITY`, 운영 진단은 `DIARY_AI_DEBUG`, 서버 quota 우회는 `DIARY_AI_TEST_MODE`로 설정합니다. 이 값들은 Edge Function secret이어야 하며 `.env`의 `VITE_*`에 넣으면 안 됩니다.
 
 ## 인증과 인가
 
@@ -91,9 +94,10 @@ Supabase가 설정되지 않은 경우 사진·일기 내용은 외부 분석 �
 - Supabase 요청은 publishable key를 `apikey` header로 사용
 - `Authorization` header 없음
 - `x-diary-client-id`는 rate limit 힌트이며 신원 인증으로 사용할 수 없음
-- 서버가 publishable key와 action별 요청을 어떻게 검증하는지는 확인 필요
+- Edge Function은 `POST`와 `quota-status`·`inspect` action, 필수 client ID와 입력 구조를 검증함
+- CORS origin은 `*`; Supabase gateway의 JWT 검증 여부와 publishable key 강제 설정은 배포 구성 확인 필요
 
-Supabase에는 사용량 제한용 `public.diary_ai_rate_limits` 테이블이 있습니다. 제공된 DDL에는 RLS 활성화 구문과 policy가 없으므로 실제 접근 정책은 확인 필요입니다. 사용자 계정·사진·일기 원문을 저장하는 테이블은 제공된 스키마에서 확인되지 않았습니다.
+Supabase에는 사용량 제한용 `public.diary_ai_rate_limits` 테이블이 있습니다. 제공된 table metadata에는 RLS·policy·grant가 나타나지 않으므로 실제 접근 정책은 확인이 필요합니다. 사용자 계정·사진·일기 원문을 저장하는 서버 테이블은 제공된 구조에서 확인되지 않았습니다.
 
 ## 입력·응답 방어
 
@@ -103,7 +107,8 @@ Supabase에는 사용량 제한용 `public.diary_ai_rate_limits` 테이블이 �
 - 10MB 제한
 - 디코딩 성공 확인
 - 가로·세로 각각 200px 이상
-- Canvas에서 JPEG 재인코딩
+- 원본 비율과 관계없이 `cover` 방식의 3:2 영역에서 이동·1~3배 확대·90° 회전
+- Canvas에서 1278×852 JPEG로 재인코딩
 
 빈 MIME type은 일부 Android picker 호환을 위해 디코딩 단계까지 허용합니다.
 
@@ -134,7 +139,7 @@ Supabase에는 사용량 제한용 `public.diary_ai_rate_limits` 테이블이 �
 2. localStorage의 무작위 UUID → `web:{value}`
 3. 저장소 사용 불가 시 탭 메모리 UUID → `session:{value}`
 
-클라이언트는 raw 값을 `x-diary-client-id`로 보냅니다. 서버가 이를 salt/hash 처리하는지, IP를 어떤 형식과 기간으로 저장하는지는 서버 소스가 없어 확인 필요입니다.
+클라이언트는 raw 값을 `x-diary-client-id`로 보냅니다. Edge Function은 사용자 값을 `SHA-256("user:{RATE_LIMIT_SALT}:{clientId}")`, IP를 `SHA-256("ip:{RATE_LIMIT_SALT}:{ip}")`로 변환한 뒤 RPC에 전달합니다. IP가 없으면 `unavailable:{clientId}`를 대신 사용합니다. hash 행의 보존 기간과 삭제 정책은 확인이 필요합니다.
 
 quota snapshot은 UI 표시와 선차단 용도입니다. 클라이언트는 공통 `all`
 카운터만 통합 AI 검사 기회로 사용합니다. 실제 강제는 `inspect` 요청을
@@ -155,18 +160,19 @@ quota snapshot은 UI 표시와 선차단 용도입니다. 클라이언트는 공
 - 공개 이미지 URL을 만들거나 사진을 업로드하는 공유 서버는 없습니다.
 - 브라우저 Clipboard fallback은 현재 페이지 URL만 복사합니다.
 
+제공된 서버 제한은 사용자 3회/UTC day, IP 20회/10분·100회/UTC day, sketch 150회/UTC day, analyze 250회/UTC day입니다. 확인 가능한 국가가 `KR`이 아니면 차단하고, 국가 header가 없으면 허용합니다. 실패 시 `content-blocked`, `invalid-image`, `invalid-input`, `invalid-content`만 차감을 유지하고 그 밖의 오류는 동일 window RPC로 환불을 시도합니다.
+
 ## 확인이 필요한 서버 항목
 
-- [ ] 실제 Edge Function source와 배포 version
-- [ ] 요청 body 크기·MIME·schema validation
-- [ ] OpenAI로 전달되는 정확한 field와 prompt
+- [ ] 제공된 Edge Function 스냅샷과 실제 배포 version의 일치
+- [ ] 서버 측 요청 body 크기·MIME 상한 추가 여부
+- [ ] import된 두 prompt의 정확한 내용과 version
 - [ ] 사진·본문·응답·로그의 저장 여부와 보존 기간
-- [ ] 익명 key·IP의 salt/hash 방식과 삭제 정책
+- [ ] hash counter 행의 삭제·보존 정책과 salt rotation 절차
 - [ ] `diary_ai_rate_limits`의 RLS·role 권한과 보조 index
-- [ ] action별·IP별·service별 정확한 제한값
-- [ ] 요청 reserve·실패 refund의 원자성
-- [ ] 지역 판정 공급자와 허용 국가 정책
-- [ ] publishable key 오용 방지와 CORS 정책
+- [ ] 세 RPC SQL 본문과 동시 요청에서 reserve·refund 원자성
+- [ ] Supabase가 국가 header를 실제로 전달하는지
+- [ ] wildcard CORS와 Supabase gateway JWT 설정
 - [ ] incident 대응·공개 보안 신고 채널
 
 ## 저장소의 보안 운영 상태

@@ -6,13 +6,13 @@
   <img src="./public/branding/app-icon.png" width="160" alt="나의 여름방학 일기 앱 아이콘" />
 </p>
 
-사진 선택과 일기 작성, 그림 변환, 선생님 첨삭, 결과물 저장과 일기 달력 보관까지 하나의 흐름으로 제공합니다.
+사진 선택·자르기와 일기 작성, 그림 변환, 선생님 첨삭, 결과물 저장과 일기 달력 보관까지 하나의 흐름으로 제공합니다.
 
 [![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=white)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-5.7.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Vite](https://img.shields.io/badge/Vite-6.4.3-646CFF?logo=vite&logoColor=white)](https://vite.dev/) [![Apps in Toss](https://img.shields.io/badge/Apps_in_Toss-2.10.7-0064FF?logo=toss&logoColor=white)](https://developers-apps-in-toss.toss.im/) [![TDS Mobile](https://img.shields.io/badge/TDS_Mobile-2.5.0-0064FF?logo=toss&logoColor=white)](https://tossmini-docs.toss.im/tds-mobile/) [![React Easy Crop](https://img.shields.io/badge/React_Easy_Crop-6.2.3-61DAFB?logo=react&logoColor=white)](https://valentinh.github.io/react-easy-crop/) [![Supabase](https://img.shields.io/badge/Supabase-Edge_Functions_%26_PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 
 ## 동작 화면
 
-아래 열 개 화면은 시작부터 일기 달력에서 기록을 다시 확인하기까지의 핵심 흐름을 보여줍니다. 같은 기기와 화면 배율로 촬영한 세로 화면을 사용해 단계별 변화를 한눈에 비교할 수 있도록 구성했습니다.
+아래 화면은 온보딩부터 사진 동의·자르기, 일기 작성과 AI 검사, 완성 후 기기 보관·공유, 일기 달력 재열람까지 현재 앱의 핵심 흐름을 보여줍니다. 완성 일기는 저장 직후 달력에 자동 보관되고, 같은 날짜의 여러 기록은 상세 뷰어에서 넘겨 볼 수 있습니다.
 
 <table>
   <tr>
@@ -41,9 +41,9 @@
   </tr>
   <tr>
     <td align="center" width="50%">
-      <strong>5. 낮·밤과 날씨 배경</strong><br /><br />
-      <img src="./docs/screenshots/05-weather-background.png" width="300" alt="밤과 천둥번개를 선택해 날씨 배경 효과가 나타난 일기 작성 화면" /><br /><br />
-      <sub>밤과 천둥번개를 선택해 달·비·번개 배경 효과가 적용된 일기 작성 화면</sub>
+      <strong>5. 날짜별 저장 한도 안내</strong><br /><br />
+      <img src="./docs/screenshots/05-diary-completed-modal.png" width="300" alt="날짜별 일기 저장 한도를 안내하는 모달" /><br /><br />
+      <sub>선택한 날짜에 이미 일기가 가득 찼을 때 최대 3개 제한과 기록 보기·닫기를 안내하는 모달</sub>
     </td>
     <td align="center" width="50%">
       <strong>6. 선생님 검사 진행</strong><br /><br />
@@ -58,21 +58,21 @@
       <sub>크레파스 그림, 원고지 본문, 첨삭 표시, 선생님 한마디와 도장이 모두 반영된 화면</sub>
     </td>
     <td align="center" width="50%">
-      <strong>8. 완성 이미지 저장과 공유</strong><br /><br />
-      <img src="./docs/screenshots/08-complete-diary-modal.png" width="300" alt="완성된 그림일기를 저장하거나 공유하는 화면" /><br /><br />
-      <sub>이미지 미리보기 없이 이미지 저장·앱 공유 또는 창 닫기를 선택하는 컴팩트 모달</sub>
+      <strong>8. 저장된 일기 상세</strong><br /><br />
+      <img src="./docs/screenshots/08-saved-diary-detail.png" width="300" alt="저장된 그림일기 상세 화면" /><br /><br />
+      <sub>같은 날짜의 기록을 이전·다음 버튼이나 좌우 스와이프로 넘겨 보고 삭제·저장 및 공유를 선택하는 화면</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
-      <strong>9. 일기 달력</strong><br /><br />
-      <img src="./docs/screenshots/09-diary-calendar.png" width="300" alt="완성한 날짜에 도장이 표시된 일기 달력 화면" /><br /><br />
-      <sub>월을 이동하고 완성한 날짜의 도장을 눌러 저장된 일기를 찾는 화면</sub>
+      <strong>9. 저장 및 공유 모달</strong><br /><br />
+      <img src="./docs/screenshots/09-save-share-confirmation-modal.png" width="300" alt="저장된 그림일기의 저장 및 공유 모달" /><br /><br />
+      <sub>완성 이미지를 기기에 저장하거나 앱 링크를 공유하고 상세 화면으로 돌아가는 선택 모달</sub>
     </td>
     <td align="center" width="50%">
-      <strong>10. 저장 일기 상세</strong><br /><br />
-      <img src="./docs/screenshots/10-saved-diary-detail.png" width="300" alt="저장된 그림일기를 다시 보고 공유하거나 삭제하는 상세 화면" /><br /><br />
-      <sub>같은 날짜의 일기를 넘겨 보고 저장 및 공유·삭제를 선택하는 상세 화면</sub>
+      <strong>10. 일기 달력</strong><br /><br />
+      <img src="./docs/screenshots/10-diary-calendar.png" width="300" alt="완성한 날짜에 도장이 표시된 일기 달력 화면" /><br /><br />
+      <sub>월을 이동하고 완성한 날짜의 도장을 눌러 저장된 일기를 다시 여는 화면</sub>
     </td>
   </tr>
 </table>
@@ -85,18 +85,32 @@
   <img src="./docs/screenshots/final-diary-result.png" width="360" alt="사진과 일기, 첨삭 결과가 합성된 최종 그림일기 JPEG" />
 </p>
 
+### 추가 동작 화면 확장 영역
+
+현재 README에는 새로 전달된 10개 화면으로 정상 흐름과 날짜별 저장 한도까지 배치했습니다. 아래 파일명은 다음 캡처를 추가할 수 있도록 비워 둔 확장 슬롯입니다. 캡처가 준비되면 `docs/screenshots/`에 넣고 위 갤러리에 2열 행을 추가하면 됩니다.
+
+| 우선순위 | 예약 파일명                        | 추천 화면           | 보여줄 기능                                 |
+| -------- | ---------------------------------- | ------------------- | ------------------------------------------- |
+| 1        | `11-photo-crop.png`                | 사진 영역 선택      | 세로·가로 사진의 3:2 자르기, 이동·확대·회전 |
+| 2        | `12-ai-error-retry.png`            | AI 검사 오류·재시도 | 오류 원인, 원본 사진 fallback, 선택 재시도  |
+| 3        | `13-diary-delete-confirmation.png` | 저장 일기 삭제 확인 | 날짜별 기록 관리와 안전한 삭제              |
+| 4        | `14-ai-quota-exhausted.png`        | AI 검사 기회 소진   | 3회 소진 안내와 원본 기반 미리보기          |
+| 5        | `15-night-weather-background.png`  | 밤·날씨 배경 변형   | 밤, 비·천둥번개 등 작성 화면의 시각 변화    |
+
+<!-- 확장 캡처를 추가할 때는 docs/screenshots/에 파일을 넣고 위 예약표와 동작 화면 갤러리를 함께 갱신합니다. -->
+
 ## 주요 기능
 
-| 기능             | 구현 내용                                                                       | 상태      |
-| ---------------- | ------------------------------------------------------------------------------- | --------- |
-| 사진 선택·자르기 | JPEG·PNG·WEBP 1장을 검사하고 3:2 영역을 1278×852 JPEG로 변환                    | 구현 완료 |
-| 정보 처리 동의   | 사진·일기, 기기 식별값·IP의 처리 목적과 전송·보관 방식을 사진 선택 전에 안내    | 구현 완료 |
-| 일기 작성        | 제목, 오늘 이전 날짜, 날씨, 낮·밤 배경, 13×5 원고지 분량의 본문 입력            | 구현 완료 |
-| 사진 변환        | Supabase `diary-ai` 호출 또는 브라우저 Canvas 로컬 연필 필터 적용               | 구현 완료 |
-| 일기 검사        | 키워드·감정·첨삭 대상·별표·도장·선생님 한마디 표시                              | 구현 완료 |
-| 결과 이미지 생성 | 미리보기와 같은 1080×1350 그림일기를 Canvas에서 JPEG로 합성                     | 구현 완료 |
-| 저장·공유        | 토스에서는 기기 저장·공유 API, 브라우저에서는 다운로드·Web Share·링크 복사 사용 | 구현 완료 |
-| 일기 달력        | 사진·본문이 같으면 날짜를 이동하고 둘 중 하나가 바뀌면 별도 기록으로 보관       | 구현 완료 |
+| 기능             | 구현 내용                                                                               | 상태      |
+| ---------------- | --------------------------------------------------------------------------------------- | --------- |
+| 사진 선택·자르기 | JPEG·PNG·WEBP 1장을 검사하고 이동·1~3배 확대·90° 회전한 3:2 영역을 1278×852 JPEG로 변환 | 구현 완료 |
+| 정보 처리 동의   | 사진·일기, 기기 식별값·IP의 처리 목적과 전송·보관 방식을 사진 선택 전에 안내            | 구현 완료 |
+| 일기 작성        | 제목, 오늘 이전 날짜, 6개 날씨, 낮·밤 배경, 13×5 원고지 분량의 본문 입력                | 구현 완료 |
+| 사진 변환        | Supabase `diary-ai` 호출 또는 브라우저 Canvas 로컬 연필 필터 적용                       | 구현 완료 |
+| 일기 검사        | 키워드·감정·첨삭 대상·별표·도장·선생님 한마디 표시                                      | 구현 완료 |
+| 결과 이미지 생성 | 처리 중 하단 작업을 잠그고 공개 애니메이션 뒤 1080×1350 그림일기를 JPEG로 합성          | 구현 완료 |
+| 저장·공유        | 토스에서는 기기 저장·공유 API, 브라우저에서는 다운로드·Web Share·링크 복사 사용         | 구현 완료 |
+| 일기 달력        | 사진·본문이 같으면 날짜를 이동하고 둘 중 하나가 바뀌면 별도 기록으로 보관               | 구현 완료 |
 
 세부 사전 조건, 예외 흐름, 권한과 근거 파일은 [기능 명세](./docs/functional-specification.md)에 정리되어 있습니다.
 
@@ -112,7 +126,7 @@ flowchart LR
     F --> S["기기 저장"]
     F --> H["앱 링크 공유"]
     F --> A["일기 달력 보관"]
-    A --> V["날짜별 열람·이미지 공유·삭제"]
+    A --> V["날짜별 열람·이미지 저장·앱 링크 공유·삭제"]
     P --> W
     W --> C
 ```
@@ -130,7 +144,7 @@ flowchart LR
 | 제목        | 공백만 입력할 수 없음, 최대 15자             |
 | 일기        | 공백만 입력 불가, 입력 최대 65자             |
 | 날짜        | 기기 로컬 날짜가 기본값, 오늘 이후 선택 불가 |
-| 날씨        | 맑음, 구름 조금, 흐림, 비, 천둥번개          |
+| 날씨        | 맑음, 구름 조금, 흐림, 비, 천둥번개, 모름    |
 | 배경        | 낮 또는 밤                                   |
 
 ## 실행 모드
@@ -167,8 +181,8 @@ flowchart LR
 ### 설치와 브라우저 실행
 
 ```bash
-git clone https://github.com/SummerVacationDiaryTMD/summer-vacation-diary.git
-cd summer-vacation-diary
+git clone https://github.com/TossHackathonTMD/SummerVacationDiary.git
+cd SummerVacationDiary
 npm ci
 npm run dev:web
 ```
@@ -192,7 +206,7 @@ cp .env.example .env
 
 두 Supabase 변수는 함께 설정해야 합니다. 하나라도 비어 있으면 외부 요청을 보내지 않는 체험 모드로 동작합니다.
 
-> `VITE_*` 값은 클라이언트 번들에 포함됩니다. OpenAI API 키나 Supabase secret/service-role key를 넣지 마세요. 이 저장소에는 `diary-ai` Edge Function 서버 소스가 없으므로 실제 모드는 별도로 배포된 호환 Function이 필요합니다.
+> `VITE_*` 값은 클라이언트 번들에 포함됩니다. OpenAI API 키나 Supabase secret/service-role key를 넣지 마세요. `diary-ai`의 2026-07-31 외부 스냅샷은 문서화했지만 저장소에서 version 관리되지 않으므로, 실제 모드에는 호환 Function과 quota RPC를 별도로 배포해야 합니다.
 
 ## 프로젝트 구조
 
@@ -200,7 +214,7 @@ cp .env.example .env
 .
 ├── public/                 # 폰트, 날씨, 도장, 온보딩, 일기 프레임 자산
 ├── src/
-│   ├── components/         # 업로드, 작성, 미리보기, 일기 달력, 자르기, 완료 모달
+│   ├── components/         # 업로드, 작성, 미리보기, 일기 달력, 자르기, 저장·공유 모달
 │   ├── constants/          # 브랜드·입력·도장 규칙
 │   ├── hooks/              # 초안, 그림 변환, 분석, 사용량 상태
 │   ├── services/           # Edge Function, 저장·공유, 캐시 경계
@@ -252,7 +266,7 @@ npm run deploy
 - 보관 일기는 서버나 다른 기기와 동기화되지 않으며 앱 데이터 삭제 시 함께 사라질 수 있습니다.
 - 공유 기능은 완성 이미지 파일이 아니라 앱 소개 문구와 미니앱 링크를 공유합니다.
 - 외부 분석·그림 생성은 이 저장소 밖에 배포된 호환 `diary-ai` Function에 의존합니다.
-- 서버의 정확한 사용량 제한 값과 데이터 보존 기간은 저장소 코드만으로 확인할 수 없습니다.
+- 제공된 서버 스냅샷의 제한은 사용자 3회/일, IP 20회/10분·100회/일, sketch 150회/일, analyze 250회/일이며 매일 09:00 KST에 초기화됩니다. 운영 배포본의 일치 여부와 데이터 보존 기간은 별도 확인이 필요합니다.
 - 사진 변환이나 분석이 실패해도 원본 사진과 작성한 글로 JPEG를 완성할 수 있습니다.
 - 저장소에 라이선스 파일이 없어 재사용 조건은 확인이 필요합니다.
 

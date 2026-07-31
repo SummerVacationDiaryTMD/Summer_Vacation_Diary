@@ -47,26 +47,26 @@ npm run deploy
 
 ## 외부 기능 배포
 
-클라이언트는 `{VITE_SUPABASE_URL}/functions/v1/diary-ai`를 호출하지만 다음 서버 산출물은 저장소에 없습니다.
+클라이언트는 `{VITE_SUPABASE_URL}/functions/v1/diary-ai`를 호출합니다. 2026-07-31에 `index.ts` 스냅샷이 별도로 제공되었지만 다음 서버 산출물은 저장소에서 version 관리되지 않습니다.
 
-- Edge Function source
+- Edge Function source와 import 대상 `prompt_analysis.ts`, `prompt_sketch.ts`
 - Supabase 사용량 테이블의 versioned migration 파일
-- OpenAI model·prompt 설정
-- 서버 secret·rate limit 설정
+- 세 quota RPC의 SQL 원문
+- 서버 secret과 운영 배포 설정
 
-제공된 운영 DDL은 [ERD](./erd.md)에 문서화했지만 migration 파일은 저장소에 없습니다. 따라서 프론트엔드 배포만으로 실제 그림 생성·분석과 사용량 강제가 활성화되지 않습니다. 호환 Function과 데이터베이스 객체를 별도 배포한 뒤 공개 URL과 publishable key만 프론트엔드 build 환경에 주입해야 합니다.
+제공된 table metadata, 재현용 DDL과 설치된 RPC를 복구하는 SQL은 [ERD](./erd.md)에 문서화했습니다. 프론트엔드 배포만으로 실제 그림 생성·분석과 사용량 강제가 활성화되지는 않습니다. 호환 Function, prompt, 테이블과 세 RPC를 별도 배포한 뒤 공개 URL과 publishable key만 프론트엔드 build 환경에 주입해야 합니다.
 
-서버 요청·응답 호환 조건은 [API 명세](./api-specification.md)를 따르며, 정확한 quota 값·지역 정책·보존 기간은 실제 서버에서 확인해야 합니다.
+제공된 스냅샷의 요청·응답, quota 값과 한국 지역 정책은 [API 명세](./api-specification.md)를 따릅니다. 운영 배포 version과 보존 기간은 실제 서버에서 확인해야 합니다.
 
 ## 환경별 권장 확인
 
-| 환경           | 확인 항목                                                           |
-| -------------- | ------------------------------------------------------------------- |
-| 브라우저       | mock/필터, JPEG 다운로드, Web Share·링크 복사, localStorage 달력    |
-| Toss 샌드박스  | deep link, safe area, `saveBase64Data`, Toss 공유창, `Storage` 달력 |
-| iOS 실기기     | 사진 선택·자르기, 저장 화면, 보관 일기 열람·공유·삭제               |
-| Android 실기기 | 빈 MIME, 저장 파일명, back 동작, 달력 스와이프                      |
-| 실제 Supabase  | analyze·sketch·quota-status contract, timeout, 오류 code            |
+| 환경           | 확인 항목                                                               |
+| -------------- | ----------------------------------------------------------------------- |
+| 브라우저       | mock/필터, JPEG 다운로드, Web Share·링크 복사, localStorage 달력        |
+| Toss 샌드박스  | deep link, safe area, `saveBase64Data`, Toss 공유창, `Storage` 달력     |
+| iOS 실기기     | 세로·가로 사진의 cover 자르기·회전, 저장 화면, 보관 일기 열람·공유·삭제 |
+| Android 실기기 | 빈 MIME, 저장 파일명, back 동작, 달력 스와이프                          |
+| 실제 Supabase  | analyze·sketch·quota-status contract, timeout, 오류 code                |
 
 ## 출시 전 체크리스트
 

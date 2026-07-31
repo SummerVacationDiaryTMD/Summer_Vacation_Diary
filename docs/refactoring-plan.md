@@ -16,6 +16,9 @@
 - [x] 분석 결과를 입력 signature 기준으로 캐시하고 오래된 응답 반영 차단
 - [x] 완성 일기 저장을 index와 일기별 record로 분리해 목록 조회 시 이미지 로드를 방지
 - [x] 토스 `Storage`와 브라우저 localStorage를 하나의 `diaryStore` 계약으로 통합
+- [x] 사진 자르기를 원본 기반 `cover` 3:2·90° 회전 좌표로 통일
+- [x] 미리보기 처리 중 하단 작업 바를 유지하고 카드·도장 공개 완료 시점까지 잠금
+- [x] 첨삭 체크·별표 자산을 투명도와 원본 질감을 보존하는 PNG로 교체
 
 ## 현재 기술 부채
 
@@ -30,7 +33,10 @@
 3. 저장소 용량 가시화
    - 완성 JPEG를 data URL로 보관하므로 기기 저장소 한도에 빨리 도달할 수 있습니다.
    - 항목 크기 측정, 오래된 기록 정리 UX, 실제 토스 `Storage` 한도 검증이 필요합니다.
-4. 문서와 코드 계약 자동 확인
+4. Edge Function·DB migration version 관리
+   - 제공된 `diary-ai/index.ts`는 저장소 밖 스냅샷이며 import하는 prompt와 세 quota RPC SQL도 저장소에 없습니다.
+   - 운영 DB의 `pg_get_functiondef` 결과와 table DDL을 migration으로 보관하고 배포 version을 함께 기록해야 rollback과 환경 재현이 가능합니다.
+5. 문서와 코드 계약 자동 확인
    - 환경 변수, storage key, 입력 길이, API action 같은 값은 코드 변경 시 문서가 어긋날 수 있습니다.
 
 ### 유지해야 할 경계
@@ -40,6 +46,8 @@
 - `diaryExport`: JPEG 파일 내보내기
 - `diaryShare`: 앱 링크 공유
 - `supabaseEdge`: 외부 AI Function 호출과 공통 오류·quota snapshot
+- 외부 `diary-ai/index.ts`: OpenAI 요청, 지역 제한, quota 예약·환불 orchestration
+- PostgreSQL RPC: 사용자·IP·서비스 counter의 원자적 read·consume·refund
 
 서로 이름이 비슷해도 보관, 파일 저장, 앱 공유는 사용자 결과가 다르므로 하나의 서비스로 합치지 않습니다.
 
