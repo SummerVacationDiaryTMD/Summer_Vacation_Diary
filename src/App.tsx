@@ -32,13 +32,18 @@ import { isAiConnected } from "./services/diaryAnalysis";
 import { DiaryStoreError, saveDiary } from "./services/diaryStore";
 import { isSketchAiConnected } from "./services/styleTransfer";
 
-// Plain state instead of a router: the flow is a strict 3-step wizard with no
-// deep links yet, so a router would add dependency weight without benefit.
-// If stage 2+ needs shareable URLs, this maps 1:1 onto routes later.
-// The calendar is a destination, not a stage: it sits outside the wizard and
-// returns to the start rather than advancing to a next step.
+// Plain state instead of a router: the flow is a strict 3-step wizard. The
+// calendar is the one externally addressable destination, so its deep-link
+// path is mapped to the initial state below without adding a routing library.
 type Step = "upload" | "write" | "preview" | "calendar";
 type WizardStep = Exclude<Step, "calendar">;
+
+const CALENDAR_PATH = "/calendar";
+
+function isCalendarDeepLink(): boolean {
+  const path = window.location.pathname.replace(/\/+$/, "") || "/";
+  return path === CALENDAR_PATH;
+}
 
 interface DiaryConfirmOptions {
   title: string;
@@ -157,8 +162,12 @@ function AppBottomBar({
 
 function App() {
   const isAndroid = /Android/i.test(navigator.userAgent);
-  const [showOnboarding, setShowOnboarding] = useState(true);
-  const [step, setStep] = useState<Step>("upload");
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !isCalendarDeepLink(),
+  );
+  const [step, setStep] = useState<Step>(() =>
+    isCalendarDeepLink() ? "calendar" : "upload",
+  );
   // Always open on a fresh diary. Draft persistence remains available in the
   // hook, but this flow must not restore a previous visit's photo or text.
   const { draft, updateDraft, clearDraft } = useDiaryDraft({
