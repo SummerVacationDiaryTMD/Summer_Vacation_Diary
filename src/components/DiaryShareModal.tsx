@@ -10,7 +10,6 @@ interface DiaryShareModalProps {
   imageDataUrl: string;
   fileName: string;
   onClose: () => void;
-  onStartNew: () => void;
 }
 
 type ShareAction = "save" | "share";
@@ -24,7 +23,6 @@ export function DiaryShareModal({
   imageDataUrl,
   fileName,
   onClose,
-  onStartNew,
 }: DiaryShareModalProps) {
   const [busyAction, setBusyAction] = useState<ShareAction | null>(null);
   const [feedback, setFeedback] = useState<ActionFeedback | null>(null);
@@ -61,7 +59,7 @@ export function DiaryShareModal({
       <Modal.Overlay />
 
       <Modal.Content
-        className="app-modal-panel"
+        className="app-modal-panel diary-share-modal-panel"
         aria-labelledby="diary-completion-title"
         aria-describedby="diary-completion-description"
         onOpenAutoFocus={(event) => {
@@ -78,23 +76,15 @@ export function DiaryShareModal({
                 className="app-modal-title diary-share-summary-title"
                 tabIndex={-1}
               >
-                완성 이미지 저장하기
+                저장 및 공유
               </h2>
 
               <p
                 id="diary-completion-description"
                 className="diary-share-description"
               >
-                그림일기를 기기에 보관하거나 앱을 공유할 수 있어요.
+                이미지를 기기에 저장하거나 앱 링크를 공유할 수 있어요.
               </p>
-            </div>
-
-            <div className="diary-share-preview-wrap">
-              <img
-                className="diary-share-preview"
-                src={imageDataUrl}
-                alt="완성된 그림일기"
-              />
             </div>
 
             <p className="diary-share-note">
@@ -105,17 +95,7 @@ export function DiaryShareModal({
           <div className="app-modal-footer diary-share-footer">
             <div className="diary-share-primary-actions">
               <DiaryButton
-                stable
-                fullWidth
-                disabled={busyAction !== null}
-                aria-busy={busyAction === "save"}
-                onClick={() => void run("save")}
-              >
-                이미지 저장하기
-              </DiaryButton>
-
-              <DiaryButton
-                tone="secondary"
+                tone="neutral"
                 stable
                 fullWidth
                 disabled={busyAction !== null && busyAction !== "share"}
@@ -124,7 +104,27 @@ export function DiaryShareModal({
               >
                 앱 공유하기
               </DiaryButton>
+
+              <DiaryButton
+                stable
+                fullWidth
+                disabled={busyAction !== null}
+                aria-busy={busyAction === "save"}
+                onClick={() => void run("save")}
+              >
+                이미지 저장하기
+              </DiaryButton>
             </div>
+
+            <DiaryButton
+              tone="secondary"
+              stable
+              fullWidth
+              disabled={busyAction !== null}
+              onClick={onClose}
+            >
+              창 닫기
+            </DiaryButton>
 
             {feedback !== null && (
               <p
@@ -134,28 +134,6 @@ export function DiaryShareModal({
                 {feedback.message}
               </p>
             )}
-
-            <div className="diary-share-secondary-actions">
-              <button
-                type="button"
-                className="diary-share-text-action"
-                disabled={busyAction !== null}
-                onClick={onClose}
-              >
-                계속 보기
-              </button>
-
-              <span className="diary-share-action-divider" aria-hidden />
-
-              <button
-                type="button"
-                className="diary-share-text-action"
-                disabled={busyAction !== null}
-                onClick={onStartNew}
-              >
-                새 일기 쓰기
-              </button>
-            </div>
           </div>
         </div>
       </Modal.Content>

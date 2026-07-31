@@ -7,7 +7,7 @@ type DiaryButtonProps = Omit<
   TdsButtonProps,
   "className" | "color" | "display" | "variant"
 > & {
-  tone?: "primary" | "secondary" | "danger";
+  tone?: "primary" | "secondary" | "neutral" | "danger";
   placement?: "dialog" | "guide";
   stable?: boolean;
   feedbackDisabled?: boolean;
@@ -41,7 +41,7 @@ export function DiaryButton({
     <Button
       {...props}
       className={className}
-      {...(tone === "secondary"
+      {...(tone === "secondary" || tone === "neutral"
         ? { color: "dark" as const, variant: "weak" as const }
         : {})}
       {...(fullWidth ? { display: "block" as const } : {})}

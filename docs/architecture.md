@@ -19,8 +19,8 @@ flowchart TD
     App --> Upload["PhotoUploadStep<br/>동의·선택·자르기"]
     App --> Write["WriteStep<br/>일기 입력"]
     App --> Preview["PreviewStep<br/>첨삭·미리보기"]
-    App --> Calendar["GrapeCalendarView<br/>보관 일기 달력·뷰어"]
-    App --> ShareModal["DiaryShareModal<br/>저장·공유"]
+    App --> Calendar["DiaryCalendarView<br/>보관 일기 달력·뷰어"]
+    Calendar --> ShareModal["DiaryShareModal<br/>저장·공유"]
 
     App --> Draft["useDiaryDraft"]
     App --> Sketch["useSketch"]
@@ -77,11 +77,12 @@ step=write
         ↓ 제목 + 공백이 아닌 본문
 step=preview
         ↓ Canvas 합성 성공
-finishedDiary={imageDataUrl,fileName}
-        ↘ saveDiary → step=calendar에서 열람
+saveDiary → calendarReveal={date,diaryId}
+        ↓
+step=calendar → 도장 표시 후 저장 기록 열람
 ```
 
-라우터를 사용하지 않는 이유는 현재 흐름이 deep link가 필요 없는 직선형 3단계 wizard이기 때문이라고 코드 주석에 기록되어 있습니다.
+별도 라우터 없이 화면 상태를 사용하되 `/calendar` deep link만 초기 달력 상태로 매핑합니다.
 
 ## 핵심 데이터 모델
 
@@ -110,7 +111,7 @@ interface DiaryDraft {
 
 ## 완성 일기 보관
 
-`src/services/diaryStore.ts`는 완성한 일기를 기기에 보관하는 서비스 계층입니다. `App.tsx`가 JPEG 합성 직후 초안 ID와 AI 입력인 사진·본문의 revision hash를 `saveDiary`에 전달합니다. 같은 초안과 revision hash의 날짜·제목·날씨 변경은 기존 항목에 반영하고, 사진 또는 본문이 바뀐 버전은 새 ID로 별도 보관합니다. `GrapeCalendarView`는 목록·상세 조회, 이미지 내보내기와 삭제를 제공합니다. 작업 사본인 draft와 달리 저장 실패를 `DiaryStoreError`로 알립니다.
+`src/services/diaryStore.ts`는 완성한 일기를 기기에 보관하는 서비스 계층입니다. `App.tsx`가 JPEG 합성 직후 초안 ID와 AI 입력인 사진·본문의 revision hash를 `saveDiary`에 전달합니다. 같은 초안과 revision hash의 날짜·제목·날씨 변경은 기존 항목에 반영하고, 사진 또는 본문이 바뀐 버전은 새 ID로 별도 보관합니다. `DiaryCalendarView`는 목록·상세 조회, 저장·공유 모달 진입과 삭제를 제공합니다. 작업 사본인 draft와 달리 저장 실패를 `DiaryStoreError`로 알립니다.
 
 - 저장 위치: 토스 앱에서는 Apps in Toss `Storage` 브리지, 브라우저 개발 환경에서는 localStorage. WebView의 웹 저장소는 미니앱 URL 기준으로 분리되고 OS가 정리할 수 있어 네이티브 저장소를 기본 경로로 둡니다. 그 결과 같은 토스 앱 안에서도 draft와 보관 일기의 보존 수명이 다릅니다.
 - key 구조: 목록용 `summer-vacation-diary:diary-index:v1`(이미지 없는 요약 배열)과 일기별 `summer-vacation-diary:diary:v1:<id>`. 목록 조회가 이미지 바이트를 읽지 않고, 저장이 기존 일기를 다시 쓰지 않도록 나눴습니다.
@@ -184,9 +185,9 @@ sequenceDiagram
 1. 프레임·폰트·날씨·첨삭·도장 이미지를 로드합니다.
 2. 날짜·날씨·제목·사진·13×5 본문·한마디를 Canvas에 그립니다.
 3. 외부 생성 결과가 있으면 `AI 생성 콘텐츠` watermark를 표시합니다.
-4. `image/jpeg` data URL을 완료 모달에 전달합니다.
-5. 같은 data URL을 일기 달력에 보관하고 성공하면 저장 완료 토스트를 표시합니다.
-6. 완성 모달에서 같은 data URL을 토스 저장 또는 브라우저 다운로드에 사용합니다.
+4. `image/jpeg` data URL을 일기 달력에 보관하고 성공하면 저장 완료 토스트를 표시합니다.
+5. 저장 날짜의 도장 애니메이션을 보여준 뒤 상세 뷰어를 엽니다.
+6. 상세 뷰어의 `저장 및 공유` 모달에서 같은 data URL을 토스 저장 또는 브라우저 다운로드에 사용합니다.
 
 Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 실패해도 원본 사진으로 합성할 수 있습니다.
 
