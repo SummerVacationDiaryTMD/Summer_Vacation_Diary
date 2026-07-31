@@ -1,5 +1,5 @@
-import check1 from "../assets/handwrites/processed/check1.webp";
-import check2 from "../assets/handwrites/processed/check2.webp";
+import check1 from "../assets/handwrites/processed/check1.png";
+import check2 from "../assets/handwrites/processed/check2.png";
 
 import { pickPositionedAsset } from "./positionedAsset";
 
