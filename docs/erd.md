@@ -31,14 +31,14 @@ erDiagram
 
 ```text
 diary-index:v1
-└── DiarySummary[]: id, draftId, date, savedAt, title, weather
+└── DiarySummary[]: id, draftId, revisionKey, date, savedAt, title, weather
 
 diary:v1:<id>
 └── DiaryRecord: summary 필드 + content, imageDataUrl, includesAiGeneratedContent
 ```
 
 - 하나의 summary는 같은 `id`의 record 하나를 가리킵니다.
-- `draftId`가 같은 일기는 날짜를 바꿔 다시 저장해도 기존 항목을 대체해 하나만 유지합니다. 이전 버전에서 저장해 `draftId`가 없는 기록도 계속 읽을 수 있습니다.
+- `draftId`와 사진·본문의 `revisionKey`가 같은 일기는 날짜·제목·날씨를 바꿔 다시 저장해도 기존 항목을 대체해 하나만 유지합니다. 같은 `draftId`라도 사진 또는 본문이 달라지면 별도 항목으로 저장합니다. 이전 버전에서 저장해 `revisionKey`가 없는 기록도 계속 읽되, 사진 일치 여부를 확정할 수 없어 다른 날짜 기록과 자동 병합하지 않습니다.
 - 같은 날짜에는 유효한 record를 최대 3개 저장합니다.
 - 저장 순서는 record → index이며, 조회 중 끊어진 index 참조를 정리합니다.
 - 사용자 계정이나 서버 foreign key가 없어 다른 기기와 동기화되지 않습니다.

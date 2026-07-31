@@ -3193,7 +3193,12 @@ html:has(.diary-content-section textarea:focus) {
 .preview-step .diary-card {
   width: min(100%, 44dvh);
   max-height: 100%;
+  margin-top: 0;
   filter: drop-shadow(0 14px 24px rgba(61, 105, 132, 0.12));
+}
+
+.preview-step {
+  gap: 4px;
 }
 
 .preview-save-notice {
@@ -4290,6 +4295,10 @@ html:has(.diary-content-section textarea:focus) {
 
 .app-shell-upload > .ai-quota-notice {
   margin-bottom: 6px;
+}
+
+.app-shell-write > .ai-quota-notice {
+  margin-bottom: 2px;
 }
 
 .app-shell-upload > .ai-quota-counter {

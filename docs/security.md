@@ -26,14 +26,14 @@
 
 ## 로컬 저장소
 
-| key                                     | 내용                                               | 삭제·만료                                                        |
-| --------------------------------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
-| `summer-vacation-diary:draft:v2`        | 초안 ID, 사진, 그림, 제목, 본문, 날짜, 날씨, 낮·밤 | `새 일기 쓰기` 시 삭제 시도; OS·사용자가 앱 데이터 삭제 가능     |
-| `summer-vacation-diary:client-id:v1`    | 무작위 브라우저 UUID                               | 자동 만료 없음                                                   |
-| `summer-vacation-diary:quota:v1`        | 사용량, reset, 차단·지역 상태                      | reset 시각 경과 또는 testMode snapshot이면 삭제                  |
-| `summer-vacation-diary:sketch-cache:v1` | 원본 파일 SHA-256와 변환 그림, 최대 3개            | 다시 그리기·캐시 교체·앱 데이터 삭제 시 제거 가능                |
-| `summer-vacation-diary:diary-index:v1`  | 보관 id, 초안 ID, 날짜, 저장 시각, 제목, 날씨      | `deleteDiary`·같은 초안 재저장 시 해당 항목 제거; 자동 만료 없음 |
-| `summer-vacation-diary:diary:v1:<id>`   | 초안 ID, 본문, 완성 JPEG data URL, AI 생성 여부    | `deleteDiary`·같은 초안 재저장 시 삭제; 자동 만료 없음           |
+| key                                     | 내용                                                          | 삭제·만료                                                           |
+| --------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `summer-vacation-diary:draft:v2`        | 초안 ID, 사진, 그림, 제목, 본문, 날짜, 날씨, 낮·밤            | `새 일기 쓰기` 시 삭제 시도; OS·사용자가 앱 데이터 삭제 가능        |
+| `summer-vacation-diary:client-id:v1`    | 무작위 브라우저 UUID                                          | 자동 만료 없음                                                      |
+| `summer-vacation-diary:quota:v1`        | 사용량, reset, 차단·지역 상태                                 | reset 시각 경과 또는 testMode snapshot이면 삭제                     |
+| `summer-vacation-diary:sketch-cache:v1` | 원본 파일 SHA-256와 변환 그림, 최대 3개                       | 다시 그리기·캐시 교체·앱 데이터 삭제 시 제거 가능                   |
+| `summer-vacation-diary:diary-index:v1`  | 보관 id, 초안 ID, 사진·본문 hash, 날짜, 저장 시각, 제목, 날씨 | `deleteDiary`·같은 AI 입력 재저장 시 해당 항목 제거; 자동 만료 없음 |
+| `summer-vacation-diary:diary:v1:<id>`   | 초안 ID, 사진·본문 hash, 본문, 완성 JPEG, AI 생성 여부        | `deleteDiary`·같은 AI 입력 재저장 시 삭제; 자동 만료 없음           |
 
 draft는 400ms debounce와 page hide flush로 기록됩니다. 저장 용량이 부족하면 그림과 사진을 제거한 더 작은 draft로 재시도합니다.
 
@@ -41,7 +41,7 @@ draft는 400ms debounce와 page hide flush로 기록됩니다. 저장 용량이 
 
 앱은 시작 시 `restoreOnStart: false`라 이전 draft를 UI에 복원하지 않지만, `새 일기 쓰기` 전까지 저장 key 자체가 남아 있을 수 있습니다.
 
-완성 일기는 이미지 없는 index와 JPEG data URL을 포함한 일기별 record로 분리해 저장합니다. 날짜별 최대 3개이며, 같은 초안 ID를 다시 저장하면 이전 날짜 기록을 교체합니다. 자동 만료는 없습니다. 앱 데이터 또는 브라우저 데이터를 지우면 함께 삭제되고, 서버나 다른 기기로 동기화되지 않습니다.
+완성 일기는 이미지 없는 index와 JPEG data URL을 포함한 일기별 record로 분리해 저장합니다. 날짜별 최대 3개이며, 같은 초안 ID와 사진·본문 revision hash가 일치할 때만 이전 날짜 기록을 교체합니다. 사진 또는 본문이 달라지면 별도 기록으로 남습니다. hash는 중복 판별용이며 원본 사진을 복원하는 용도로 사용하지 않습니다. 자동 만료는 없습니다. 앱 데이터 또는 브라우저 데이터를 지우면 함께 삭제되고, 서버나 다른 기기로 동기화되지 않습니다.
 
 ## 외부 전송
 

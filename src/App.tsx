@@ -27,6 +27,7 @@ import {
   type DiaryInspectionContext,
 } from "./services/diaryInspection";
 import { composeDiaryImage, type DiaryImageInput } from "./utils/diaryImage";
+import { createDiaryRevisionKey } from "./utils/diaryIdentity";
 import { isAiConnected } from "./services/diaryAnalysis";
 import { DiaryStoreError, saveDiary } from "./services/diaryStore";
 import { isSketchAiConnected } from "./services/styleTransfer";
@@ -535,8 +536,13 @@ function App() {
       if (archivedImageRef.current !== imageDataUrl) {
         archivedImageRef.current = imageDataUrl;
         try {
+          const revisionKey = await createDiaryRevisionKey(
+            draft.photoDataUrl,
+            draft.content,
+          );
           await saveDiary({
             draftId: draft.draftId,
+            revisionKey,
             date: draft.date,
             // Stored as typed. The empty-title fallback is a display choice, and
             // baking it in here would make it impossible to tell apart from a
