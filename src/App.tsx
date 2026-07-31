@@ -862,7 +862,7 @@ function App() {
           </DiaryButton>
         </AppBottomBar>
       )}
-      {step === "preview" && (
+      {step === "preview" && !previewPreparing && (
         <AppBottomBar double>
           <DiaryButton
             tone="secondary"
