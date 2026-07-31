@@ -1,17 +1,19 @@
 import { Top, useDialog, useToast } from "@toss/tds-mobile";
 import { SafeAreaInsets } from "@apps-in-toss/web-framework";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import "./App.css";
 import { AiQuotaNotice, AiRecheckNotice } from "./components/AiQuotaNotice";
 import { DiaryButton } from "./components/DiaryButton";
-import { DiaryShareModal } from "./components/DiaryShareModal";
-import { GrapeCalendarView } from "./components/GrapeCalendarView";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
-import {
-  PreviewStep,
-  type RenderedDiaryPreview,
-} from "./components/PreviewStep";
+import type { RenderedDiaryPreview } from "./components/PreviewStep";
 import { WriteStep } from "./components/WriteStep";
 import {
   isAiQuotaSpent,
@@ -26,7 +28,7 @@ import {
   createDiaryInspectionContext,
   type DiaryInspectionContext,
 } from "./services/diaryInspection";
-import { composeDiaryImage, type DiaryImageInput } from "./utils/diaryImage";
+import type { DiaryImageInput } from "./utils/diaryImage";
 import { createDiaryRevisionKey } from "./utils/diaryIdentity";
 import { isAiConnected } from "./services/diaryAnalysis";
 import { DiaryStoreError, saveDiary } from "./services/diaryStore";
@@ -39,6 +41,22 @@ type Step = "upload" | "write" | "preview" | "calendar";
 type WizardStep = Exclude<Step, "calendar">;
 
 const CALENDAR_PATH = "/calendar";
+
+const loadPreviewStep = () => import("./components/PreviewStep");
+const loadGrapeCalendarView = () => import("./components/GrapeCalendarView");
+const loadDiaryShareModal = () => import("./components/DiaryShareModal");
+const PreviewStep = lazy(async () => {
+  const module = await loadPreviewStep();
+  return { default: module.PreviewStep };
+});
+const GrapeCalendarView = lazy(async () => {
+  const module = await loadGrapeCalendarView();
+  return { default: module.GrapeCalendarView };
+});
+const DiaryShareModal = lazy(async () => {
+  const module = await loadDiaryShareModal();
+  return { default: module.DiaryShareModal };
+});
 
 function isCalendarDeepLink(): boolean {
   const path = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -233,6 +251,7 @@ function App() {
   const [previewAnimationRunning, setPreviewAnimationRunning] = useState(false);
   const [previewProcessingEnabled, setPreviewProcessingEnabled] =
     useState(false);
+  const [previewModuleLoading, setPreviewModuleLoading] = useState(false);
   const [finishedDiary, setFinishedDiary] = useState<{
     imageDataUrl: string;
     fileName: string;
@@ -321,7 +340,8 @@ function App() {
   const previewPreparing =
     sketchState.status === "loading" ||
     analysisState.status === "loading" ||
-    previewAnimationRunning;
+    previewAnimationRunning ||
+    previewModuleLoading;
   const includesAiGeneratedContent =
     (isSketchAiConnected && sketchState.status === "success") ||
     (isAiConnected && analysisState.status === "success");
@@ -408,6 +428,8 @@ function App() {
     }
 
     setHasVisitedPreview(true);
+    setPreviewModuleLoading(true);
+    void loadPreviewStep().finally(() => setPreviewModuleLoading(false));
 
     const needsSketch = draft.sketchDataUrl === null;
     const needsAnalysis = analysisState.status !== "success";
@@ -466,6 +488,7 @@ function App() {
     if (draft.photoDataUrl === null || saving) {
       return;
     }
+    void loadDiaryShareModal();
 
     // Saving with a missing piece is allowed, but never silently: the AI
     // comment / 첨삭 (MVP-required) and the drawing are the whole point, so an
@@ -541,7 +564,9 @@ function App() {
         renderedDiaryPreview !== null &&
         sameDiaryImageInput(renderedDiaryPreview.input, imageInput)
           ? renderedDiaryPreview.dataUrl
-          : (await composeDiaryImage(imageInput)).dataUrl;
+          : (await (await import("./utils/diaryImage")).composeDiaryImage(
+              imageInput,
+            )).dataUrl;
       setFinishedDiary({
         imageDataUrl,
         // ASCII name (some Android managers mangle Korean) + a time suffix so
@@ -665,7 +690,17 @@ function App() {
         </div>
       )}
 
-      {step === "calendar" && <GrapeCalendarView />}
+      {step === "calendar" && (
+        <Suspense
+          fallback={
+            <div className="step-body" role="status">
+              기록을 불러오고 있어요.
+            </div>
+          }
+        >
+          <GrapeCalendarView />
+        </Suspense>
+      )}
 
       {step === "upload" && (
         <>
@@ -720,36 +755,46 @@ function App() {
         </>
       )}
       {step === "preview" && (
-        <PreviewStep
-          draft={draft}
-          analysisState={analysisState}
-          onRetry={retryAnalysis}
-          sketchState={sketchState}
-          onSketchRetry={retryDrawing}
-          processingEnabled={previewProcessingEnabled}
-          onProcessingVisibilityChange={setPreviewAnimationRunning}
-          onRenderedImageChange={setRenderedDiaryPreview}
-        />
+        <Suspense
+          fallback={
+            <div className="step-body" role="status">
+              미리보기를 준비하고 있어요.
+            </div>
+          }
+        >
+          <PreviewStep
+            draft={draft}
+            analysisState={analysisState}
+            onRetry={retryAnalysis}
+            sketchState={sketchState}
+            onSketchRetry={retryDrawing}
+            processingEnabled={previewProcessingEnabled}
+            onProcessingVisibilityChange={setPreviewAnimationRunning}
+            onRenderedImageChange={setRenderedDiaryPreview}
+          />
+        </Suspense>
       )}
 
       {finishedDiary !== null && (
-        <DiaryShareModal
-          open
-          imageDataUrl={finishedDiary.imageDataUrl}
-          fileName={finishedDiary.fileName}
-          onClose={() => setFinishedDiary(null)}
-          onStartNew={() => {
-            setFinishedDiary(null);
-            archivedImageRef.current = null;
-            clearDraft();
+        <Suspense fallback={null}>
+          <DiaryShareModal
+            open
+            imageDataUrl={finishedDiary.imageDataUrl}
+            fileName={finishedDiary.fileName}
+            onClose={() => setFinishedDiary(null)}
+            onStartNew={() => {
+              setFinishedDiary(null);
+              archivedImageRef.current = null;
+              clearDraft();
 
-            setHasVisitedWrite(false);
-            setHasVisitedPreview(false);
-            setAnalyzeRecheckNoticeVisible(false);
+              setHasVisitedWrite(false);
+              setHasVisitedPreview(false);
+              setAnalyzeRecheckNoticeVisible(false);
 
-            setStep("upload");
-          }}
-        />
+              setStep("upload");
+            }}
+          />
+        </Suspense>
       )}
 
       {step === "upload" && (
@@ -758,7 +803,10 @@ function App() {
             tone="secondary"
             stable
             fullWidth
-            onClick={() => setStep("calendar")}
+            onClick={() => {
+              void loadGrapeCalendarView();
+              setStep("calendar");
+            }}
           >
             나의 기록 보기
           </DiaryButton>
