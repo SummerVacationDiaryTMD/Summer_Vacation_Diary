@@ -1,5 +1,5 @@
-import star1 from "../assets/handwrites/processed/star.png";
-import star2 from "../assets/handwrites/processed/star2.png";
+import star1 from "../assets/handwrites/processed/star.webp";
+import star2 from "../assets/handwrites/processed/star2.webp";
 
 import { pickPositionedAsset } from "./positionedAsset";
 
