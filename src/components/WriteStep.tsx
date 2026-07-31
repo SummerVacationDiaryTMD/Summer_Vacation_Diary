@@ -1,5 +1,5 @@
-import { Paragraph, TextArea, TextField } from "@toss/tds-mobile";
-import { useState } from "react";
+import { Paragraph, TextArea, TextField, useToast } from "@toss/tds-mobile";
+import { useRef, useState } from "react";
 
 import {
   CONTENT_MAX_LENGTH,
@@ -8,11 +8,11 @@ import {
 } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
+import { clampDiaryDateToToday, localTodayString } from "../utils/diaryDate";
 import {
-  clampDiaryDateToToday,
-  localTodayString,
-} from "../utils/diaryDate";
-import { diaryContentCellCount, fitDiaryContent } from "../utils/diaryFrameLayout";
+  diaryContentCellCount,
+  fitDiaryContent,
+} from "../utils/diaryFrameLayout";
 
 interface WriteStepProps {
   draft: DiaryDraft;
@@ -84,6 +84,8 @@ function formatDateValue(date: string): string {
  * (or the app) never loses input — the draft hook persists it.
  */
 export function WriteStep({ draft, onChange }: WriteStepProps) {
+  const toast = useToast();
+  const dateGuidanceShownRef = useRef(false);
   const [titleLimitShakeCount, setTitleLimitShakeCount] = useState(0);
   const [contentLimitShakeCount, setContentLimitShakeCount] = useState(0);
   const maxDiaryDate = localTodayString();
@@ -197,6 +199,10 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
               // user-activated or unsupported, so a failure just leaves the
               // native behaviour in place.
               onClick={(event) => {
+                if (!dateGuidanceShownRef.current) {
+                  dateGuidanceShownRef.current = true;
+                  toast.openToast("오늘 날짜까지만 일기를 쓸 수 있어요.");
+                }
                 try {
                   event.currentTarget.showPicker();
                 } catch {
@@ -207,6 +213,11 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
                 // Some browsers emit an empty string while the picker is being
                 // cleared; keep the previous date instead of storing an invalid one.
                 if (event.target.value !== "") {
+                  if (event.target.value > maxDiaryDate) {
+                    toast.openToast(
+                      "오늘 이후 날짜는 선택할 수 없어서 오늘로 바꿨어요.",
+                    );
+                  }
                   onChange({
                     date: clampDiaryDateToToday(
                       event.target.value,

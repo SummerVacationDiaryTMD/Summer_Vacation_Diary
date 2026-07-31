@@ -30,7 +30,10 @@
  * DRAFT_STORAGE_KEY in constants/diary.ts.
  */
 
-import { getOperationalEnvironment, Storage } from "@apps-in-toss/web-framework";
+import {
+  getOperationalEnvironment,
+  Storage,
+} from "@apps-in-toss/web-framework";
 import {
   CONTENT_MAX_LENGTH,
   TITLE_MAX_LENGTH,
@@ -54,6 +57,8 @@ export interface DiarySummary {
    * so records saved before this field existed remain readable.
    */
   draftId?: string;
+  /** Hash of the AI input revision: original photo + diary body. */
+  revisionKey?: string;
   /** The date the user picked, local YYYY-MM-DD — same meaning as in the draft. */
   date: string;
   /** ISO 8601 instant of the save itself; formatting it is the screen's job. */
@@ -71,15 +76,14 @@ export interface DiaryRecord extends DiarySummary {
 
 export type SaveDiaryInput = Omit<
   DiaryRecord,
-  "id" | "savedAt" | "draftId"
+  "id" | "savedAt" | "draftId" | "revisionKey"
 > & {
   draftId: string;
+  revisionKey: string;
 };
 
 export type DiaryStoreErrorCode =
-  | "storage-full"
-  | "read-failed"
-  | "daily-limit";
+  "storage-full" | "read-failed" | "daily-limit";
 
 export class DiaryStoreError extends Error {
   constructor(
@@ -180,15 +184,15 @@ function isSummary(value: unknown): value is DiarySummary {
   if (typeof value !== "object" || value === null) {
     return false;
   }
-  const { id, draftId, date, savedAt, title, weather } = value as Record<
-    string,
-    unknown
-  >;
+  const { id, draftId, revisionKey, date, savedAt, title, weather } =
+    value as Record<string, unknown>;
   return (
     typeof id === "string" &&
     id !== "" &&
     (draftId === undefined ||
       (typeof draftId === "string" && draftId !== "")) &&
+    (revisionKey === undefined ||
+      (typeof revisionKey === "string" && revisionKey !== "")) &&
     typeof date === "string" &&
     DATE_PATTERN.test(date) &&
     typeof savedAt === "string" &&
@@ -216,6 +220,9 @@ function toSummary(record: DiaryRecord): DiarySummary {
   return {
     id: record.id,
     ...(record.draftId === undefined ? {} : { draftId: record.draftId }),
+    ...(record.revisionKey === undefined
+      ? {}
+      : { revisionKey: record.revisionKey }),
     date: record.date,
     savedAt: record.savedAt,
     title: record.title,
@@ -291,17 +298,27 @@ export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
       throw readFailedError();
     }
 
-    // Re-saving the same logical draft moves it to the newly selected date
-    // instead of creating another calendar entry. The image cannot identify
-    // this reliably because its pixels include the selected date.
+    const normalizedTitle = clamp(input.title, TITLE_MAX_LENGTH);
+    const normalizedContent = clamp(input.content, CONTENT_MAX_LENGTH);
+    // A revision follows the exact AI input: original photo + diary body.
+    // Date, title and weather edits update that revision; changing either AI
+    // input creates a new record even inside the same draft.
     const replacedIds = new Set(
       index
-        .filter((summary) => summary.draftId === input.draftId)
+        .filter(
+          (summary) =>
+            summary.draftId === input.draftId &&
+            summary.revisionKey === input.revisionKey,
+        )
         .map((summary) => summary.id),
     );
     let diariesOnDate = 0;
     for (const summary of index) {
-      if (summary.date !== input.date) {
+      if (replacedIds.has(summary.id)) {
+        continue;
+      }
+      const isTargetDate = summary.date === input.date;
+      if (!isTargetDate) {
         continue;
       }
 
@@ -321,10 +338,6 @@ export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
       if (!isRecord(existing)) {
         continue;
       }
-      if (existing.draftId === input.draftId) {
-        replacedIds.add(summary.id);
-        continue;
-      }
       // Migrate an exact same-date record saved by the older schema into the
       // draft-ID model rather than leaving one legacy duplicate behind.
       if (existing.imageDataUrl === input.imageDataUrl) {
@@ -341,10 +354,11 @@ export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
     const record: DiaryRecord = {
       id: createDiaryId(),
       draftId: input.draftId,
+      revisionKey: input.revisionKey,
       date: input.date,
       savedAt: new Date().toISOString(),
-      title: clamp(input.title, TITLE_MAX_LENGTH),
-      content: clamp(input.content, CONTENT_MAX_LENGTH),
+      title: normalizedTitle,
+      content: normalizedContent,
       weather: input.weather,
       imageDataUrl: input.imageDataUrl,
       includesAiGeneratedContent: input.includesAiGeneratedContent,

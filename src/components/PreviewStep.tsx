@@ -433,9 +433,7 @@ export function PreviewStep({
   const errorDialogKey = `${analysisState.status === "error" ? analysisState.message : ""}|${sketchState.status === "error" ? sketchState.message : ""}`;
   const errorDialogKeyRef = useRef<string | null>(null);
   const [errorModalOpen, setErrorModalOpen] = useState(false);
-  const [modeModalOpen, setModeModalOpen] = useState(
-    () => modeNotice !== null,
-  );
+  const [modeModalOpen, setModeModalOpen] = useState(() => modeNotice !== null);
   const retryFailedRequests = useCallback(() => {
     if (analysisRetryable) onRetry();
     if (sketchRetryable) onSketchRetry();
@@ -618,208 +616,213 @@ export function PreviewStep({
         {sketchAnnouncement}
       </p>
 
-      <div className="preview-save-notice" role="note">
-        <span className="preview-save-notice-symbol" aria-hidden="true">
-          ✓
-        </span>
-        <span>
-          아래 <strong>일기 완성하기</strong>를 눌러야 달력에 저장돼요.
-        </span>
-      </div>
-
       {isProcessingVisible ? (
         <DiaryProcessingStage currentStep={processingStep} />
       ) : (
-        <div className="diary-card diary-card-reveal">
-          <div
-            className="diary-template"
-            style={
-              {
-                aspectRatio: `${frameLayout.width} / ${frameLayout.height}`,
-                "--stamp-delay": `${stampDelayMs}ms`,
-              } as CSSProperties
-            }
-          >
-            <DiaryFrameBackground layout={frameLayout} />
-
-            {includesAiGeneratedContent && (
-              <span className="ai-content-watermark">
-                {AI_CONTENT_WATERMARK}
-              </span>
-            )}
-
-            <div
-              className="diary-card-header"
-              style={frameRegionStyle(DIARY_FRAME.header, frameLayout)}
-            >
-              <span>
-                <strong>
-                  <HandwrittenText text={year} strength={0.45} />
-                </strong>
-              </span>
-              <span>
-                <strong>
-                  <HandwrittenText
-                    text={month}
-                    seedOffset={10}
-                    strength={0.45}
-                  />
-                </strong>
-              </span>
-              <span>
-                <strong>
-                  <HandwrittenText text={day} seedOffset={20} strength={0.45} />
-                </strong>
-              </span>
-              <span>
-                <strong>
-                  <HandwrittenText
-                    text={weekday}
-                    seedOffset={30}
-                    strength={0.45}
-                  />
-                </strong>
-              </span>
-              <span className="diary-weather">
-                <img
-                  className="diary-weather-icon"
-                  src={weatherIconUrl(draft.weather)}
-                  alt=""
-                  aria-hidden="true"
-                />
-                <strong>
-                  <HandwrittenText
-                    text={weatherLabel(draft.weather)}
-                    seedOffset={40}
-                    strength={0.45}
-                  />
-                </strong>
-              </span>
-            </div>
-
-            <div
-              className="diary-title-row"
-              style={frameRegionStyle(DIARY_FRAME.title, frameLayout)}
-            >
-              <strong>
-                <HandwrittenText
-                  text={draft.title !== "" ? draft.title : "제목 없는 일기"}
-                  seedOffset={50}
-                  strength={TITLE_HANDWRITING_STRENGTH}
-                />
-              </strong>
-            </div>
-
-            <div
-              className="diary-card-photo"
-              style={frameRegionStyle(DIARY_FRAME.photo, frameLayout)}
-            >
-              {draft.photoDataUrl !== null ? (
-                <>
-                  <img
-                    src={showsSketch ? sketchUrl : draft.photoDataUrl}
-                    alt={
-                      showsSketch
-                        ? "크레파스 그림으로 바뀐 일기 사진"
-                        : "일기 사진"
-                    }
-                  />
-                </>
-              ) : (
-                <div className="diary-card-photo-empty">사진이 없어요</div>
-              )}
-            </div>
-
-            <div
-              className="diary-card-content"
-              style={{
-                ...frameRegionStyle(frameLayout.content, frameLayout),
-                gridTemplateRows: `repeat(${frameLayout.contentRows}, minmax(0, 1fr))`,
-              }}
-            >
-              <HighlightedContent
-                content={draft.content}
-                analysis={animatedAnalysis}
-                timeline={annotationTimeline}
-              />
-            </div>
-
-            {/* Fixed colors throughout the card: it sits on a fixed paper
-            background (#fffdf5), and the AIT provider is light-only today. */}
-            <div
-              className="diary-card-comment"
-              style={frameRegionStyle(frameLayout.comment, frameLayout)}
-            >
-              {animatedAnalysis === null && (
-                <div className="diary-comment-label">선생님 한마디</div>
-              )}
-
-              {analysisState.status === "error" && (
-                <div className="comment-error">
-                  <Paragraph
-                    as="span"
-                    className="diary-comment-text"
-                    typography="t5"
-                    color="#8a7d55"
-                  >
-                    한마디를 불러오지 못했어요
-                  </Paragraph>
-                </div>
-              )}
-
-              {analysisState.status === "idle" && (
-                <div className="comment-error">
-                  <Paragraph
-                    as="span"
-                    className="diary-comment-text"
-                    typography="t5"
-                    color="#8a7d55"
-                  >
-                    아직 검사받지 않았어요
-                  </Paragraph>
-                </div>
-              )}
-            </div>
-
-            {animatedAnalysis !== null && renderedPreview !== null && (
-              <div
-                className="diary-rendered-comment"
-                style={
-                  {
-                    ...frameRegionStyle(frameLayout.comment, frameLayout),
-                    "--comment-write-duration": `${Math.max(animatedAnalysis.comment.length, 1) * 50}ms`,
-                    "--comment-delay": `${commentDelayMs}ms`,
-                    "--comment-write-steps": Math.max(
-                      animatedAnalysis.comment.length,
-                      1,
-                    ),
-                  } as CSSProperties
-                }
-                aria-hidden="true"
-              >
-                <img
-                  src={renderedPreview.dataUrl}
-                  alt=""
-                  style={{
-                    left: `${(-frameLayout.comment.x / frameLayout.comment.width) * 100}%`,
-                    top: `${(-frameLayout.comment.y / frameLayout.comment.height) * 100}%`,
-                    width: `${(frameLayout.width / frameLayout.comment.width) * 100}%`,
-                    height: `${(frameLayout.height / frameLayout.comment.height) * 100}%`,
-                  }}
-                />
-              </div>
-            )}
-
-            {animatedAnalysis !== null && (
-              <img
-                className="diary-stamp"
-                src={STAMP_IMAGE_URLS[animatedAnalysis.stamp]}
-                alt={STAMP_ALT_TEXT[animatedAnalysis.stamp]}
-              />
-            )}
+        <>
+          <div className="preview-save-notice" role="note">
+            <span className="preview-save-notice-symbol" aria-hidden="true">
+              ✓
+            </span>
+            <span>
+              아래 <strong>일기 완성하기</strong>를 눌러야 달력에 저장돼요.
+            </span>
           </div>
 
-        </div>
+          <div className="diary-card diary-card-reveal">
+            <div
+              className="diary-template"
+              style={
+                {
+                  aspectRatio: `${frameLayout.width} / ${frameLayout.height}`,
+                  "--stamp-delay": `${stampDelayMs}ms`,
+                } as CSSProperties
+              }
+            >
+              <DiaryFrameBackground layout={frameLayout} />
+
+              {includesAiGeneratedContent && (
+                <span className="ai-content-watermark">
+                  {AI_CONTENT_WATERMARK}
+                </span>
+              )}
+
+              <div
+                className="diary-card-header"
+                style={frameRegionStyle(DIARY_FRAME.header, frameLayout)}
+              >
+                <span>
+                  <strong>
+                    <HandwrittenText text={year} strength={0.45} />
+                  </strong>
+                </span>
+                <span>
+                  <strong>
+                    <HandwrittenText
+                      text={month}
+                      seedOffset={10}
+                      strength={0.45}
+                    />
+                  </strong>
+                </span>
+                <span>
+                  <strong>
+                    <HandwrittenText
+                      text={day}
+                      seedOffset={20}
+                      strength={0.45}
+                    />
+                  </strong>
+                </span>
+                <span>
+                  <strong>
+                    <HandwrittenText
+                      text={weekday}
+                      seedOffset={30}
+                      strength={0.45}
+                    />
+                  </strong>
+                </span>
+                <span className="diary-weather">
+                  <img
+                    className="diary-weather-icon"
+                    src={weatherIconUrl(draft.weather)}
+                    alt=""
+                    aria-hidden="true"
+                  />
+                  <strong>
+                    <HandwrittenText
+                      text={weatherLabel(draft.weather)}
+                      seedOffset={40}
+                      strength={0.45}
+                    />
+                  </strong>
+                </span>
+              </div>
+
+              <div
+                className="diary-title-row"
+                style={frameRegionStyle(DIARY_FRAME.title, frameLayout)}
+              >
+                <strong>
+                  <HandwrittenText
+                    text={draft.title !== "" ? draft.title : "제목 없는 일기"}
+                    seedOffset={50}
+                    strength={TITLE_HANDWRITING_STRENGTH}
+                  />
+                </strong>
+              </div>
+
+              <div
+                className="diary-card-photo"
+                style={frameRegionStyle(DIARY_FRAME.photo, frameLayout)}
+              >
+                {draft.photoDataUrl !== null ? (
+                  <>
+                    <img
+                      src={showsSketch ? sketchUrl : draft.photoDataUrl}
+                      alt={
+                        showsSketch
+                          ? "크레파스 그림으로 바뀐 일기 사진"
+                          : "일기 사진"
+                      }
+                    />
+                  </>
+                ) : (
+                  <div className="diary-card-photo-empty">사진이 없어요</div>
+                )}
+              </div>
+
+              <div
+                className="diary-card-content"
+                style={{
+                  ...frameRegionStyle(frameLayout.content, frameLayout),
+                  gridTemplateRows: `repeat(${frameLayout.contentRows}, minmax(0, 1fr))`,
+                }}
+              >
+                <HighlightedContent
+                  content={draft.content}
+                  analysis={animatedAnalysis}
+                  timeline={annotationTimeline}
+                />
+              </div>
+
+              {/* Fixed colors throughout the card: it sits on a fixed paper
+            background (#fffdf5), and the AIT provider is light-only today. */}
+              <div
+                className="diary-card-comment"
+                style={frameRegionStyle(frameLayout.comment, frameLayout)}
+              >
+                {animatedAnalysis === null && (
+                  <div className="diary-comment-label">선생님 한마디</div>
+                )}
+
+                {analysisState.status === "error" && (
+                  <div className="comment-error">
+                    <Paragraph
+                      as="span"
+                      className="diary-comment-text"
+                      typography="t5"
+                      color="#8a7d55"
+                    >
+                      한마디를 불러오지 못했어요
+                    </Paragraph>
+                  </div>
+                )}
+
+                {analysisState.status === "idle" && (
+                  <div className="comment-error">
+                    <Paragraph
+                      as="span"
+                      className="diary-comment-text"
+                      typography="t5"
+                      color="#8a7d55"
+                    >
+                      아직 검사받지 않았어요
+                    </Paragraph>
+                  </div>
+                )}
+              </div>
+
+              {animatedAnalysis !== null && renderedPreview !== null && (
+                <div
+                  className="diary-rendered-comment"
+                  style={
+                    {
+                      ...frameRegionStyle(frameLayout.comment, frameLayout),
+                      "--comment-write-duration": `${Math.max(animatedAnalysis.comment.length, 1) * 50}ms`,
+                      "--comment-delay": `${commentDelayMs}ms`,
+                      "--comment-write-steps": Math.max(
+                        animatedAnalysis.comment.length,
+                        1,
+                      ),
+                    } as CSSProperties
+                  }
+                  aria-hidden="true"
+                >
+                  <img
+                    src={renderedPreview.dataUrl}
+                    alt=""
+                    style={{
+                      left: `${(-frameLayout.comment.x / frameLayout.comment.width) * 100}%`,
+                      top: `${(-frameLayout.comment.y / frameLayout.comment.height) * 100}%`,
+                      width: `${(frameLayout.width / frameLayout.comment.width) * 100}%`,
+                      height: `${(frameLayout.height / frameLayout.comment.height) * 100}%`,
+                    }}
+                  />
+                </div>
+              )}
+
+              {animatedAnalysis !== null && (
+                <img
+                  className="diary-stamp"
+                  src={STAMP_IMAGE_URLS[animatedAnalysis.stamp]}
+                  alt={STAMP_ALT_TEXT[animatedAnalysis.stamp]}
+                />
+              )}
+            </div>
+          </div>
+        </>
       )}
 
       <Modal open={errorModalOpen} onOpenChange={setErrorModalOpen}>
