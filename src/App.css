@@ -1789,26 +1789,26 @@ html:has(.diary-content-section textarea:focus) {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.grape-delete-modal {
+.diary-delete-modal {
   height: auto !important;
 }
 
-.grape-delete-modal-layout {
+.diary-delete-modal-layout {
   height: auto;
 }
 
-.grape-delete-modal-body {
+.diary-delete-modal-body {
   padding: 24px var(--app-modal-bezel) 20px;
 }
 
-.grape-delete-modal-body p {
+.diary-delete-modal-body p {
   margin: 10px 0 0;
   color: #6b5a52;
   font-size: 15px;
   line-height: 1.5;
 }
 
-.grape-delete-modal-actions {
+.diary-delete-modal-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
@@ -2080,6 +2080,29 @@ html:has(.diary-content-section textarea:focus) {
   color: #a98b38 !important;
 }
 
+/* 중립 버튼: 보조 버튼과 같은 종이 질감에 차분한 하늘색 구분 */
+.summer-diary-button-neutral {
+  border-color: #9bbdcc !important;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0 10%,
+      rgba(223, 151, 151, 0.08) 10% 10.4%,
+      transparent 10.4%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 11px,
+      rgba(93, 156, 181, 0.13) 11px 12px
+    ),
+    #f2fbfd !important;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.78),
+    1px 2px 0 rgba(87, 133, 151, 0.16),
+    0 5px 10px rgba(58, 105, 123, 0.06) !important;
+  color: #4f8295 !important;
+}
+
 /* Destructive actions remain visibly distinct from navigation without using
    the primary coral CTA treatment. */
 .summer-diary-button-danger {
@@ -2145,6 +2168,27 @@ html:has(.diary-content-section textarea:focus) {
   filter: brightness(0.99) saturate(0.96) !important;
 }
 
+.summer-diary-button-neutral:active:not(:disabled) {
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0 10%,
+      rgba(223, 151, 151, 0.09) 10% 10.4%,
+      transparent 10.4%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 11px,
+      rgba(93, 156, 181, 0.15) 11px 12px
+    ),
+    #e9f6f9 !important;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.7),
+    0 1px 0 rgba(87, 133, 151, 0.14),
+    0 3px 7px rgba(58, 105, 123, 0.05) !important;
+  filter: brightness(0.99) saturate(0.96) !important;
+}
+
 .summer-diary-button-danger:active:not(:disabled) {
   background: #ffe8e1 !important;
   box-shadow: 0 1px 0 rgba(160, 74, 63, 0.14) !important;
@@ -2201,13 +2245,18 @@ html:has(.diary-content-section textarea:focus) {
 .diary-share-layout {
   --diary-share-inline-padding: var(--app-modal-bezel);
 
+  height: auto;
   background: #ffffff;
+}
+
+.diary-share-modal-panel {
+  height: auto !important;
 }
 
 .diary-share-body {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   gap: clamp(10px, 2vh, 16px);
   padding: var(--app-modal-bezel) var(--diary-share-inline-padding);
@@ -2243,29 +2292,9 @@ html:has(.diary-content-section textarea:focus) {
   overflow-wrap: anywhere;
 }
 
-.diary-share-preview-wrap {
-  display: flex;
-  flex: 1 1 0;
-  align-items: center;
-  justify-content: center;
-  min-height: 80px;
-  overflow: hidden;
-}
-
-.diary-share-preview {
-  display: block;
-  width: auto;
-  max-width: 100%;
-  height: 100%;
-  max-height: 100%;
-  min-height: 0;
-  object-fit: contain;
-  border-radius: 12px;
-  background: #f2f4f6;
-}
-
 .diary-share-primary-actions {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -2303,50 +2332,6 @@ html:has(.diary-content-section textarea:focus) {
 .diary-share-feedback-error {
   background: #fff0f0;
   color: #d22030;
-}
-
-.diary-share-secondary-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 40px;
-}
-
-.diary-share-text-action {
-  display: inline-flex;
-  min-height: 40px;
-  min-width: 0;
-  box-sizing: border-box;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 14px;
-  border: 0;
-  background: transparent;
-  color: #4e5968;
-  font-family: "NanumCoDingHeuiMang", sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.4;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    color 140ms ease,
-    opacity 140ms ease;
-}
-
-.diary-share-text-action:focus-visible {
-  outline: 3px solid rgba(57, 113, 150, 0.28);
-  outline-offset: 1px;
-}
-
-.diary-share-text-action:disabled {
-  opacity: 0.4;
-}
-
-.diary-share-action-divider {
-  width: 1px;
-  height: 14px;
-  background: #d1d6db;
 }
 
 /* --- Write step --- */
@@ -4722,6 +4707,31 @@ html:has(.diary-content-section textarea:focus) {
   background: #fff0b7;
 }
 
+.diary-calendar-cell.is-reveal-target:not(.is-revealing)
+  .diary-calendar-stamp {
+  opacity: 0;
+}
+
+.diary-calendar-cell.is-revealing {
+  animation: diary-calendar-cell-reveal 900ms ease-out both;
+}
+
+@keyframes diary-calendar-cell-reveal {
+  0%,
+  38% {
+    background: #fffdf6;
+    box-shadow: inset 0 0 0 0 rgba(255, 190, 70, 0);
+  }
+  62% {
+    background: #fff0b7;
+    box-shadow: inset 0 0 0 4px rgba(255, 190, 70, 0.42);
+  }
+  100% {
+    background: #fffdf6;
+    box-shadow: inset 0 0 0 0 rgba(255, 190, 70, 0);
+  }
+}
+
 .diary-calendar-day {
   position: absolute;
   z-index: 2;
@@ -4768,6 +4778,33 @@ html:has(.diary-content-section textarea:focus) {
   mix-blend-mode: multiply;
 }
 
+.diary-calendar-stamp.is-revealing {
+  animation: diary-calendar-stamp-reveal 900ms
+    cubic-bezier(0.18, 0.82, 0.3, 1.12) both;
+}
+
+@keyframes diary-calendar-stamp-reveal {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -105%) scale(2.2) rotate(-18deg);
+  }
+  48% {
+    opacity: 0;
+    transform: translate(-50%, -80%) scale(1.8) rotate(-14deg);
+  }
+  63% {
+    opacity: 1;
+    transform: translate(-50%, -46%) scale(0.78) rotate(-5deg);
+  }
+  78% {
+    transform: translate(-50%, -46%) scale(1.12) rotate(-5deg);
+  }
+  100% {
+    opacity: 0.92;
+    transform: translate(-50%, -46%) scale(1) rotate(-5deg);
+  }
+}
+
 .diary-calendar-message {
   min-height: 22px;
   margin: 12px 4px 0;
@@ -4795,8 +4832,10 @@ html:has(.diary-content-section textarea:focus) {
 
 @media (prefers-reduced-motion: reduce) {
   .diary-calendar-cell,
-  .diary-calendar-month-picker button {
+  .diary-calendar-month-picker button,
+  .diary-calendar-stamp {
     transition: none;
+    animation: none;
   }
 }
 
@@ -4804,10 +4843,10 @@ html:has(.diary-content-section textarea:focus) {
    sharp and bright thing on screen is the diary itself. The solid tint is the
    fallback: without backdrop-filter the page still goes dark, just not blurry.
 
-   The z-index clears .app-bottom-bar at 50, but only because GrapeCalendarView
+   The z-index clears .app-bottom-bar at 50, but only because DiaryCalendarView
    renders this outside .step-body — that element is z-index 1, and a z-index
    inside it cannot reach past its parent's place in the stack. */
-.grape-viewer-layer {
+.diary-viewer-layer {
   display: flex;
   position: fixed;
   z-index: 80;
@@ -4818,22 +4857,65 @@ html:has(.diary-content-section textarea:focus) {
   backdrop-filter: blur(10px) saturate(0.85);
   -webkit-backdrop-filter: blur(10px) saturate(0.85);
   background: rgba(24, 14, 36, 0.62);
-  animation: grape-veil 220ms ease-out;
+  animation: diary-viewer-veil 680ms ease-out both;
   touch-action: pan-y;
 }
 
-@keyframes grape-veil {
-  from {
-    opacity: 0;
+@keyframes diary-viewer-veil {
+  0%,
+  18% {
+    backdrop-filter: blur(0) saturate(1);
+    -webkit-backdrop-filter: blur(0) saturate(1);
+    background: rgba(24, 14, 36, 0);
   }
-  to {
-    opacity: 1;
+  100% {
+    backdrop-filter: blur(10px) saturate(0.85);
+    -webkit-backdrop-filter: blur(10px) saturate(0.85);
+    background: rgba(24, 14, 36, 0.62);
   }
 }
 
-/* Starts at the tapped bead's centre (passed in as --grape-pop-*) and swells
-   into place, so the diary reads as coming out of that bead. */
-.grape-viewer-card {
+.diary-viewer-layer::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: calc(50% + var(--diary-pop-dy, 0px));
+  left: calc(50% + var(--diary-pop-dx, 0px));
+  width: 54px;
+  height: 54px;
+  border: 3px solid var(--summer-coral);
+  border-radius: 18px;
+  background: rgba(255, 250, 240, 0.32);
+  box-shadow:
+    0 0 0 7px rgba(255, 215, 102, 0.34),
+    0 5px 18px rgba(189, 94, 76, 0.28);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: diary-origin-pulse 520ms ease-out both;
+}
+
+@keyframes diary-origin-pulse {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.62) rotate(-5deg);
+  }
+  22% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.96) rotate(2deg);
+  }
+  68% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1.28) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.62);
+  }
+}
+
+/* Starts at the selected date cell's centre (passed in as --diary-pop-*) and
+   expands into place, so the diary reads as coming out of that date. */
+.diary-viewer-card {
   display: flex;
   width: 100%;
   max-width: 420px;
@@ -4841,22 +4923,32 @@ html:has(.diary-content-section textarea:focus) {
   max-height: 100%;
   flex-direction: column;
   gap: clamp(16px, 3dvh, 28px);
-  animation: grape-pop 320ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  transform-origin: center;
+  will-change: transform, opacity, clip-path, filter;
+  animation: diary-viewer-pop 1500ms 40ms cubic-bezier(0.22, 0.62, 0.24, 1) both;
 }
 
-@keyframes grape-pop {
-  from {
-    transform: translate(var(--grape-pop-dx, 0), var(--grape-pop-dy, 0))
-      scale(0.12);
-    opacity: 0;
+@keyframes diary-viewer-pop {
+  0% {
+    transform: translate(var(--diary-pop-dx, 0), var(--diary-pop-dy, 0))
+      scale(0.14) rotate(-3deg);
+    opacity: 0.55;
+    filter: blur(1.5px);
   }
-  to {
-    transform: translate(0, 0) scale(1);
+
+  48% {
     opacity: 1;
+    filter: blur(0);
+  }
+
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0);
+    opacity: 1;
+    filter: blur(0);
   }
 }
 
-.grape-viewer-stage {
+.diary-viewer-stage {
   display: flex;
   position: relative;
   height: min(62dvh, 650px);
@@ -4867,8 +4959,8 @@ html:has(.diary-content-section textarea:focus) {
   padding: 0 12px;
 }
 
-.grape-viewer-stage::before,
-.grape-viewer-stage::after {
+.diary-viewer-stage::before,
+.diary-viewer-stage::after {
   display: none;
   content: "";
   position: absolute;
@@ -4887,22 +4979,22 @@ html:has(.diary-content-section textarea:focus) {
   pointer-events: none;
 }
 
-.grape-viewer-stage.stack-2::before,
-.grape-viewer-stage.stack-3::before,
-.grape-viewer-stage.stack-3::after {
+.diary-viewer-stage.stack-2::before,
+.diary-viewer-stage.stack-3::before,
+.diary-viewer-stage.stack-3::after {
   display: block;
 }
 
-.grape-viewer-stage.stack-2::before,
-.grape-viewer-stage.stack-3::before {
+.diary-viewer-stage.stack-2::before,
+.diary-viewer-stage.stack-3::before {
   transform: translate(-9px, 6px) rotate(-2.2deg);
 }
 
-.grape-viewer-stage.stack-3::after {
+.diary-viewer-stage.stack-3::after {
   transform: translate(9px, 8px) rotate(2deg);
 }
 
-.grape-viewer-image {
+.diary-viewer-image {
   position: relative;
   z-index: 2;
   max-width: 100%;
@@ -4913,7 +5005,7 @@ html:has(.diary-content-section textarea:focus) {
   backface-visibility: hidden;
 }
 
-.grape-viewer-note {
+.diary-viewer-note {
   position: relative;
   z-index: 2;
   margin: 0;
@@ -4922,14 +5014,14 @@ html:has(.diary-content-section textarea:focus) {
   text-align: center;
 }
 
-.grape-viewer-error {
+.diary-viewer-error {
   margin: 0;
   color: #ffd5d5;
   font-size: 13px;
   text-align: center;
 }
 
-.grape-viewer-nav {
+.diary-viewer-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -4937,7 +5029,7 @@ html:has(.diary-content-section textarea:focus) {
   margin: clamp(22px, 4dvh, 46px) auto 0;
 }
 
-.grape-viewer-nav .summer-diary-button {
+.diary-viewer-nav .summer-diary-button {
   width: 44px !important;
   min-width: 44px !important;
   min-height: 44px !important;
@@ -4946,11 +5038,11 @@ html:has(.diary-content-section textarea:focus) {
   transform: none;
 }
 
-.grape-viewer-nav .summer-diary-button:disabled {
+.diary-viewer-nav .summer-diary-button:disabled {
   opacity: 0.3;
 }
 
-.grape-viewer-count {
+.diary-viewer-count {
   min-width: 52px;
   padding: 5px 8px;
   border: 2px solid #dccb8a;
@@ -4973,19 +5065,19 @@ html:has(.diary-content-section textarea:focus) {
   font-variant-numeric: tabular-nums;
 }
 
-.grape-viewer-actions {
+.diary-viewer-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   flex: 0 0 auto;
   gap: 12px;
   /* Keep actions directly after the diary instead of spending all remaining
-     viewport height above them. On short devices .grape-viewer-stage is the
+     viewport height above them. On short devices .diary-viewer-stage is the
      shrinkable item, so the buttons stay visible without covering the diary. */
   margin-top: clamp(6px, 1dvh, 10px);
   contain: layout paint;
 }
 
-@keyframes grape-page-forward {
+@keyframes diary-page-forward {
   from {
     transform: translateX(52px);
   }
@@ -4994,7 +5086,7 @@ html:has(.diary-content-section textarea:focus) {
   }
 }
 
-@keyframes grape-page-backward {
+@keyframes diary-page-backward {
   from {
     transform: translateX(-52px);
   }
@@ -5003,23 +5095,27 @@ html:has(.diary-content-section textarea:focus) {
   }
 }
 
-.grape-page-forward {
-  animation: grape-page-forward 420ms cubic-bezier(0.16, 0.78, 0.28, 1) both;
+.diary-page-forward {
+  animation: diary-page-forward 420ms cubic-bezier(0.16, 0.78, 0.28, 1) both;
 }
 
-.grape-page-backward {
-  animation: grape-page-backward 420ms cubic-bezier(0.16, 0.78, 0.28, 1) both;
+.diary-page-backward {
+  animation: diary-page-backward 420ms cubic-bezier(0.16, 0.78, 0.28, 1) both;
 }
 
-.grape-viewer-actions > :nth-child(3) {
+.diary-viewer-actions > :nth-child(3) {
   grid-column: 1 / -1;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .grape-viewer-layer,
-  .grape-viewer-card,
-  .grape-page-forward,
-  .grape-page-backward {
+  .diary-viewer-layer,
+  .diary-viewer-card,
+  .diary-page-forward,
+  .diary-page-backward {
     animation: none;
+  }
+
+  .diary-viewer-layer::before {
+    display: none;
   }
 }

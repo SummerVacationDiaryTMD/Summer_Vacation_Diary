@@ -13,6 +13,7 @@ import "./App.css";
 import { AiQuotaNotice, AiRecheckNotice } from "./components/AiQuotaNotice";
 import { DiaryButton } from "./components/DiaryButton";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
+import type { CalendarRevealRequest } from "./components/DiaryCalendarView";
 import type { RenderedDiaryPreview } from "./components/PreviewStep";
 import { WriteStep } from "./components/WriteStep";
 import {
@@ -43,19 +44,14 @@ type WizardStep = Exclude<Step, "calendar">;
 const CALENDAR_PATH = "/calendar";
 
 const loadPreviewStep = () => import("./components/PreviewStep");
-const loadGrapeCalendarView = () => import("./components/GrapeCalendarView");
-const loadDiaryShareModal = () => import("./components/DiaryShareModal");
+const loadDiaryCalendarView = () => import("./components/DiaryCalendarView");
 const PreviewStep = lazy(async () => {
   const module = await loadPreviewStep();
   return { default: module.PreviewStep };
 });
-const GrapeCalendarView = lazy(async () => {
-  const module = await loadGrapeCalendarView();
-  return { default: module.GrapeCalendarView };
-});
-const DiaryShareModal = lazy(async () => {
-  const module = await loadDiaryShareModal();
-  return { default: module.DiaryShareModal };
+const DiaryCalendarView = lazy(async () => {
+  const module = await loadDiaryCalendarView();
+  return { default: module.DiaryCalendarView };
 });
 
 function isCalendarDeepLink(): boolean {
@@ -82,17 +78,6 @@ function sameDiaryImageInput(
     left.weather === right.weather &&
     left.analysis === right.analysis &&
     left.includesAiGeneratedContent === right.includesAiGeneratedContent
-  );
-}
-
-// HHMMSS from the local clock, appended to the saved file name so two saves
-// on the same date don't produce an identical name.
-function clockSuffix(): string {
-  const now = new Date();
-  return (
-    String(now.getHours()).padStart(2, "0") +
-    String(now.getMinutes()).padStart(2, "0") +
-    String(now.getSeconds()).padStart(2, "0")
   );
 }
 
@@ -186,7 +171,7 @@ function App() {
   const [writeEntryId, setWriteEntryId] = useState(0);
   // Always open on a fresh diary. Draft persistence remains available in the
   // hook, but this flow must not restore a previous visit's photo or text.
-  const { draft, updateDraft, clearDraft } = useDiaryDraft({
+  const { draft, updateDraft } = useDiaryDraft({
     restoreOnStart: false,
   });
   // Not part of the draft: it is only a cache key, and persisting it would mean
@@ -243,17 +228,14 @@ function App() {
   const regionNoticeShownRef = useRef(false);
   const toast = useToast();
   const [saving, setSaving] = useState(false);
-  const archivedImageRef = useRef<string | null>(null);
   const [renderedDiaryPreview, setRenderedDiaryPreview] =
     useState<RenderedDiaryPreview | null>(null);
   const [previewAnimationRunning, setPreviewAnimationRunning] = useState(false);
   const [previewProcessingEnabled, setPreviewProcessingEnabled] =
     useState(false);
   const [previewModuleLoading, setPreviewModuleLoading] = useState(false);
-  const [finishedDiary, setFinishedDiary] = useState<{
-    imageDataUrl: string;
-    fileName: string;
-  } | null>(null);
+  const [calendarReveal, setCalendarReveal] =
+    useState<CalendarRevealRequest | null>(null);
 
   const [hasVisitedWrite, setHasVisitedWrite] = useState(false);
   const [hasVisitedPreview, setHasVisitedPreview] = useState(false);
@@ -481,14 +463,12 @@ function App() {
     retrySketch();
   };
 
-  // Stage 4: compose the finished diary once, then let the result sheet reuse
-  // the exact same file for save, SNS share and preview.
+  // Stage 4: compose the finished diary once, archive it, then reveal that
+  // exact entry from its calendar date.
   const handleFinish = async () => {
     if (draft.photoDataUrl === null || saving) {
       return;
     }
-    void loadDiaryShareModal();
-
     // Saving with a missing piece is allowed, but never silently: the AI
     // comment / 첨삭 (MVP-required) and the drawing are the whole point, so an
     // incomplete keepsake must be a knowing choice. A sketch *error* is the
@@ -568,51 +548,37 @@ function App() {
                 await import("./utils/diaryImage")
               ).composeDiaryImage(imageInput)
             ).dataUrl;
-      setFinishedDiary({
+      const revisionKey = await createDiaryRevisionKey(
+        draft.photoDataUrl,
+        draft.content,
+      );
+      const saveResult = await saveDiary({
+        draftId: draft.draftId,
+        revisionKey,
+        date: draft.date,
+        // Stored as typed. The empty-title fallback is a display choice, and
+        // baking it in here would make it impossible to tell apart from a
+        // diary the user actually named 제목 없는 일기.
+        title: draft.title,
+        content: draft.content,
+        weather: draft.weather,
         imageDataUrl,
-        // ASCII name (some Android managers mangle Korean) + a time suffix so
-        // saving twice in one day can't collide on an identical fileName.
-        fileName: `summer-diary-${draft.date}-${clockSuffix()}.jpg`,
+        includesAiGeneratedContent,
       });
+      toast.openToast(
+        `일기가 달력에 저장되었어요! (${saveResult.diariesOnDate}/${saveResult.limit})`,
+      );
 
-      // Adds the finished diary to the diary calendar. Kept in its own catch
-      // because the finished image is already on screen: failing to archive it
-      // is worth telling the user about, but not worth taking that away or
-      // offering to re-run the composition that just succeeded.
-      if (archivedImageRef.current !== imageDataUrl) {
-        archivedImageRef.current = imageDataUrl;
-        try {
-          const revisionKey = await createDiaryRevisionKey(
-            draft.photoDataUrl,
-            draft.content,
-          );
-          const saveResult = await saveDiary({
-            draftId: draft.draftId,
-            revisionKey,
-            date: draft.date,
-            // Stored as typed. The empty-title fallback is a display choice, and
-            // baking it in here would make it impossible to tell apart from a
-            // diary the user actually named 제목 없는 일기.
-            title: draft.title,
-            content: draft.content,
-            weather: draft.weather,
-            imageDataUrl,
-            includesAiGeneratedContent,
-          });
-          toast.openToast(
-            `일기가 달력에 저장되었어요! (${saveResult.diariesOnDate}/${saveResult.limit})`,
-          );
-        } catch (error) {
-          archivedImageRef.current = null;
-          toast.openToast(
-            error instanceof DiaryStoreError
-              ? error.userMessage
-              : "일기장에 저장하지 못했어요.",
-          );
-        }
-      }
-    } catch {
-      const message = "그림일기 이미지를 만들지 못했어요. 다시 시도해 주세요.";
+      void loadDiaryCalendarView();
+      setCalendarReturnStep("upload");
+      setCalendarInitialDate(undefined);
+      setCalendarReveal({ date: draft.date, diaryId: saveResult.record.id });
+      setStep("calendar");
+    } catch (error) {
+      const message =
+        error instanceof DiaryStoreError
+          ? error.userMessage
+          : "그림일기를 저장하지 못했어요. 다시 시도해 주세요.";
       // Retry button keeps the failure recoverable in place instead of
       // vanishing with the 3s toast.
       toast.openToast(message, {
@@ -699,7 +665,11 @@ function App() {
             </div>
           }
         >
-          <GrapeCalendarView initialDate={calendarInitialDate} />
+          <DiaryCalendarView
+            initialDate={calendarInitialDate}
+            reveal={calendarReveal}
+            onRevealComplete={() => setCalendarReveal(null)}
+          />
         </Suspense>
       )}
 
@@ -745,9 +715,10 @@ function App() {
             draft={draft}
             entryId={writeEntryId}
             onOpenCalendar={(date) => {
-              void loadGrapeCalendarView();
+              void loadDiaryCalendarView();
               setCalendarReturnStep("write");
               setCalendarInitialDate(date);
+              setCalendarReveal(null);
               setStep("calendar");
             }}
             onChange={(patch) => {
@@ -783,28 +754,6 @@ function App() {
         </Suspense>
       )}
 
-      {finishedDiary !== null && (
-        <Suspense fallback={null}>
-          <DiaryShareModal
-            open
-            imageDataUrl={finishedDiary.imageDataUrl}
-            fileName={finishedDiary.fileName}
-            onClose={() => setFinishedDiary(null)}
-            onStartNew={() => {
-              setFinishedDiary(null);
-              archivedImageRef.current = null;
-              clearDraft();
-
-              setHasVisitedWrite(false);
-              setHasVisitedPreview(false);
-              setAnalyzeRecheckNoticeVisible(false);
-
-              setStep("upload");
-            }}
-          />
-        </Suspense>
-      )}
-
       {step === "upload" && (
         <AppBottomBar double={!hasVisitedWrite}>
           {!hasVisitedWrite && (
@@ -813,9 +762,10 @@ function App() {
               stable
               fullWidth
               onClick={() => {
-                void loadGrapeCalendarView();
+                void loadDiaryCalendarView();
                 setCalendarReturnStep("upload");
                 setCalendarInitialDate(undefined);
+                setCalendarReveal(null);
                 setStep("calendar");
               }}
             >
@@ -842,6 +792,7 @@ function App() {
             fullWidth
             onClick={() => {
               setCalendarInitialDate(undefined);
+              setCalendarReveal(null);
               if (calendarReturnStep === "write") {
                 setWriteEntryId((entryId) => entryId + 1);
                 setStep("write");

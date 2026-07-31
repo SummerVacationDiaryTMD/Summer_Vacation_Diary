@@ -2,7 +2,6 @@ import { Modal } from "@toss/tds-mobile";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { formatKoreanDate } from "../constants/diary";
-import { DiaryExportError, exportDiaryImage } from "../services/diaryExport";
 import {
   DiaryStoreError,
   deleteDiary,
@@ -17,8 +16,9 @@ import {
   koreanMonth,
   monthKeyOf,
   moveMonth,
-} from "../utils/grapeCalendar";
+} from "../utils/diaryCalendar";
 import { DiaryButton } from "./DiaryButton";
+import { DiaryShareModal } from "./DiaryShareModal";
 
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"] as const;
 const DAILY_COMPLETE_STAMP_URL = "/stamps/daily-complete.png";
@@ -26,9 +26,21 @@ const DAILY_COMPLETE_STAMP_URL = "/stamps/daily-complete.png";
 // Below this a drag reads as a tap or a stray finger movement rather than an
 // intent to turn the page.
 const SWIPE_THRESHOLD_PX = 48;
+const REVEAL_VIEWER_DELAY_MS = 1500;
 type PageDirection = "forward" | "backward";
 
-function GrapeArrow({ direction }: { direction: "left" | "right" }) {
+export interface CalendarRevealRequest {
+  date: string;
+  diaryId: string;
+}
+
+interface DiaryCalendarViewProps {
+  initialDate?: string;
+  reveal?: CalendarRevealRequest | null;
+  onRevealComplete?: () => void;
+}
+
+function CalendarArrow({ direction }: { direction: "left" | "right" }) {
   return (
     <svg
       className="diary-calendar-arrow-icon"
@@ -59,7 +71,7 @@ interface PopOrigin {
 
 /**
  * Rebuilt from the record rather than stored, so it always matches the diary
- * being looked at. Same shape as the name used right after finishing a diary.
+ * being looked at.
  */
 function diaryFileName(record: DiaryRecord): string {
   const saved = new Date(record.savedAt);
@@ -69,14 +81,20 @@ function diaryFileName(record: DiaryRecord): string {
   return `summer-diary-${record.date}-${suffix}.jpg`;
 }
 
-export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
+export function DiaryCalendarView({
+  initialDate,
+  reveal = null,
+  onRevealComplete,
+}: DiaryCalendarViewProps) {
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
-  // One bunch is on screen at a time, so the month is view state rather than
+  // One calendar month is on screen at a time, so it is view state rather than
   // something derived from the saved diaries.
   const [selectedMonth, setSelectedMonth] = useState(() =>
-    initialDate === undefined
-      ? monthKeyOf(new Date())
-      : initialDate.slice(0, 7),
+    reveal !== null
+      ? reveal.date.slice(0, 7)
+      : initialDate !== undefined
+        ? initialDate.slice(0, 7)
+        : monthKeyOf(new Date()),
   );
   // The viewer is a small album for one calendar date. It deliberately keeps
   // its own list so a swipe can never spill into the previous or next day.
@@ -87,13 +105,29 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
   const [popOrigin, setPopOrigin] = useState<PopOrigin>({ dx: 0, dy: 0 });
   const [record, setRecord] = useState<DiaryRecord | null>(null);
   const [recordError, setRecordError] = useState<string | null>(null);
-  const [sharing, setSharing] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [shareError, setShareError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [revealingDiaryId, setRevealingDiaryId] = useState<string | null>(
+    null,
+  );
   const touchStartXRef = useRef<number | null>(null);
+  const revealCellRef = useRef<HTMLButtonElement | null>(null);
+  const handledRevealRef = useRef<string | null>(null);
   const initialDateOpenedRef = useRef(false);
+  const onRevealCompleteRef = useRef(onRevealComplete);
+
+  useEffect(() => {
+    onRevealCompleteRef.current = onRevealComplete;
+  }, [onRevealComplete]);
+
+  useEffect(() => {
+    const targetDate = reveal?.date ?? initialDate;
+    if (targetDate !== undefined) {
+      setSelectedMonth(targetDate.slice(0, 7));
+    }
+  }, [initialDate, reveal]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,8 +156,12 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
     };
   }, []);
 
+  const summaries = load.status === "ready" ? load.summaries : [];
+  const current = viewerIndex === null ? null : viewerEntries[viewerIndex];
+
   useEffect(() => {
     if (
+      reveal !== null ||
       initialDate === undefined ||
       initialDateOpenedRef.current ||
       load.status !== "ready"
@@ -139,17 +177,61 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
       return;
     }
 
-    // A date-limit dialog has no calendar cell to animate from, so the detail
-    // opens from the centre. Normal taps still burst from the selected day.
     setPopOrigin({ dx: 0, dy: 0 });
     setViewerEntries(entries);
     setPageDirection("forward");
     setManageOnly(true);
     setViewerIndex(0);
-  }, [initialDate, load]);
+  }, [initialDate, load, reveal]);
 
-  const summaries = load.status === "ready" ? load.summaries : [];
-  const current = viewerIndex === null ? null : viewerEntries[viewerIndex];
+  useEffect(() => {
+    if (reveal === null || load.status !== "ready") {
+      return;
+    }
+
+    const revealKey = `${reveal.date}:${reveal.diaryId}`;
+    if (
+      handledRevealRef.current === revealKey ||
+      selectedMonth !== reveal.date.slice(0, 7)
+    ) {
+      return;
+    }
+
+    const entries = load.summaries.filter(
+      (summary) => summary.date === reveal.date,
+    );
+    const revealedIndex = entries.findIndex(
+      (summary) => summary.id === reveal.diaryId,
+    );
+    const cell = revealCellRef.current;
+    if (cell === null || revealedIndex < 0) {
+      return;
+    }
+
+    handledRevealRef.current = revealKey;
+    setRevealingDiaryId(reveal.diaryId);
+    setManageOnly(false);
+
+    const rect = cell.getBoundingClientRect();
+    setPopOrigin({
+      dx: rect.left + rect.width / 2 - window.innerWidth / 2,
+      dy: rect.top + rect.height / 2 - window.innerHeight / 2,
+    });
+
+    // AIDEV-NOTE: 순서 중요 — 도장 뒤 1.5초 대기는 저장 위치를 인지한 다음 상세를 열기 위한 것이다.
+    const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? 180
+      : REVEAL_VIEWER_DELAY_MS;
+    const timer = window.setTimeout(() => {
+      setViewerEntries(entries);
+      setPageDirection("forward");
+      setViewerIndex(revealedIndex);
+      setRevealingDiaryId(null);
+      onRevealCompleteRef.current?.();
+    }, delay);
+
+    return () => window.clearTimeout(timer);
+  }, [load, reveal, selectedMonth]);
 
   // The image lives in the entry, not the index, so it is fetched per page
   // instead of loading every diary's bytes up front.
@@ -160,7 +242,7 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
 
     let cancelled = false;
     setRecordError(null);
-    setShareError(null);
+    setShareModalOpen(false);
     setDeleteError(null);
 
     void (async () => {
@@ -222,14 +304,14 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
     });
   };
 
-  const openDay = (entries: DiarySummary[], bead: HTMLElement) => {
+  const openDay = (entries: DiarySummary[], calendarCell: HTMLElement) => {
     if (entries.length === 0) {
       return;
     }
 
-    // Measured at tap time so the diary grows out of the bead the user actually
-    // pressed, not from a fixed point on screen.
-    const rect = bead.getBoundingClientRect();
+    // Measured at tap time so the diary grows out of the date cell the user
+    // actually pressed, not from a fixed point on screen.
+    const rect = calendarCell.getBoundingClientRect();
     setPopOrigin({
       dx: rect.left + rect.width / 2 - window.innerWidth / 2,
       dy: rect.top + rect.height / 2 - window.innerHeight / 2,
@@ -239,26 +321,6 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
     setPageDirection("forward");
     setManageOnly(false);
     setViewerIndex(0);
-  };
-
-  const share = async () => {
-    if (record === null || record.id !== current?.id || sharing) {
-      return;
-    }
-
-    setSharing(true);
-    setShareError(null);
-    try {
-      await exportDiaryImage(record.imageDataUrl, diaryFileName(record));
-    } catch (error) {
-      setShareError(
-        error instanceof DiaryExportError
-          ? error.userMessage
-          : "이미지를 공유하지 못했어요. 잠시 후 다시 시도해 주세요.",
-      );
-    } finally {
-      setSharing(false);
-    }
   };
 
   const removeCurrentDiary = async () => {
@@ -305,8 +367,8 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
   };
 
   const popStyle = {
-    "--grape-pop-dx": `${popOrigin.dx}px`,
-    "--grape-pop-dy": `${popOrigin.dy}px`,
+    "--diary-pop-dx": `${popOrigin.dx}px`,
+    "--diary-pop-dy": `${popOrigin.dy}px`,
   } as CSSProperties;
 
   return (
@@ -327,7 +389,7 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
                 setSelectedMonth((current) => moveMonth(current, -1))
               }
             >
-              <GrapeArrow direction="left" />
+              <CalendarArrow direction="left" />
             </DiaryButton>
             <h2 id="diary-month">{koreanMonth(selectedMonth)}</h2>
             <DiaryButton
@@ -338,7 +400,7 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
                 setSelectedMonth((current) => moveMonth(current, 1))
               }
             >
-              <GrapeArrow direction="right" />
+              <CalendarArrow direction="right" />
             </DiaryButton>
           </div>
 
@@ -371,13 +433,20 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
                 const first = saved[0];
                 const hasDiaries = first !== undefined;
                 const weekdayIndex = index % 7;
+                const isRevealTarget =
+                  reveal !== null &&
+                  reveal.date.startsWith(`${selectedMonth}-`) &&
+                  Number(reveal.date.slice(8, 10)) === day;
+                const isRevealing =
+                  isRevealTarget && revealingDiaryId === reveal?.diaryId;
 
                 return (
                   <button
                     key={day}
+                    ref={isRevealTarget ? revealCellRef : undefined}
                     type="button"
                     role="gridcell"
-                    className={`diary-calendar-cell weekday-${weekdayIndex}${hasDiaries ? " has-diaries" : ""}`}
+                    className={`diary-calendar-cell weekday-${weekdayIndex}${hasDiaries ? " has-diaries" : ""}${isRevealTarget ? " is-reveal-target" : ""}${isRevealing ? " is-revealing" : ""}`}
                     disabled={!hasDiaries}
                     aria-label={
                       hasDiaries
@@ -393,7 +462,7 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
                     <span className="diary-calendar-day">{day}</span>
                     {hasDiaries && (
                       <img
-                        className="diary-calendar-stamp"
+                        className={`diary-calendar-stamp${isRevealing ? " is-revealing" : ""}`}
                         src={DAILY_COMPLETE_STAMP_URL}
                         alt=""
                         aria-hidden="true"
@@ -433,7 +502,8 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
         // Covers the whole screen, header and bottom bar included, so the only
         // sharp and bright thing left is the diary itself.
         <div
-          className="grape-viewer-layer"
+          className="diary-viewer-layer"
+          style={popStyle}
           role="dialog"
           aria-modal="true"
           aria-label={`${formatKoreanDate(current.date)}에 저장된 일기 ${viewerEntries.length}편`}
@@ -455,8 +525,8 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
         >
           {/* Mounts once per open, so the pop animation plays on opening and
               not again on every swipe. */}
-          <div className="grape-viewer-card" style={popStyle}>
-            <div className="grape-viewer-nav">
+          <div className="diary-viewer-card">
+            <div className="diary-viewer-nav">
               <DiaryButton
                 tone="secondary"
                 stable
@@ -464,10 +534,10 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
                 onClick={() => step(-1)}
                 aria-label="이 날의 이전 일기"
               >
-                <GrapeArrow direction="left" />
+                <CalendarArrow direction="left" />
               </DiaryButton>
 
-              <span className="grape-viewer-count">
+              <span className="diary-viewer-count">
                 {(viewerIndex ?? 0) + 1} / {viewerEntries.length}
               </span>
 
@@ -478,41 +548,36 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
                 onClick={() => step(1)}
                 aria-label="이 날의 다음 일기"
               >
-                <GrapeArrow direction="right" />
+                <CalendarArrow direction="right" />
               </DiaryButton>
             </div>
 
             <div
-              className={`grape-viewer-stage stack-${Math.min(viewerEntries.length, 3)}`}
+              className={`diary-viewer-stage stack-${Math.min(viewerEntries.length, 3)}`}
             >
               {recordError !== null ? (
-                <p className="grape-viewer-note" role="alert">
+                <p className="diary-viewer-note" role="alert">
                   {recordError}
                 </p>
               ) : record === null ? (
-                <p className="grape-viewer-note">일기를 펴는 중이에요…</p>
+                <p className="diary-viewer-note">일기를 펴는 중이에요…</p>
               ) : (
                 <img
                   key={record.id}
-                  className={`grape-viewer-image grape-page-${pageDirection}`}
+                  className={`diary-viewer-image diary-page-${pageDirection}`}
                   src={record.imageDataUrl}
                   alt={`${formatKoreanDate(record.date)}에 쓴 그림일기`}
                 />
               )}
             </div>
 
-            {shareError !== null && (
-              <p className="grape-viewer-error" role="alert">
-                {shareError}
-              </p>
-            )}
             {deleteError !== null && (
-              <p className="grape-viewer-error" role="alert">
+              <p className="diary-viewer-error" role="alert">
                 {deleteError}
               </p>
             )}
 
-            <div className="grape-viewer-actions">
+            <div className="diary-viewer-actions">
               <DiaryButton
                 tone="danger"
                 stable
@@ -528,11 +593,12 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
                 <DiaryButton
                   stable
                   fullWidth
-                  disabled={sharing || deleting}
-                  aria-busy={sharing}
-                  onClick={() => void share()}
+                  disabled={
+                    deleting || record === null || record.id !== current.id
+                  }
+                  onClick={() => setShareModalOpen(true)}
                 >
-                  이미지 공유하기
+                  저장 및 공유
                 </DiaryButton>
               )}
 
@@ -540,7 +606,7 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
                 tone="secondary"
                 stable
                 fullWidth
-                disabled={sharing || deleting}
+                disabled={deleting}
                 onClick={() => {
                   setManageOnly(false);
                   setViewerIndex(null);
@@ -553,23 +619,32 @@ export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
         </div>
       )}
 
+      {record !== null && (
+        <DiaryShareModal
+          open={shareModalOpen}
+          imageDataUrl={record.imageDataUrl}
+          fileName={diaryFileName(record)}
+          onClose={() => setShareModalOpen(false)}
+        />
+      )}
+
       <Modal open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <Modal.Overlay />
         <Modal.Content
-          className="app-modal-panel grape-delete-modal"
-          aria-labelledby="grape-delete-title"
-          aria-describedby="grape-delete-description"
+          className="app-modal-panel diary-delete-modal"
+          aria-labelledby="diary-delete-title"
+          aria-describedby="diary-delete-description"
         >
-          <div className="app-modal-layout grape-delete-modal-layout">
-            <div className="grape-delete-modal-body">
-              <h2 id="grape-delete-title" className="app-modal-title">
+          <div className="app-modal-layout diary-delete-modal-layout">
+            <div className="diary-delete-modal-body">
+              <h2 id="diary-delete-title" className="app-modal-title">
                 이 일기를 삭제할까요?
               </h2>
-              <p id="grape-delete-description">
+              <p id="diary-delete-description">
                 삭제한 일기는 다시 복원할 수 없어요.
               </p>
             </div>
-            <div className="app-modal-footer grape-delete-modal-actions">
+            <div className="app-modal-footer diary-delete-modal-actions">
               <DiaryButton
                 tone="secondary"
                 stable
