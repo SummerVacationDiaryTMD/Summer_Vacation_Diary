@@ -172,9 +172,9 @@ export function WriteStep({
 
         if (capacity.isFull) {
           const openRecords = await openConfirm({
-            title: `${formatDateValue(selectedDate)} 기록이 가득 찼어요`,
-            description: `하루에는 일기를 최대 ${capacity.limit}개까지 저장할 수 있어요. 이 날짜에 새 일기를 쓰려면 기존 기록을 삭제해 주세요.`,
-            confirmButton: <DiaryButton>기록 보기</DiaryButton>,
+            title: `${formatDateValue(selectedDate)} 일기가 가득 찼어요`,
+            description: `하루에는 일기를 최대 ${capacity.limit}개까지 저장할 수 있어요. 이 날짜에 새 일기를 쓰려면 기존 일기를 삭제해 주세요.`,
+            confirmButton: <DiaryButton>일기장 보기</DiaryButton>,
             cancelButton: <DiaryButton tone="secondary">닫기</DiaryButton>,
             closeOnDimmerClick: false,
           });
