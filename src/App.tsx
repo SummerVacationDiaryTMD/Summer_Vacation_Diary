@@ -243,6 +243,17 @@ function App() {
     };
   }, [showOnboarding]);
 
+  useEffect(() => {
+    if (!showOnboarding) return;
+
+    // The two locally bundled handwriting faces are otherwise fetched only
+    // when their first screen appears.
+    void Promise.all([
+      document.fonts.load("400 19px NanumCoDingHeuiMang"),
+      document.fonts.load("400 19px NanumDdarEGeEomMaGa"),
+    ]);
+  }, [showOnboarding]);
+
   // quota-status never consumes a request. Start it while the onboarding is
   // visible so the upload step can show the real remaining count immediately
   // in the usual case, instead of beginning the network round trip on tap.
