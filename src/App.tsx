@@ -607,7 +607,7 @@ function App() {
           toast.openToast(
             error instanceof DiaryStoreError
               ? error.userMessage
-              : "일기 달력에 기록하지 못했어요.",
+              : "일기장에 저장하지 못했어요.",
           );
         }
       }
@@ -695,7 +695,7 @@ function App() {
         <Suspense
           fallback={
             <div className="step-body" role="status">
-              기록을 불러오고 있어요.
+              일기장을 불러오고 있어요.
             </div>
           }
         >
@@ -806,20 +806,22 @@ function App() {
       )}
 
       {step === "upload" && (
-        <AppBottomBar double>
-          <DiaryButton
-            tone="secondary"
-            stable
-            fullWidth
-            onClick={() => {
-              void loadGrapeCalendarView();
-              setCalendarReturnStep("upload");
-              setCalendarInitialDate(undefined);
-              setStep("calendar");
-            }}
-          >
-            나의 기록 보기
-          </DiaryButton>
+        <AppBottomBar double={!hasVisitedWrite}>
+          {!hasVisitedWrite && (
+            <DiaryButton
+              tone="secondary"
+              stable
+              fullWidth
+              onClick={() => {
+                void loadGrapeCalendarView();
+                setCalendarReturnStep("upload");
+                setCalendarInitialDate(undefined);
+                setStep("calendar");
+              }}
+            >
+              일기장 보기
+            </DiaryButton>
+          )}
 
           <DiaryButton
             stable
