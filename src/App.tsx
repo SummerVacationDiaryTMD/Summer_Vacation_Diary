@@ -560,7 +560,7 @@ function App() {
             draft.photoDataUrl,
             draft.content,
           );
-          await saveDiary({
+          const saveResult = await saveDiary({
             draftId: draft.draftId,
             revisionKey,
             date: draft.date,
@@ -573,7 +573,9 @@ function App() {
             imageDataUrl,
             includesAiGeneratedContent,
           });
-          toast.openToast("일기가 달력에 저장되었어요!");
+          toast.openToast(
+            `일기가 달력에 저장되었어요! (${saveResult.diariesOnDate}/${saveResult.limit})`,
+          );
         } catch (error) {
           archivedImageRef.current = null;
           toast.openToast(
