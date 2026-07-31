@@ -538,7 +538,7 @@ function App() {
             imageDataUrl,
             includesAiGeneratedContent,
           });
-          toast.openToast("일기 달력에 저장했어요.");
+          toast.openToast("일기가 달력에 저장되었어요!");
         } catch (error) {
           archivedImageRef.current = null;
           toast.openToast(
