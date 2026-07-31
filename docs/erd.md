@@ -6,7 +6,7 @@
 
 이 문서는 Supabase PostgreSQL에 생성된 `public.diary_ai_rate_limits` DDL을 기준으로 작성했습니다. 해당 DDL은 현재 저장소의 migration 파일로 관리되지 않고 사용자가 제공한 운영 스키마이므로, 이후 Supabase에서 변경되면 이 문서도 함께 갱신해야 합니다.
 
-현재 확인된 데이터베이스 테이블은 사용량 제한용 단일 테이블입니다. 사용자 계정, 사진, 일기 원문, 분석 결과를 저장하는 테이블은 제공된 스키마에 없습니다.
+현재 확인된 서버 데이터베이스 테이블은 사용량 제한용 단일 테이블입니다. 사용자 계정, 사진, 일기 원문, 분석 결과를 저장하는 서버 테이블은 제공된 스키마에 없습니다. 일기 달력의 완성 일기는 서버가 아니라 기기 `Storage` 또는 localStorage에 저장합니다.
 
 ## 데이터 모델
 
@@ -24,6 +24,23 @@ erDiagram
 ```
 
 외래키가 없으므로 다른 엔터티와의 관계선은 표시하지 않았습니다.
+
+## 기기 보관 모델
+
+기기 저장소는 관계형 데이터베이스가 아니므로 위 ERD에 포함하지 않습니다. 논리 구조는 다음과 같습니다.
+
+```text
+diary-index:v1
+└── DiarySummary[]: id, date, savedAt, title, weather
+
+diary:v1:<id>
+└── DiaryRecord: summary 필드 + content, imageDataUrl, includesAiGeneratedContent
+```
+
+- 하나의 summary는 같은 `id`의 record 하나를 가리킵니다.
+- 같은 날짜에는 유효한 record를 최대 3개 저장합니다.
+- 저장 순서는 record → index이며, 조회 중 끊어진 index 참조를 정리합니다.
+- 사용자 계정이나 서버 foreign key가 없어 다른 기기와 동기화되지 않습니다.
 
 ## 테이블 역할
 
@@ -103,15 +120,15 @@ DDL에서 명시적으로 생성한 보조 index는 없습니다.
 
 ## 제공된 DDL과 문서 상태
 
-| 항목                               | 상태                |
-| ---------------------------------- | ------------------- |
-| 테이블·컬럼·타입                   | 확인됨              |
-| Primary Key·CHECK·NOT NULL·DEFAULT | 확인됨              |
-| 외래키 관계                        | 없음                |
-| 보조 index                         | 제공된 DDL에는 없음 |
-| RLS·policy                         | 확인 필요           |
-| RPC·trigger·quota 차감 로직        | 확인 필요           |
-| 보존·삭제 정책                     | 확인 필요           |
+| 항목                               | 상태                           |
+| ---------------------------------- | ------------------------------ |
+| 테이블·컬럼·타입                   | 확인됨                         |
+| Primary Key·CHECK·NOT NULL·DEFAULT | 확인됨                         |
+| 외래키 관계                        | 없음                           |
+| 보조 index                         | 제공된 DDL에는 없음            |
+| RLS·policy                         | 확인 필요                      |
+| RPC·trigger·quota 차감 로직        | 확인 필요                      |
+| 보존·삭제 정책                     | 확인 필요                      |
 | migration version 관리             | 현재 저장소에는 원본 파일 없음 |
 
 ## 관련 문서
