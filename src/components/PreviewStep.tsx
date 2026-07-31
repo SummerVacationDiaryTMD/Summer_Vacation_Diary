@@ -582,7 +582,11 @@ export function PreviewStep({
   );
 
   useEffect(() => {
-    onProcessingVisibilityChange(isProcessingVisible);
+    if (isProcessingVisible) {
+      onProcessingVisibilityChange(true);
+    } else if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      onProcessingVisibilityChange(false);
+    }
   }, [isProcessingVisible, onProcessingVisibilityChange]);
 
   useEffect(
@@ -631,7 +635,17 @@ export function PreviewStep({
             </span>
           </div>
 
-          <div className="diary-card diary-card-reveal">
+          <div
+            className="diary-card diary-card-reveal"
+            onAnimationEnd={(event) => {
+              if (
+                event.target === event.currentTarget &&
+                analysis === null
+              ) {
+                onProcessingVisibilityChange(false);
+              }
+            }}
+          >
             <div
               className="diary-template"
               style={
@@ -820,6 +834,7 @@ export function PreviewStep({
                   className="diary-stamp"
                   src={STAMP_IMAGE_URLS[animatedAnalysis.stamp]}
                   alt={STAMP_ALT_TEXT[animatedAnalysis.stamp]}
+                  onAnimationEnd={() => onProcessingVisibilityChange(false)}
                 />
               )}
             </div>

@@ -468,6 +468,7 @@ function App() {
     // so PreviewStep skips its three-stage animation and shows the fallback
     // preview immediately.
     setPreviewProcessingEnabled(willProcessSketch || willProcessAnalysis);
+    setPreviewAnimationRunning(willProcessSketch || willProcessAnalysis);
 
     // Navigation is never gated on the budget: unavailable AI results fall
     // back to the original photo or an uncommented diary, and 완성하기 still
@@ -896,7 +897,7 @@ function App() {
           </DiaryButton>
         </AppBottomBar>
       )}
-      {step === "preview" && !previewPreparing && (
+      {step === "preview" && (
         <AppBottomBar double>
           <DiaryButton
             tone="secondary"
