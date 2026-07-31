@@ -13,7 +13,10 @@ import "./App.css";
 import { AiQuotaNotice, AiRecheckNotice } from "./components/AiQuotaNotice";
 import { DiaryButton } from "./components/DiaryButton";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
-import type { CalendarRevealRequest } from "./components/DiaryCalendarView";
+import type {
+  CalendarRevealRequest,
+  CalendarShareRequest,
+} from "./components/DiaryCalendarView";
 import type { RenderedDiaryPreview } from "./components/PreviewStep";
 import { WriteStep } from "./components/WriteStep";
 import {
@@ -45,6 +48,7 @@ const CALENDAR_PATH = "/calendar";
 
 const loadPreviewStep = () => import("./components/PreviewStep");
 const loadDiaryCalendarView = () => import("./components/DiaryCalendarView");
+const loadDiaryShareModal = () => import("./components/DiaryShareModal");
 const PreviewStep = lazy(async () => {
   const module = await loadPreviewStep();
   return { default: module.PreviewStep };
@@ -52,6 +56,10 @@ const PreviewStep = lazy(async () => {
 const DiaryCalendarView = lazy(async () => {
   const module = await loadDiaryCalendarView();
   return { default: module.DiaryCalendarView };
+});
+const DiaryShareModal = lazy(async () => {
+  const module = await loadDiaryShareModal();
+  return { default: module.DiaryShareModal };
 });
 
 function isCalendarDeepLink(): boolean {
@@ -165,13 +173,13 @@ function App() {
     isCalendarDeepLink() ? "calendar" : "upload",
   );
   const [calendarReturnStep, setCalendarReturnStep] = useState<
-    "upload" | "write"
+    "upload" | "write" | "new"
   >("upload");
   const [calendarInitialDate, setCalendarInitialDate] = useState<string>();
   const [writeEntryId, setWriteEntryId] = useState(0);
   // Always open on a fresh diary. Draft persistence remains available in the
   // hook, but this flow must not restore a previous visit's photo or text.
-  const { draft, updateDraft } = useDiaryDraft({
+  const { draft, updateDraft, clearDraft } = useDiaryDraft({
     restoreOnStart: false,
   });
   // Not part of the draft: it is only a cache key, and persisting it would mean
@@ -236,11 +244,25 @@ function App() {
   const [previewModuleLoading, setPreviewModuleLoading] = useState(false);
   const [calendarReveal, setCalendarReveal] =
     useState<CalendarRevealRequest | null>(null);
+  const [calendarShareRequest, setCalendarShareRequest] =
+    useState<CalendarShareRequest | null>(null);
+  // Consent is intentionally memory-only: it survives new-diary navigation
+  // inside this execution, but a fresh mini-app launch asks again.
+  const [hasPhotoSessionConsent, setHasPhotoSessionConsent] = useState(false);
 
   const [hasVisitedWrite, setHasVisitedWrite] = useState(false);
   const [hasVisitedPreview, setHasVisitedPreview] = useState(false);
   const [analyzeRecheckNoticeVisible, setAnalyzeRecheckNoticeVisible] =
     useState(false);
+
+  useEffect(() => {
+    // A destroyed WebView loses this state naturally. pagehide also covers a
+    // host that caches the page and later restores it instead of remounting.
+    const endPhotoConsentSession = () => setHasPhotoSessionConsent(false);
+    window.addEventListener("pagehide", endPhotoConsentSession);
+    return () =>
+      window.removeEventListener("pagehide", endPhotoConsentSession);
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -373,6 +395,24 @@ function App() {
       </main>
     );
   }
+
+  const startNewDiary = () => {
+    clearDraft();
+    setPhotoSourceHash(null);
+    setInspectionContext(undefined);
+    setRenderedDiaryPreview(null);
+    setPreviewAnimationRunning(false);
+    setPreviewProcessingEnabled(false);
+    setPreviewModuleLoading(false);
+    setHasVisitedWrite(false);
+    setHasVisitedPreview(false);
+    setAnalyzeRecheckNoticeVisible(false);
+    setCalendarReturnStep("upload");
+    setCalendarInitialDate(undefined);
+    setCalendarReveal(null);
+    setCalendarShareRequest(null);
+    setStep("upload");
+  };
 
   const handleStartWriting = () => {
     if (!canWrite) {
@@ -570,7 +610,7 @@ function App() {
       );
 
       void loadDiaryCalendarView();
-      setCalendarReturnStep("upload");
+      setCalendarReturnStep("new");
       setCalendarInitialDate(undefined);
       setCalendarReveal({ date: draft.date, diaryId: saveResult.record.id });
       setStep("calendar");
@@ -669,6 +709,10 @@ function App() {
             initialDate={calendarInitialDate}
             reveal={calendarReveal}
             onRevealComplete={() => setCalendarReveal(null)}
+            onShareRequest={(request) => {
+              void loadDiaryShareModal();
+              setCalendarShareRequest(request);
+            }}
           />
         </Suspense>
       )}
@@ -678,6 +722,8 @@ function App() {
           <AiQuotaNotice />
           <PhotoUploadStep
             photoDataUrl={draft.photoDataUrl}
+            hasSessionConsent={hasPhotoSessionConsent}
+            onSessionConsent={() => setHasPhotoSessionConsent(true)}
             canRedraw={sketchAllowed}
             isDrawingInProgress={isDrawingInProgress}
             onPhotoChange={({
@@ -754,6 +800,17 @@ function App() {
         </Suspense>
       )}
 
+      {calendarShareRequest !== null && (
+        <Suspense fallback={null}>
+          <DiaryShareModal
+            open
+            imageDataUrl={calendarShareRequest.imageDataUrl}
+            fileName={calendarShareRequest.fileName}
+            onClose={() => setCalendarShareRequest(null)}
+          />
+        </Suspense>
+      )}
+
       {step === "upload" && (
         <AppBottomBar double={!hasVisitedWrite}>
           {!hasVisitedWrite && (
@@ -787,7 +844,7 @@ function App() {
       {step === "calendar" && (
         <AppBottomBar>
           <DiaryButton
-            tone="secondary"
+            tone={calendarReturnStep === "new" ? "primary" : "secondary"}
             stable
             fullWidth
             onClick={() => {
@@ -796,6 +853,8 @@ function App() {
               if (calendarReturnStep === "write") {
                 setWriteEntryId((entryId) => entryId + 1);
                 setStep("write");
+              } else if (calendarReturnStep === "new") {
+                startNewDiary();
               } else {
                 setStep("upload");
               }
@@ -803,7 +862,9 @@ function App() {
           >
             {calendarReturnStep === "write"
               ? "일기 쓰기로 돌아가기"
-              : "돌아가기"}
+              : calendarReturnStep === "new"
+                ? "새 일기 쓰기"
+                : "돌아가기"}
           </DiaryButton>
         </AppBottomBar>
       )}

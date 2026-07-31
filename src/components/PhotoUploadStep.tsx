@@ -44,6 +44,9 @@ export interface PhotoSelection {
 interface PhotoUploadStepProps {
   photoDataUrl: string | null;
   onPhotoChange: (selection: PhotoSelection) => void;
+  /** Kept only for the lifetime of the current mini-app execution. */
+  hasSessionConsent: boolean;
+  onSessionConsent: () => void;
   /** False when no request can reach the server today (budget spent, region). */
   canRedraw: boolean;
   /** True while a drawing for that source file is still on its way. */
@@ -61,6 +64,8 @@ interface PhotoUploadStepProps {
 export function PhotoUploadStep({
   photoDataUrl,
   onPhotoChange,
+  hasSessionConsent,
+  onSessionConsent,
   canRedraw,
   isDrawingInProgress,
 }: PhotoUploadStepProps) {
@@ -140,8 +145,9 @@ export function PhotoUploadStep({
       return;
     }
 
-    // 이미 사진이 있으면 동의 모달을 띄우지 않음
-    if (photoDataUrl !== null) {
+    // 한 번 동의한 앱 실행 중에는 사진을 바꾸거나 새 일기를 시작해도
+    // 같은 처리 내용을 반복해서 묻지 않습니다.
+    if (photoDataUrl !== null || hasSessionConsent) {
       fileInputRef.current?.click();
       return;
     }
@@ -170,6 +176,7 @@ export function PhotoUploadStep({
     }
 
     setConsentOpen(false);
+    onSessionConsent();
 
     // 모바일 브라우저에서 파일 선택기가 차단되지 않도록
     // 사용자 클릭 이벤트 안에서 바로 실행합니다.
