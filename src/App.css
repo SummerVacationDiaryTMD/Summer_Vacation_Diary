@@ -1774,6 +1774,10 @@ html:has(.diary-content-section textarea:focus) {
   word-break: keep-all;
 }
 
+.preview-error-modal-body .preview-error-message {
+  font-weight: 700;
+}
+
 .preview-error-modal-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -4972,8 +4976,12 @@ html:has(.diary-content-section textarea:focus) {
 .grape-viewer-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  flex: 0 0 auto;
   gap: 12px;
-  margin-top: auto;
+  /* Keep actions directly after the diary instead of spending all remaining
+     viewport height above them. On short devices .grape-viewer-stage is the
+     shrinkable item, so the buttons stay visible without covering the diary. */
+  margin-top: clamp(6px, 1dvh, 10px);
   contain: layout paint;
 }
 
@@ -5014,12 +5022,4 @@ html:has(.diary-content-section textarea:focus) {
   .grape-page-backward {
     animation: none;
   }
-}
-
-/* Upload step puts its two actions on an even split, unlike the later steps
-   where the primary action is given the wider half. */
-.app-bottom-bar-content-even {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px;
 }

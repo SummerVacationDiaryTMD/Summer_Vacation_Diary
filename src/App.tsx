@@ -158,18 +158,11 @@ const ONBOARDING_TITLE_LINES = [
 function AppBottomBar({
   children,
   double = false,
-  even = false,
 }: {
   children: ReactNode;
   double?: boolean;
-  /** Splits the bar down the middle instead of favouring the primary action. */
-  even?: boolean;
 }) {
-  const layout = even
-    ? " app-bottom-bar-content-even"
-    : double
-      ? " app-bottom-bar-content-double"
-      : "";
+  const layout = double ? " app-bottom-bar-content-double" : "";
 
   return (
     <div className="app-bottom-bar">
@@ -186,6 +179,11 @@ function App() {
   const [step, setStep] = useState<Step>(() =>
     isCalendarDeepLink() ? "calendar" : "upload",
   );
+  const [calendarReturnStep, setCalendarReturnStep] = useState<
+    "upload" | "write"
+  >("upload");
+  const [calendarInitialDate, setCalendarInitialDate] = useState<string>();
+  const [writeEntryId, setWriteEntryId] = useState(0);
   // Always open on a fresh diary. Draft persistence remains available in the
   // hook, but this flow must not restore a previous visit's photo or text.
   const { draft, updateDraft, clearDraft } = useDiaryDraft({
@@ -407,6 +405,7 @@ function App() {
     // PhotoUploadStep already collects the required processing consent before
     // a photo can enter the draft, so another confirmation here would repeat
     // the same notice and interrupt the user a second time.
+    setWriteEntryId((entryId) => entryId + 1);
     setStep("write");
   };
 
@@ -564,9 +563,11 @@ function App() {
         renderedDiaryPreview !== null &&
         sameDiaryImageInput(renderedDiaryPreview.input, imageInput)
           ? renderedDiaryPreview.dataUrl
-          : (await (await import("./utils/diaryImage")).composeDiaryImage(
-              imageInput,
-            )).dataUrl;
+          : (
+              await (
+                await import("./utils/diaryImage")
+              ).composeDiaryImage(imageInput)
+            ).dataUrl;
       setFinishedDiary({
         imageDataUrl,
         // ASCII name (some Android managers mangle Korean) + a time suffix so
@@ -698,7 +699,7 @@ function App() {
             </div>
           }
         >
-          <GrapeCalendarView />
+          <GrapeCalendarView initialDate={calendarInitialDate} />
         </Suspense>
       )}
 
@@ -742,6 +743,13 @@ function App() {
             analysisState.status !== "success" && <AiRecheckNotice />}
           <WriteStep
             draft={draft}
+            entryId={writeEntryId}
+            onOpenCalendar={(date) => {
+              void loadGrapeCalendarView();
+              setCalendarReturnStep("write");
+              setCalendarInitialDate(date);
+              setStep("calendar");
+            }}
             onChange={(patch) => {
               if (
                 patch.weather !== undefined ||
@@ -798,13 +806,15 @@ function App() {
       )}
 
       {step === "upload" && (
-        <AppBottomBar even>
+        <AppBottomBar double>
           <DiaryButton
             tone="secondary"
             stable
             fullWidth
             onClick={() => {
               void loadGrapeCalendarView();
+              setCalendarReturnStep("upload");
+              setCalendarInitialDate(undefined);
               setStep("calendar");
             }}
           >
@@ -828,9 +838,19 @@ function App() {
             tone="secondary"
             stable
             fullWidth
-            onClick={() => setStep("upload")}
+            onClick={() => {
+              setCalendarInitialDate(undefined);
+              if (calendarReturnStep === "write") {
+                setWriteEntryId((entryId) => entryId + 1);
+                setStep("write");
+              } else {
+                setStep("upload");
+              }
+            }}
           >
-            돌아가기
+            {calendarReturnStep === "write"
+              ? "일기 쓰기로 돌아가기"
+              : "돌아가기"}
           </DiaryButton>
         </AppBottomBar>
       )}
@@ -871,6 +891,7 @@ function App() {
             disabled={saving || previewPreparing}
             onClick={() => {
               setAnalyzeRecheckNoticeVisible(true);
+              setWriteEntryId((entryId) => entryId + 1);
               setStep("write");
             }}
           >

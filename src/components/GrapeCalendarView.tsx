@@ -69,17 +69,20 @@ function diaryFileName(record: DiaryRecord): string {
   return `summer-diary-${record.date}-${suffix}.jpg`;
 }
 
-export function GrapeCalendarView() {
+export function GrapeCalendarView({ initialDate }: { initialDate?: string }) {
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
   // One bunch is on screen at a time, so the month is view state rather than
   // something derived from the saved diaries.
   const [selectedMonth, setSelectedMonth] = useState(() =>
-    monthKeyOf(new Date()),
+    initialDate === undefined
+      ? monthKeyOf(new Date())
+      : initialDate.slice(0, 7),
   );
   // The viewer is a small album for one calendar date. It deliberately keeps
   // its own list so a swipe can never spill into the previous or next day.
   const [viewerEntries, setViewerEntries] = useState<DiarySummary[]>([]);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [manageOnly, setManageOnly] = useState(false);
   const [pageDirection, setPageDirection] = useState<PageDirection>("forward");
   const [popOrigin, setPopOrigin] = useState<PopOrigin>({ dx: 0, dy: 0 });
   const [record, setRecord] = useState<DiaryRecord | null>(null);
@@ -90,6 +93,7 @@ export function GrapeCalendarView() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const touchStartXRef = useRef<number | null>(null);
+  const initialDateOpenedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,6 +121,32 @@ export function GrapeCalendarView() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (
+      initialDate === undefined ||
+      initialDateOpenedRef.current ||
+      load.status !== "ready"
+    ) {
+      return;
+    }
+
+    initialDateOpenedRef.current = true;
+    const entries = load.summaries.filter(
+      (summary) => summary.date === initialDate,
+    );
+    if (entries.length === 0) {
+      return;
+    }
+
+    // A date-limit dialog has no calendar cell to animate from, so the detail
+    // opens from the centre. Normal taps still burst from the selected day.
+    setPopOrigin({ dx: 0, dy: 0 });
+    setViewerEntries(entries);
+    setPageDirection("forward");
+    setManageOnly(true);
+    setViewerIndex(0);
+  }, [initialDate, load]);
 
   const summaries = load.status === "ready" ? load.summaries : [];
   const current = viewerIndex === null ? null : viewerEntries[viewerIndex];
@@ -207,6 +237,7 @@ export function GrapeCalendarView() {
     // listDiaries already orders entries on the same date newest first.
     setViewerEntries([...entries]);
     setPageDirection("forward");
+    setManageOnly(false);
     setViewerIndex(0);
   };
 
@@ -493,22 +524,27 @@ export function GrapeCalendarView() {
                 일기 삭제
               </DiaryButton>
 
-              <DiaryButton
-                stable
-                fullWidth
-                disabled={sharing || deleting}
-                aria-busy={sharing}
-                onClick={() => void share()}
-              >
-                이미지 공유하기
-              </DiaryButton>
+              {!manageOnly && (
+                <DiaryButton
+                  stable
+                  fullWidth
+                  disabled={sharing || deleting}
+                  aria-busy={sharing}
+                  onClick={() => void share()}
+                >
+                  이미지 공유하기
+                </DiaryButton>
+              )}
 
               <DiaryButton
                 tone="secondary"
                 stable
                 fullWidth
                 disabled={sharing || deleting}
-                onClick={() => setViewerIndex(null)}
+                onClick={() => {
+                  setManageOnly(false);
+                  setViewerIndex(null);
+                }}
               >
                 뒤로가기
               </DiaryButton>
