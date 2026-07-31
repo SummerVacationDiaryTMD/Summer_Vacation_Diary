@@ -43,7 +43,7 @@ import type { WeatherValue } from "../constants/diary";
 
 const INDEX_STORAGE_KEY = "summer-vacation-diary:diary-index:v1";
 const ENTRY_STORAGE_KEY_PREFIX = "summer-vacation-diary:diary:v1:";
-const MAX_DIARIES_PER_DATE = 5;
+export const MAX_DIARIES_PER_DATE = 3;
 
 function entryStorageKey(id: string): string {
   return `${ENTRY_STORAGE_KEY_PREFIX}${id}`;
@@ -86,6 +86,12 @@ export interface SaveDiaryResult {
   record: DiaryRecord;
   diariesOnDate: number;
   limit: number;
+}
+
+export interface DiaryDateCapacity {
+  diariesOnDate: number;
+  limit: number;
+  isFull: boolean;
 }
 
 export type DiaryStoreErrorCode =
@@ -438,6 +444,67 @@ export function listDiaries(): Promise<DiarySummary[]> {
       }
       return 0;
     });
+  });
+}
+
+/**
+ * Checks whether a date can accept another diary without loading image bytes
+ * for unrelated dates. A record for the current draft revision is excluded
+ * because saving it updates that record instead of consuming another slot.
+ */
+export function getDiaryDateCapacity({
+  date,
+  draftId,
+  revisionKey,
+}: {
+  date: string;
+  draftId: string;
+  revisionKey?: string;
+}): Promise<DiaryDateCapacity> {
+  return withLock(async () => {
+    let index: DiarySummary[];
+    try {
+      index = await readIndex();
+    } catch {
+      throw readFailedError();
+    }
+
+    let diariesOnDate = 0;
+    for (const summary of index) {
+      if (summary.date !== date) {
+        continue;
+      }
+      if (
+        revisionKey !== undefined &&
+        summary.draftId === draftId &&
+        summary.revisionKey === revisionKey
+      ) {
+        continue;
+      }
+
+      let raw: string | null;
+      try {
+        raw = await getBackend().getItem(entryStorageKey(summary.id));
+      } catch {
+        throw readFailedError();
+      }
+
+      let existing: unknown = null;
+      try {
+        existing = raw === null ? null : JSON.parse(raw);
+      } catch {
+        // Corrupt entries are absent and do not consume a date slot.
+      }
+      if (isRecord(existing)) {
+        diariesOnDate += 1;
+      }
+    }
+
+    return {
+      diariesOnDate,
+      limit: MAX_DIARIES_PER_DATE,
+      isFull: diariesOnDate >= MAX_DIARIES_PER_DATE,
+    };
   });
 }
 

@@ -836,7 +836,12 @@ export function PreviewStep({
         >
           <div className="app-modal-layout preview-error-modal-layout">
             <div className="preview-error-modal-body">
-              <p id="preview-error-description">{errorMessageText}</p>
+              <p
+                id="preview-error-description"
+                className="preview-error-message"
+              >
+                {errorMessageText}
+              </p>
             </div>
             <div
               className={`app-modal-footer preview-error-modal-actions${hasRetryableError ? "" : " is-single"}`}

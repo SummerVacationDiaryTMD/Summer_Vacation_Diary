@@ -1,5 +1,11 @@
-import { Paragraph, TextArea, TextField, useToast } from "@toss/tds-mobile";
-import { useRef, useState } from "react";
+import {
+  Paragraph,
+  TextArea,
+  TextField,
+  useDialog,
+  useToast,
+} from "@toss/tds-mobile";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   CONTENT_MAX_LENGTH,
@@ -8,15 +14,20 @@ import {
 } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
+import { DiaryStoreError, getDiaryDateCapacity } from "../services/diaryStore";
 import { clampDiaryDateToToday, localTodayString } from "../utils/diaryDate";
+import { createDiaryRevisionKey } from "../utils/diaryIdentity";
 import {
   diaryContentCellCount,
   fitDiaryContent,
 } from "../utils/diaryFrameLayout";
+import { DiaryButton } from "./DiaryButton";
 
 interface WriteStepProps {
   draft: DiaryDraft;
+  entryId: number;
   onChange: (patch: Partial<DiaryDraft>) => void;
+  onOpenCalendar: (date: string) => void;
 }
 
 // The form sits on a permanently cream sheet, so an adaptive token here would
@@ -83,9 +94,17 @@ function formatDateValue(date: string): string {
  * All fields write straight into the shared draft, so leaving this screen
  * (or the app) never loses input — the draft hook persists it.
  */
-export function WriteStep({ draft, onChange }: WriteStepProps) {
+export function WriteStep({
+  draft,
+  entryId,
+  onChange,
+  onOpenCalendar,
+}: WriteStepProps) {
   const toast = useToast();
+  const { openConfirm } = useDialog();
   const dateGuidanceShownRef = useRef(false);
+  const dateCheckIdRef = useRef(0);
+  const checkedEntryIdRef = useRef<number | null>(null);
   const [titleLimitShakeCount, setTitleLimitShakeCount] = useState(0);
   const [contentLimitShakeCount, setContentLimitShakeCount] = useState(0);
   const maxDiaryDate = localTodayString();
@@ -129,6 +148,90 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
   // A whitespace-only title also blocks the preview button (App.tsx trims it),
   // so surface the reason here instead of leaving the button silently disabled.
   const titleBlank = draft.title.length > 0 && draft.title.trim() === "";
+  const checkDateCapacity = useCallback(
+    async (selectedDate: string, applyWhenAvailable: boolean) => {
+      const checkId = dateCheckIdRef.current + 1;
+      dateCheckIdRef.current = checkId;
+
+      try {
+        // Entry checks count every stored record so a full date is announced
+        // on every visit. A user-selected date excludes the current revision,
+        // because saving that revision replaces it instead of adding a fourth.
+        const revisionKey =
+          !applyWhenAvailable || draft.photoDataUrl === null
+            ? undefined
+            : await createDiaryRevisionKey(draft.photoDataUrl, draft.content);
+        const capacity = await getDiaryDateCapacity({
+          date: selectedDate,
+          draftId: draft.draftId,
+          revisionKey,
+        });
+        if (checkId !== dateCheckIdRef.current) {
+          return;
+        }
+
+        if (capacity.isFull) {
+          const openRecords = await openConfirm({
+            title: `${formatDateValue(selectedDate)} 기록이 가득 찼어요`,
+            description: `하루에는 일기를 최대 ${capacity.limit}개까지 저장할 수 있어요. 이 날짜에 새 일기를 쓰려면 기존 기록을 삭제해 주세요.`,
+            confirmButton: <DiaryButton>기록 보기</DiaryButton>,
+            cancelButton: <DiaryButton tone="secondary">닫기</DiaryButton>,
+            closeOnDimmerClick: false,
+          });
+          if (openRecords) {
+            onOpenCalendar(selectedDate);
+          }
+          return;
+        }
+
+        if (applyWhenAvailable) {
+          onChange({ date: selectedDate });
+        }
+      } catch (error) {
+        if (checkId !== dateCheckIdRef.current) {
+          return;
+        }
+        toast.openToast(
+          error instanceof DiaryStoreError
+            ? error.userMessage
+            : "저장된 일기를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.",
+        );
+      }
+    },
+    [
+      draft.content,
+      draft.draftId,
+      draft.photoDataUrl,
+      onChange,
+      onOpenCalendar,
+      openConfirm,
+      toast,
+    ],
+  );
+
+  useEffect(() => {
+    if (checkedEntryIdRef.current === entryId) {
+      return;
+    }
+    checkedEntryIdRef.current = entryId;
+    void checkDateCapacity(draft.date, false);
+  }, [checkDateCapacity, draft.date, entryId]);
+
+  const handleDateChange = async (value: string) => {
+    if (value === "") {
+      return;
+    }
+
+    const selectedDate = clampDiaryDateToToday(value, maxDiaryDate);
+    if (value > maxDiaryDate) {
+      toast.openToast("오늘 이후 날짜는 선택할 수 없어서 오늘로 바꿨어요.");
+    }
+    if (selectedDate === draft.date) {
+      return;
+    }
+
+    await checkDateCapacity(selectedDate, true);
+  };
 
   return (
     <div className="step-body write-form">
@@ -209,23 +312,7 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
                   // Older WebView: the indicator still works.
                 }
               }}
-              onChange={(event) => {
-                // Some browsers emit an empty string while the picker is being
-                // cleared; keep the previous date instead of storing an invalid one.
-                if (event.target.value !== "") {
-                  if (event.target.value > maxDiaryDate) {
-                    toast.openToast(
-                      "오늘 이후 날짜는 선택할 수 없어서 오늘로 바꿨어요.",
-                    );
-                  }
-                  onChange({
-                    date: clampDiaryDateToToday(
-                      event.target.value,
-                      maxDiaryDate,
-                    ),
-                  });
-                }
-              }}
+              onChange={(event) => void handleDateChange(event.target.value)}
             />
           </div>
         </section>
