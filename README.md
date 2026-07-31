@@ -12,7 +12,7 @@
 
 ## 동작 화면
 
-아래 여덟 장은 시작부터 최종 이미지 저장까지의 핵심 흐름을 보여줍니다. 같은 기기와 화면 배율로 촬영한 세로 화면을 사용해 단계별 변화를 한눈에 비교할 수 있도록 구성했습니다.
+아래 열 개 화면은 시작부터 일기 달력에서 기록을 다시 확인하기까지의 핵심 흐름을 보여줍니다. 같은 기기와 화면 배율로 촬영한 세로 화면을 사용해 단계별 변화를 한눈에 비교할 수 있도록 구성했습니다.
 
 <table>
   <tr>
@@ -41,29 +41,49 @@
   </tr>
   <tr>
     <td align="center" width="50%">
-      <strong>5. 선생님 검사 진행</strong><br /><br />
-      <img src="./docs/screenshots/05-teacher-review.png" width="300" alt="선생님이 그림일기를 검사하는 동안 표시되는 화면" /><br /><br />
-      <sub>그림일기 미리보기에서 선생님 한마디와 첨삭 결과를 기다리는 처리 상태</sub>
+      <strong>5. 낮·밤과 날씨 배경</strong><br /><br />
+      <img src="./docs/screenshots/05-weather-background.png" width="300" alt="밤과 천둥번개를 선택해 날씨 배경 효과가 나타난 일기 작성 화면" /><br /><br />
+      <sub>밤과 천둥번개를 선택해 달·비·번개 배경 효과가 적용된 일기 작성 화면</sub>
     </td>
     <td align="center" width="50%">
-      <strong>6. 그림일기 미리보기</strong><br /><br />
-      <img src="./docs/screenshots/06-diary-preview.png" width="300" alt="크레파스 그림과 첨삭 결과가 반영된 그림일기 미리보기 화면" /><br /><br />
-      <sub>크레파스 그림, 원고지 본문, 첨삭 표시, 선생님 한마디와 도장이 모두 반영된 화면</sub>
+      <strong>6. 선생님 검사 진행</strong><br /><br />
+      <img src="./docs/screenshots/06-teacher-review.png" width="300" alt="선생님이 그림일기를 검사하는 동안 표시되는 화면" /><br /><br />
+      <sub>그림일기 미리보기에서 선생님 한마디와 첨삭 결과를 기다리는 처리 상태</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
-      <strong>7. 완성 이미지 저장과 공유</strong><br /><br />
-      <img src="./docs/screenshots/07-complete-diary-modal.png" width="300" alt="완성된 그림일기를 저장하거나 공유하는 화면" /><br /><br />
-      <sub>완성 이미지를 확인하고 이미지 저장·앱 공유·새 일기 쓰기를 선택하는 모달</sub>
+      <strong>7. 그림일기 미리보기</strong><br /><br />
+      <img src="./docs/screenshots/07-diary-preview.png" width="300" alt="크레파스 그림과 첨삭 결과가 반영된 그림일기 미리보기 화면" /><br /><br />
+      <sub>크레파스 그림, 원고지 본문, 첨삭 표시, 선생님 한마디와 도장이 모두 반영된 화면</sub>
     </td>
     <td align="center" width="50%">
-      <strong>8. 최종 그림일기 JPEG</strong><br /><br />
-      <img src="./docs/screenshots/08-result.JPG" width="300" alt="사진과 일기, 첨삭 결과가 합성된 최종 그림일기 이미지" /><br /><br />
-      <sub>사진·본문·첨삭·한마디·도장이 한 장으로 합성되어 기기에 저장되는 최종 결과물</sub>
+      <strong>8. 완성 이미지 저장과 공유</strong><br /><br />
+      <img src="./docs/screenshots/08-complete-diary-modal.png" width="300" alt="완성된 그림일기를 저장하거나 공유하는 화면" /><br /><br />
+      <sub>완성 이미지를 확인하고 이미지 저장·앱 공유·새 일기 쓰기를 선택하는 모달</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <strong>9. 일기 달력</strong><br /><br />
+      <img src="./docs/screenshots/09-diary-calendar.png" width="300" alt="완성한 날짜에 도장이 표시된 일기 달력 화면" /><br /><br />
+      <sub>월을 이동하고 완성한 날짜의 도장을 눌러 저장된 일기를 찾는 화면</sub>
+    </td>
+    <td align="center" width="50%">
+      <strong>10. 저장 일기 상세</strong><br /><br />
+      <img src="./docs/screenshots/10-saved-diary-detail.png" width="300" alt="저장된 그림일기를 다시 보고 공유하거나 삭제하는 상세 화면" /><br /><br />
+      <sub>같은 날짜의 일기를 넘겨 보고 이미지 공유·삭제를 선택하는 상세 화면</sub>
     </td>
   </tr>
 </table>
+
+### 최종 결과물
+
+화면 흐름과 별도로, 사진·본문·첨삭·선생님 한마디·도장이 한 장으로 합성되는 1080×1350 JPEG 결과물입니다.
+
+<p align="center">
+  <img src="./docs/screenshots/final-diary-result.png" width="360" alt="사진과 일기, 첨삭 결과가 합성된 최종 그림일기 JPEG" />
+</p>
 
 ## 주요 기능
 
