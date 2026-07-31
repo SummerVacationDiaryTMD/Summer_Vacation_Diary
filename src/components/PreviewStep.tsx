@@ -611,7 +611,9 @@ export function PreviewStep({
     renderedPreview?.frameLayout ?? getDiaryFrameLayout(draft.content);
 
   return (
-    <div className="step-body preview-step">
+    <div
+      className={`step-body preview-step${isProcessingVisible ? " is-processing" : ""}`}
+    >
       <p className="visually-hidden" role="status">
         {sketchAnnouncement}
       </p>

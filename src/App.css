@@ -3277,6 +3277,20 @@ html:has(.diary-content-section textarea:focus) {
   animation: diary-processing-enter 420ms ease-out both;
 }
 
+.preview-step.is-processing {
+  padding-bottom: calc(24px + var(--app-safe-bottom));
+}
+
+.app-shell-preview:has(.preview-step.is-processing) .app-bottom-bar {
+  display: none;
+}
+
+.preview-step.is-processing .diary-processing-stage {
+  min-height: 0;
+  flex: 1 1 auto;
+  margin-bottom: 0;
+}
+
 .diary-processing-visual {
   position: relative;
   display: grid;
