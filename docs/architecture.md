@@ -4,7 +4,7 @@
 
 ## 시스템 개요
 
-이 프로젝트는 React 단일 페이지 WebView 앱입니다. 라우터·전역 상태 라이브러리·일기 보관용 데이터베이스 없이 `App.tsx`가 온보딩과 3단계 제작 흐름을 조정합니다. 별도 Supabase Edge Function과 사용량 제한 테이블이 서버 경계를 담당합니다.
+이 프로젝트는 React 단일 페이지 WebView 앱입니다. 라우터·전역 상태 라이브러리 없이 `App.tsx`가 온보딩, 3단계 제작 흐름과 일기 달력을 조정합니다. 완성 일기는 기기 저장소에 보관하고, 별도 Supabase Edge Function과 사용량 제한 테이블이 서버 경계를 담당합니다.
 
 외부 기능은 두 경로로 분리됩니다.
 
@@ -14,11 +14,12 @@
 ```mermaid
 flowchart TD
     HTML["index.html"] --> Main["main.tsx<br/>TDSMobileAITProvider"]
-    Main --> App["App.tsx<br/>온보딩 + 3단계 상태"]
+    Main --> App["App.tsx<br/>온보딩 + 제작 3단계 + 달력"]
 
     App --> Upload["PhotoUploadStep<br/>동의·선택·자르기"]
     App --> Write["WriteStep<br/>일기 입력"]
     App --> Preview["PreviewStep<br/>첨삭·미리보기"]
+    App --> Calendar["GrapeCalendarView<br/>보관 일기 달력·뷰어"]
     App --> ShareModal["DiaryShareModal<br/>저장·공유"]
 
     App --> Draft["useDiaryDraft"]
@@ -39,6 +40,9 @@ flowchart TD
 
     Preview --> Composer["diaryImage<br/>Canvas 합성"]
     App --> Composer
+    App --> Archive["diaryStore"]
+    Calendar --> Archive
+    Archive --> DeviceStore["Toss Storage<br/>또는 localStorage"]
     ShareModal --> Export["diaryExport"]
     ShareModal --> Share["diaryShare"]
     Export --> TossSave["Toss saveBase64Data"]
@@ -52,8 +56,8 @@ flowchart TD
 | 경계             | 책임                                       | 주요 파일           |
 | ---------------- | ------------------------------------------ | ------------------- |
 | 진입·Provider    | React mount, Strict Mode, TDS provider     | `src/main.tsx`      |
-| 화면 조정        | 온보딩, 단계, 유효성, 완료 흐름, 모달 상태 | `src/App.tsx`       |
-| 화면 컴포넌트    | 사진·작성·미리보기·완성 UI                 | `src/components/`   |
+| 화면 조정        | 온보딩, 제작 단계, 달력, 유효성, 완료 흐름 | `src/App.tsx`       |
+| 화면 컴포넌트    | 사진·작성·미리보기·달력·완성 UI            | `src/components/`   |
 | 도메인 상태      | `DiaryDraft`, 그림·분석·quota 비동기 상태  | `src/hooks/`        |
 | 외부 경계        | Edge Function, Toss 저장·공유, 캐시        | `src/services/`     |
 | 순수 계산·Canvas | 이미지 처리, 레이아웃, 첨삭, JPEG 합성     | `src/utils/`        |
@@ -74,6 +78,7 @@ step=write
 step=preview
         ↓ Canvas 합성 성공
 finishedDiary={imageDataUrl,fileName}
+        ↘ saveDiary → step=calendar에서 열람
 ```
 
 라우터를 사용하지 않는 이유는 현재 흐름이 deep link가 필요 없는 직선형 3단계 wizard이기 때문이라고 코드 주석에 기록되어 있습니다.
@@ -88,6 +93,7 @@ interface DiaryDraft {
   content: string;
   date: string;
   weather: "sunny" | "partly-cloudy" | "cloudy" | "rainy" | "stormy";
+  timeOfDay: "day" | "night";
 }
 ```
 
@@ -104,12 +110,14 @@ interface DiaryDraft {
 
 ## 완성 일기 보관
 
-`src/services/diaryStore.ts`는 완성한 일기를 기기에 보관하는 서비스 계층입니다. 작업 사본인 draft와 달리, 다시 만들 수 없는 결과물을 다루므로 저장 실패를 조용히 넘기지 않고 `DiaryStoreError`로 알립니다. 아직 어떤 화면과도 연결되어 있지 않습니다.
+`src/services/diaryStore.ts`는 완성한 일기를 기기에 보관하는 서비스 계층입니다. `App.tsx`가 JPEG 합성 직후 `saveDiary`를 호출하고, `GrapeCalendarView`가 목록·상세 조회, 이미지 내보내기와 삭제를 제공합니다. 작업 사본인 draft와 달리 저장 실패를 `DiaryStoreError`로 알립니다.
 
 - 저장 위치: 토스 앱에서는 Apps in Toss `Storage` 브리지, 브라우저 개발 환경에서는 localStorage. WebView의 웹 저장소는 미니앱 URL 기준으로 분리되고 OS가 정리할 수 있어 네이티브 저장소를 기본 경로로 둡니다. 그 결과 같은 토스 앱 안에서도 draft와 보관 일기의 보존 수명이 다릅니다.
 - key 구조: 목록용 `summer-vacation-diary:diary-index:v1`(이미지 없는 요약 배열)과 일기별 `summer-vacation-diary:diary:v1:<id>`. 목록 조회가 이미지 바이트를 읽지 않고, 저장이 기존 일기를 다시 쓰지 않도록 나눴습니다.
 - 일관성: 저장은 항목 → index 순으로 씁니다. 중간에 실패하면 화면에 보이지 않는 항목만 남고, 목록에 있는데 열 수 없는 일기는 생기지 않습니다. index에 남은 끊어진 참조는 `getDiary`가 발견할 때 정리합니다.
 - 정렬은 저장이 아니라 조회 시점에 날짜·저장 시각 내림차순으로 수행합니다.
+- 같은 날짜에는 서로 다른 완성 이미지를 최대 3개 저장합니다. 같은 이미지의 중복 저장은 기존 기록을 반환합니다.
+- 달력은 월 단위로 이동하며 기록이 있는 날짜에 도장을 표시합니다. 같은 날 여러 일기는 버튼 또는 좌우 스와이프로 넘깁니다.
 
 ## 사진 처리 흐름
 
@@ -127,8 +135,8 @@ sequenceDiagram
     Upload->>Image: MIME·용량·크기 검사
     Upload->>Image: 3:2 자르기와 JPEG 변환
     Upload->>App: photoDataUrl + sourceHash
-    User->>App: 일기 쓰러 가기
-    App->>Sketch: 업로드 단계 종료
+    User->>App: 검사 받기
+    App->>Sketch: 미리보기 단계 진입
     Sketch->>Service: transferPhotoToSketch
     alt Supabase + 실제 모드
         Service->>Edge: inspect action
@@ -143,7 +151,7 @@ sequenceDiagram
     Sketch-->>App: draft 갱신
 ```
 
-그림 생성은 작성 시작과 함께 실행해 사용자 입력 시간과 30~120초 범위의 클라이언트 대기 시간을 겹칩니다. 실패는 자동 재시도하지 않고 원본 사진을 유지합니다.
+그림 생성과 분석은 `검사 받기`를 누른 뒤 시작합니다. 하나의 검사 context로 필요한 작업만 통합 요청하며, 실패는 자동 재시도하지 않고 원본 사진을 유지합니다.
 
 ## 일기 검사 흐름
 
@@ -177,7 +185,8 @@ sequenceDiagram
 2. 날짜·날씨·제목·사진·13×5 본문·한마디를 Canvas에 그립니다.
 3. 외부 생성 결과가 있으면 `AI 생성 콘텐츠` watermark를 표시합니다.
 4. `image/jpeg` data URL을 완료 모달에 전달합니다.
-5. 같은 data URL을 토스 저장 또는 브라우저 다운로드에 사용합니다.
+5. 같은 data URL을 일기 달력에 보관하고 성공하면 저장 완료 토스트를 표시합니다.
+6. 완성 모달에서 같은 data URL을 토스 저장 또는 브라우저 다운로드에 사용합니다.
 
 Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 실패해도 원본 사진으로 합성할 수 있습니다.
 
@@ -185,10 +194,10 @@ Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 �
 
 | 대상                | 전송 또는 저장 데이터                                                               | 경계                      |
 | ------------------- | ----------------------------------------------------------------------------------- | ------------------------- |
-| Supabase `diary-ai` | inspect: 필요한 사진 변환·사진/본문 분석, quota: 익명 식별 header                  | `supabaseEdge.ts`         |
+| Supabase `diary-ai` | inspect: 필요한 사진 변환·사진/본문 분석, quota: 익명 식별 header                   | `supabaseEdge.ts`         |
 | Supabase PostgreSQL | scope·식별자 hash·action·window별 요청 횟수                                         | `diary_ai_rate_limits`    |
 | OpenAI              | 클라이언트가 직접 호출하지 않음. 별도 Edge Function 뒤의 실제 전달은 서버 확인 필요 | 저장소 밖                 |
-| Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지, 완성 일기 보관(`Storage`, 화면 미연결) | web-framework runtime API |
+| Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지, 완성 일기 보관(`Storage`)          | web-framework runtime API |
 | localStorage        | draft, quota snapshot, 브라우저 설치 ID, 완성 일기 보관의 브라우저 대체 경로        | 기기 내                   |
 | 메모리              | 분석 캐시, 그림 캐시, 진행 요청 ledger, 완성 JPEG                                   | 현재 앱 실행              |
 
@@ -207,7 +216,8 @@ Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 �
 | 일기 분석   | 30초                  | signature별 Promise·결과 캐시        | 첨삭 없는 미리보기, 선택 재시도 |
 | 그림 생성   | 120초                 | 사진 캐시·진행 ledger                | 원본 사진, 선택 재시도          |
 | Canvas 합성 | 별도 timeout 없음     | 완성 버튼의 `saving` 상태            | 토스트 재시도                   |
-| 저장·공유   | SDK/브라우저 API 의존 | 모달의 `busyAction`                  | 모달 오류 메시지                |
+| 보관        | SDK/브라우저 API 의존 | 서비스 직렬 queue·이미지 중복 검사   | 토스트 또는 달력 오류 메시지    |
+| 저장·공유   | SDK/브라우저 API 의존 | 모달·뷰어의 busy 상태                | 현재 화면의 오류 메시지         |
 
 클라이언트 timeout은 서버 실행 취소를 보장하지 않습니다. 분석 timeout 후 quota를 다시 조회하고, 그림은 확인 불가 결과로 ledger를 해제한 뒤 snapshot을 갱신할 수 있도록 구성되어 있습니다.
 
@@ -241,7 +251,7 @@ flowchart LR
 - Supabase 사용량 테이블 DDL은 확인됐지만 versioned migration 파일은 저장소에 없습니다.
 - 서버 rate limit 값, 해시 방식, 보존 기간, 환불 정책은 확인할 수 없습니다.
 - 자동 테스트와 CI 품질 gate가 없습니다.
-- 완성 일기 목록, 계정 동기화, PDF 내보내기가 없습니다.
+- 계정 동기화, 클라우드 백업, PDF 내보내기가 없습니다.
 - 브라우저 저장·공유 fallback과 Toss 실제 동작은 각각 별도 환경 검증이 필요합니다.
 
 ## 관련 문서

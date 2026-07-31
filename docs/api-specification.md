@@ -10,7 +10,7 @@
 - **확인 필요:** 운영 배포 상태, OpenAI 응답 품질, 로그·보존 정책
 - **근거:** `src/services/supabaseEdge.ts`, `src/services/diaryAnalysis.ts`, `src/services/styleTransfer.ts`, `src/services/aiQuotaStore.ts`, `src/hooks/useAiQuota.ts`
 
-이 API는 이 앱의 내부 외부-service 경계이며, 저장소가 공개 HTTP API로 제공하는 서버 구현은 아닙니다.
+이 API는 이 앱의 AI·사용량 외부 경계이며, 저장소가 공개 HTTP API로 제공하는 서버 구현은 아닙니다. 일기 달력의 저장·조회·삭제는 이 API를 사용하지 않고 기기 저장소에서만 처리합니다.
 
 ## 공통 계약
 
@@ -50,14 +50,14 @@
 }
 ```
 
-| 필드                | 타입·제약                                                   |
-| ------------------- | ----------------------------------------------------------- |
-| `all`               | 필수 통합 AI 검사 카운터                                    |
-| `resetAt`           | 파싱 가능한 ISO date string                                 |
-| `blocked`           | `null`, `device`, `ip-burst`, `ip-daily`, `service` 중 하나 |
-| `region.allowed`    | boolean. 누락 시 클라이언트는 `true`로 호환 처리            |
-| `region.country`    | ISO 3166-1 alpha-2 string 또는 `null`로 기대                |
-| `testMode`          | `true`일 때만 true, 누락 시 false                           |
+| 필드             | 타입·제약                                                   |
+| ---------------- | ----------------------------------------------------------- |
+| `all`            | 필수 통합 AI 검사 카운터                                    |
+| `resetAt`        | 파싱 가능한 ISO date string                                 |
+| `blocked`        | `null`, `device`, `ip-burst`, `ip-daily`, `service` 중 하나 |
+| `region.allowed` | boolean. 누락 시 클라이언트는 `true`로 호환 처리            |
+| `region.country` | ISO 3166-1 alpha-2 string 또는 `null`로 기대                |
+| `testMode`       | `true`일 때만 true, 누락 시 false                           |
 
 클라이언트는 `quota.all`만 통합 `AI 검사 기회`의 권위값으로 사용합니다.
 서버는 필요한 작업을 하나의 `inspect` 요청으로 묶고, 사용자 `all`
@@ -108,14 +108,14 @@ counter는 실제 실행한 sketch·analyze 작업별로 유지합니다.
 }
 ```
 
-| 필드                 | 타입             | 클라이언트 조건                          |
-| -------------------- | ---------------- | ---------------------------------------- |
-| `action`             | string           | 항상 `inspect`                           |
-| `runSketch`          | boolean          | 새 그림이 필요할 때 true                 |
-| `runAnalyze`         | boolean          | 새 본문 분석이 필요할 때 true            |
-| `photoDataUrl`       | string           | `runSketch=true`일 때 JPEG data URL      |
-| `input.photoDataUrl` | string 또는 null | `runAnalyze=true`일 때 현재 사진         |
-| `input.content`      | string           | `runAnalyze=true`일 때 현재 일기 본문    |
+| 필드                 | 타입             | 클라이언트 조건                       |
+| -------------------- | ---------------- | ------------------------------------- |
+| `action`             | string           | 항상 `inspect`                        |
+| `runSketch`          | boolean          | 새 그림이 필요할 때 true              |
+| `runAnalyze`         | boolean          | 새 본문 분석이 필요할 때 true         |
+| `photoDataUrl`       | string           | `runSketch=true`일 때 JPEG data URL   |
+| `input.photoDataUrl` | string 또는 null | `runAnalyze=true`일 때 현재 사진      |
+| `input.content`      | string           | `runAnalyze=true`일 때 현재 일기 본문 |
 
 - 두 실행 값 중 하나 이상이 true여야 합니다.
 - **timeout:** 150초
@@ -192,7 +192,7 @@ invalid-response
 분석 입력은 A-02의 `inspect` 요청 안에 포함되며 `runAnalyze=true`일 때만
 전송됩니다. 결과는 최상위 `analysis` 객체로 반환됩니다.
 
-제목·날짜·날씨는 완성 이미지에만 사용하며 분석 API에는 전송하지 않습니다.
+제목·날짜·날씨·낮/밤 배경은 완성 이미지와 화면 표현에만 사용하며 분석 API에는 전송하지 않습니다.
 
 - **timeout:** 통합 요청 기준 150초
 - **Path·Query parameter:** 없음
@@ -257,6 +257,8 @@ invalid-response
 - 사용자 계정 token이나 session 인증은 없습니다.
 - `x-diary-client-id`는 남용 방지 힌트이며 인증 수단이 아닙니다.
 - 원본 사진과 일기는 JSON request body로 전송됩니다.
+- 제목·날짜·날씨·낮/밤 배경과 완성 JPEG는 전송하지 않습니다.
+- 완성 일기의 자동 보관과 일기 달력 조회에는 네트워크 요청이 없습니다.
 
 자세한 데이터 흐름과 확인 필요 항목은 [보안·데이터 처리](./security.md)를 참고하세요.
 

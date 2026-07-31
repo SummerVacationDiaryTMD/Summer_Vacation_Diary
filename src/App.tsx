@@ -26,10 +26,7 @@ import {
   createDiaryInspectionContext,
   type DiaryInspectionContext,
 } from "./services/diaryInspection";
-import {
-  composeDiaryImage,
-  type DiaryImageInput,
-} from "./utils/diaryImage";
+import { composeDiaryImage, type DiaryImageInput } from "./utils/diaryImage";
 import { isAiConnected } from "./services/diaryAnalysis";
 import { DiaryStoreError, saveDiary } from "./services/diaryStore";
 import { isSketchAiConnected } from "./services/styleTransfer";
@@ -523,9 +520,9 @@ function App() {
         fileName: `summer-diary-${draft.date}-${clockSuffix()}.jpg`,
       });
 
-      // Ripens the bead on the grape calendar. Kept in its own catch because
-      // the finished image is already on screen: failing to archive it is
-      // worth telling the user about, but not worth taking that away or
+      // Adds the finished diary to the diary calendar. Kept in its own catch
+      // because the finished image is already on screen: failing to archive it
+      // is worth telling the user about, but not worth taking that away or
       // offering to re-run the composition that just succeeded.
       if (archivedImageRef.current !== imageDataUrl) {
         archivedImageRef.current = imageDataUrl;
@@ -541,12 +538,13 @@ function App() {
             imageDataUrl,
             includesAiGeneratedContent,
           });
+          toast.openToast("일기 달력에 저장했어요.");
         } catch (error) {
           archivedImageRef.current = null;
           toast.openToast(
             error instanceof DiaryStoreError
               ? error.userMessage
-              : "일기를 포도 달력에 담지 못했어요.",
+              : "일기 달력에 기록하지 못했어요.",
           );
         }
       }

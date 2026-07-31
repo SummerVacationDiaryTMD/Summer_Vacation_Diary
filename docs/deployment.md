@@ -60,13 +60,13 @@ npm run deploy
 
 ## 환경별 권장 확인
 
-| 환경           | 확인 항목                                                |
-| -------------- | -------------------------------------------------------- |
-| 브라우저       | mock/필터, JPEG 다운로드, Web Share·링크 복사            |
-| Toss 샌드박스  | deep link, safe area, `saveBase64Data`, Toss 공유창      |
-| iOS 실기기     | 사진 선택·자르기, 저장 화면, 공유 취소·완료              |
-| Android 실기기 | 파일 MIME이 빈 경우, 저장 파일명, back 동작              |
-| 실제 Supabase  | analyze·sketch·quota-status contract, timeout, 오류 code |
+| 환경           | 확인 항목                                                           |
+| -------------- | ------------------------------------------------------------------- |
+| 브라우저       | mock/필터, JPEG 다운로드, Web Share·링크 복사, localStorage 달력    |
+| Toss 샌드박스  | deep link, safe area, `saveBase64Data`, Toss 공유창, `Storage` 달력 |
+| iOS 실기기     | 사진 선택·자르기, 저장 화면, 보관 일기 열람·공유·삭제               |
+| Android 실기기 | 빈 MIME, 저장 파일명, back 동작, 달력 스와이프                      |
+| 실제 Supabase  | analyze·sketch·quota-status contract, timeout, 오류 code            |
 
 ## 출시 전 체크리스트
 
@@ -78,6 +78,9 @@ npm run deploy
 - [ ] 한국·해외 IP의 실제 지역 제한 동작을 확인했다.
 - [ ] 사용량 제한과 09:00 KST reset 안내가 실제 서버와 일치한다.
 - [ ] iOS·Android에서 저장·공유를 실기기로 확인했다.
+- [ ] 완성 JPEG가 일기 달력에 자동 보관되고 앱 재실행 후에도 열리는지 확인했다.
+- [ ] 날짜별 3개 제한, 같은 날 일기 이동, 삭제 확인과 저장소 부족 오류를 확인했다.
+- [ ] 보관 기록이 계정·기기·브라우저 환경 사이에 동기화되지 않는다는 제품 안내가 운영 정책과 맞다.
 - [ ] Edge Function 장애 시 원본 사진과 mock이 아니라 명시적 오류/fallback이 나타난다.
 - [ ] 린트, 타입 검사, build가 성공했다.
 

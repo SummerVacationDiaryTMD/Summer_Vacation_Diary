@@ -8,38 +8,40 @@
 
 ## 처리 데이터
 
-| 데이터             | 발생 위치                | 로컬 저장                            | 외부 전송                          |
-| ------------------ | ------------------------ | ------------------------------------ | ---------------------------------- |
-| 원본을 자른 사진   | 파일 선택·Canvas         | draft의 JPEG data URL                | sketch, analyze 요청               |
-| 그림 변환 이미지   | 로컬 필터 또는 Edge 응답 | draft의 JPEG data URL                | 추가 전송 없음                     |
-| 제목               | 작성 화면                | draft                                | 전송하지 않음                      |
-| 본문               | 작성 화면                | draft                                | analyze 요청                       |
-| 날짜               | 작성 화면                | draft                                | 전송하지 않음                      |
-| 날씨               | 작성 화면                | draft                                | 전송하지 않음                      |
-| 분석 결과          | mock 또는 Edge 응답      | React 메모리 캐시                    | 추가 전송 없음                     |
-| 완성 JPEG          | Canvas                   | IndexedDB, 사용자가 저장하면 기기    | 공유 payload에는 포함하지 않음     |
-| Toss 익명 key      | Toss runtime             | 앱이 별도 저장하지 않음              | `x-diary-client-id`                |
-| 브라우저 설치 UUID | Web Crypto               | localStorage                         | `x-diary-client-id`                |
-| quota snapshot     | Edge 응답                | localStorage                         | 서버에서 수신                      |
-| IP                 | 네트워크 요청            | 클라이언트가 직접 저장하지 않음      | 서버가 요청 연결에서 관찰 가능     |
+| 데이터             | 발생 위치                | 로컬 저장                                                | 외부 전송                              |
+| ------------------ | ------------------------ | -------------------------------------------------------- | -------------------------------------- |
+| 원본을 자른 사진   | 파일 선택·Canvas         | draft의 JPEG data URL                                    | sketch, analyze 요청                   |
+| 그림 변환 이미지   | 로컬 필터 또는 Edge 응답 | draft의 JPEG data URL                                    | 추가 전송 없음                         |
+| 제목               | 작성 화면                | draft                                                    | 전송하지 않음                          |
+| 본문               | 작성 화면                | draft                                                    | analyze 요청                           |
+| 날짜               | 작성 화면                | draft                                                    | 전송하지 않음                          |
+| 날씨               | 작성 화면                | draft                                                    | 전송하지 않음                          |
+| 낮·밤 배경         | 작성 화면                | draft                                                    | 전송하지 않음                          |
+| 분석 결과          | mock 또는 Edge 응답      | React 메모리 캐시                                        | 추가 전송 없음                         |
+| 완성 JPEG          | Canvas                   | Toss `Storage` 또는 localStorage, 사용자가 저장하면 파일 | 앱 링크 공유 payload에는 포함하지 않음 |
+| Toss 익명 key      | Toss runtime             | 앱이 별도 저장하지 않음                                  | `x-diary-client-id`                    |
+| 브라우저 설치 UUID | Web Crypto               | localStorage                                             | `x-diary-client-id`                    |
+| quota snapshot     | Edge 응답                | localStorage                                             | 서버에서 수신                          |
+| IP                 | 네트워크 요청            | 클라이언트가 직접 저장하지 않음                          | 서버가 요청 연결에서 관찰 가능         |
 
 ## 로컬 저장소
 
-| key                                  | 내용                               | 삭제·만료                                                    |
-| ------------------------------------ | ---------------------------------- | ------------------------------------------------------------ |
-| `summer-vacation-diary:draft:v2`     | 사진, 그림, 제목, 본문, 날짜, 날씨 | `새 일기 쓰기` 시 삭제 시도; OS·사용자가 앱 데이터 삭제 가능 |
-| `summer-vacation-diary:client-id:v1` | 무작위 브라우저 UUID               | 자동 만료 없음                                               |
-| `summer-vacation-diary:quota:v1`     | 사용량, reset, 차단·지역 상태      | reset 시각 경과 또는 testMode snapshot이면 삭제              |
-| `summer-vacation-diary:diary-index:v1` | 보관된 일기의 id, 날짜, 저장 시각, 제목, 날씨 | `deleteDiary` 시 해당 항목 제거; 자동 만료 없음 |
-| `summer-vacation-diary:diary:v1:<id>` | 보관된 일기 한 편 전체: 본문, 완성 JPEG data URL, AI 생성 여부 | `deleteDiary` 시 삭제; 자동 만료 없음 |
+| key                                     | 내용                                                           | 삭제·만료                                                    |
+| --------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------ |
+| `summer-vacation-diary:draft:v2`        | 사진, 그림, 제목, 본문, 날짜, 날씨, 낮·밤                      | `새 일기 쓰기` 시 삭제 시도; OS·사용자가 앱 데이터 삭제 가능 |
+| `summer-vacation-diary:client-id:v1`    | 무작위 브라우저 UUID                                           | 자동 만료 없음                                               |
+| `summer-vacation-diary:quota:v1`        | 사용량, reset, 차단·지역 상태                                  | reset 시각 경과 또는 testMode snapshot이면 삭제              |
+| `summer-vacation-diary:sketch-cache:v1` | 원본 파일 SHA-256와 변환 그림, 최대 3개                        | 다시 그리기·캐시 교체·앱 데이터 삭제 시 제거 가능            |
+| `summer-vacation-diary:diary-index:v1`  | 보관된 일기의 id, 날짜, 저장 시각, 제목, 날씨                  | `deleteDiary` 시 해당 항목 제거; 자동 만료 없음              |
+| `summer-vacation-diary:diary:v1:<id>`   | 보관된 일기 한 편 전체: 본문, 완성 JPEG data URL, AI 생성 여부 | `deleteDiary` 시 삭제; 자동 만료 없음                        |
 
 draft는 400ms debounce와 page hide flush로 기록됩니다. 저장 용량이 부족하면 그림과 사진을 제거한 더 작은 draft로 재시도합니다.
 
-`diary-index`와 `diary` key는 토스 앱 안에서는 localStorage가 아니라 네이티브 `Storage` 브리지에, 브라우저 개발 환경에서는 localStorage에 기록됩니다. 이 모듈은 아직 화면과 연결되어 있지 않아 현재 실제 사용자 흐름에서는 기록되지 않습니다.
+`diary-index`와 `diary` key는 토스 앱 안에서는 localStorage가 아니라 네이티브 `Storage` 브리지에, 브라우저 개발 환경에서는 localStorage에 기록됩니다. JPEG 합성에 성공하면 자동으로 기록하고 일기 달력에서 조회·삭제합니다.
 
 앱은 시작 시 `restoreOnStart: false`라 이전 draft를 UI에 복원하지 않지만, `새 일기 쓰기` 전까지 저장 key 자체가 남아 있을 수 있습니다.
 
-완성 일기는 IndexedDB `summer-vacation-diary` 데이터베이스의 `completed-diaries` 요약 store와 `completed-diary-images` 이미지 store에 날짜·생성 시각·평가 도장과 함께 저장됩니다. 날짜별 최대 3개이며 자동 만료는 없습니다. 앱 데이터 또는 브라우저 데이터를 지우면 함께 삭제되고, 서버나 다른 기기로 동기화되지 않습니다.
+완성 일기는 이미지 없는 index와 JPEG data URL을 포함한 일기별 record로 분리해 저장합니다. 날짜별 최대 3개이며 자동 만료는 없습니다. 앱 데이터 또는 브라우저 데이터를 지우면 함께 삭제되고, 서버나 다른 기기로 동기화되지 않습니다.
 
 ## 외부 전송
 
@@ -148,6 +150,7 @@ quota snapshot은 UI 표시와 선차단 용도입니다. 클라이언트는 공
 - 토스 저장 시 data URL prefix를 제거한 JPEG Base64를 `saveBase64Data`에 전달합니다.
 - 브라우저 저장은 `<a download>`를 사용합니다.
 - 공유는 완성 이미지가 아니라 앱 소개 문구와 Toss share link 또는 현재 URL입니다.
+- 일기 달력의 `이미지 공유하기`는 공개 URL 업로드가 아니라 같은 JPEG 파일 저장/다운로드 경로를 사용합니다.
 - 공개 이미지 URL을 만들거나 사진을 업로드하는 공유 서버는 없습니다.
 - 브라우저 Clipboard fallback은 현재 페이지 URL만 복사합니다.
 
