@@ -74,6 +74,13 @@ function formatDateValue(date: string): string {
   return `${year}. ${Number(month)}. ${Number(day)}.`;
 }
 
+function todayString(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
 /**
  * Step 2: title, diary text, date and weather.
  * All fields write straight into the shared draft, so leaving this screen
@@ -185,6 +192,7 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
               type="date"
               aria-label="일기 날짜"
               value={draft.date}
+              max={todayString()}
               // Without this only the calendar glyph opens the picker — tapping
               // the date text does nothing, which reads as a dead button.
               // showPicker is Chrome 99+/Safari 16+ and throws if it is not
