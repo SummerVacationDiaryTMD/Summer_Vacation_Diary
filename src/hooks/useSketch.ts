@@ -303,12 +303,14 @@ export function useSketch(
       retryable: error.retryable,
     };
   } else if (isSketchTicketSettled(photoDataUrl)) {
-    // A settled photo whose drawing is still in the session cache is about to
-    // be committed by the effect — that frame must read as loading, not as
-    // failure. With nothing cached the result is genuinely gone: charged for,
-    // but neither a sketch nor an error survived, and nothing may dispatch
-    // again.
-    state = cacheRef.current.has(photoDataUrl)
+    // The ledger settles inside the request before this hook's resolution
+    // handler can cache and commit the returned drawing. A render can land in
+    // that gap, so an in-flight promise must remain loading just like a cached
+    // result waiting to be committed. Only a settled photo with neither is a
+    // genuine lost-result failure.
+    state =
+      pendingRef.current.has(photoDataUrl) ||
+      cacheRef.current.has(photoDataUrl)
       ? { status: "loading" }
       : {
           status: "error",

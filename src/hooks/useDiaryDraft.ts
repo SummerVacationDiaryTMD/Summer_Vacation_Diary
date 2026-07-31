@@ -6,10 +6,16 @@ import {
   WEATHER_OPTIONS,
 } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
+import {
+  clampDiaryDateToToday,
+  localTodayString,
+} from "../utils/diaryDate";
 
 export type TimeOfDay = "day" | "night";
 
 export interface DiaryDraft {
+  /** Stable identity for one logical diary, preserved while it is edited. */
+  draftId: string;
   photoDataUrl: string | null;
   /**
    * Stage-3 colored-pencil drawing made from photoDataUrl. Lives in the draft
@@ -27,27 +33,29 @@ export interface DiaryDraft {
   timeOfDay: TimeOfDay;
 }
 
-// toISOString() reports UTC, which is "yesterday" for Korean users before 09:00,
-// so the default date is built from local time parts instead.
-function todayString(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
-}
-
 function currentTimeOfDay(): TimeOfDay {
   const hour = new Date().getHours();
   return hour >= 6 && hour < 18 ? "day" : "night";
 }
 
+function createDraftId(): string {
+  if (typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(
+    "",
+  );
+}
+
 function emptyDraft(): DiaryDraft {
   return {
+    draftId: createDraftId(),
     photoDataUrl: null,
     sketchDataUrl: null,
     title: "",
     content: "",
-    date: todayString(),
+    date: localTodayString(),
     weather: "sunny",
     timeOfDay: currentTimeOfDay(),
   };
@@ -73,6 +81,10 @@ function loadDraft(): DiaryDraft {
         ? candidate.photoDataUrl
         : null;
     return {
+      draftId:
+        typeof candidate.draftId === "string" && candidate.draftId !== ""
+          ? candidate.draftId
+          : createDraftId(),
       photoDataUrl,
       // A sketch is only meaningful for the photo it was drawn from — if the
       // stored draft has no photo, a leftover sketch must not survive either.
@@ -88,8 +100,8 @@ function loadDraft(): DiaryDraft {
       date:
         typeof candidate.date === "string" &&
         /^\d{4}-\d{2}-\d{2}$/.test(candidate.date)
-          ? candidate.date
-          : todayString(),
+          ? clampDiaryDateToToday(candidate.date)
+          : localTodayString(),
       weather: WEATHER_VALUES.includes(candidate.weather as WeatherValue)
         ? (candidate.weather as WeatherValue)
         : "sunny",
@@ -173,7 +185,11 @@ export function useDiaryDraft({ restoreOnStart = true } = {}) {
   }, [draft]);
 
   const updateDraft = useCallback((patch: Partial<DiaryDraft>) => {
-    setDraft((previous) => ({ ...previous, ...patch }));
+    const normalizedPatch =
+      patch.date === undefined
+        ? patch
+        : { ...patch, date: clampDiaryDateToToday(patch.date) };
+    setDraft((previous) => ({ ...previous, ...normalizedPatch }));
   }, []);
 
   const clearDraft = useCallback(() => {
