@@ -829,14 +829,11 @@ export function PreviewStep({
         <Modal.Overlay />
         <Modal.Content
           className="app-modal-panel preview-error-modal"
-          aria-labelledby="preview-error-title"
+          aria-label="오류 안내"
           aria-describedby="preview-error-description"
         >
           <div className="app-modal-layout preview-error-modal-layout">
             <div className="preview-error-modal-body">
-              <h2 id="preview-error-title" className="app-modal-title">
-                연결을 다시 확인해 주세요
-              </h2>
               <p id="preview-error-description">{errorMessageText}</p>
             </div>
             <div
