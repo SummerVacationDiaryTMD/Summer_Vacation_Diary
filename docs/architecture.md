@@ -110,13 +110,13 @@ interface DiaryDraft {
 
 ## 완성 일기 보관
 
-`src/services/diaryStore.ts`는 완성한 일기를 기기에 보관하는 서비스 계층입니다. `App.tsx`가 JPEG 합성 직후 `saveDiary`를 호출하고, `GrapeCalendarView`가 목록·상세 조회, 이미지 내보내기와 삭제를 제공합니다. 작업 사본인 draft와 달리 저장 실패를 `DiaryStoreError`로 알립니다.
+`src/services/diaryStore.ts`는 완성한 일기를 기기에 보관하는 서비스 계층입니다. `App.tsx`가 JPEG 합성 직후 초안 ID와 함께 `saveDiary`를 호출하고, 같은 초안을 다시 저장하면 이전 날짜 항목을 새 날짜 항목으로 교체합니다. `GrapeCalendarView`는 목록·상세 조회, 이미지 내보내기와 삭제를 제공합니다. 작업 사본인 draft와 달리 저장 실패를 `DiaryStoreError`로 알립니다.
 
 - 저장 위치: 토스 앱에서는 Apps in Toss `Storage` 브리지, 브라우저 개발 환경에서는 localStorage. WebView의 웹 저장소는 미니앱 URL 기준으로 분리되고 OS가 정리할 수 있어 네이티브 저장소를 기본 경로로 둡니다. 그 결과 같은 토스 앱 안에서도 draft와 보관 일기의 보존 수명이 다릅니다.
 - key 구조: 목록용 `summer-vacation-diary:diary-index:v1`(이미지 없는 요약 배열)과 일기별 `summer-vacation-diary:diary:v1:<id>`. 목록 조회가 이미지 바이트를 읽지 않고, 저장이 기존 일기를 다시 쓰지 않도록 나눴습니다.
 - 일관성: 저장은 항목 → index 순으로 씁니다. 중간에 실패하면 화면에 보이지 않는 항목만 남고, 목록에 있는데 열 수 없는 일기는 생기지 않습니다. index에 남은 끊어진 참조는 `getDiary`가 발견할 때 정리합니다.
 - 정렬은 저장이 아니라 조회 시점에 날짜·저장 시각 내림차순으로 수행합니다.
-- 같은 날짜에는 서로 다른 완성 이미지를 최대 3개 저장합니다. 같은 이미지의 중복 저장은 기존 기록을 반환합니다.
+- 같은 날짜에는 서로 다른 일기를 최대 3개 저장합니다. 같은 `draftId`를 다시 저장하면 새 record와 index 항목으로 교체하고 이전 record를 정리합니다.
 - 달력은 월 단위로 이동하며 기록이 있는 날짜에 도장을 표시합니다. 같은 날 여러 일기는 버튼 또는 좌우 스와이프로 넘깁니다.
 
 ## 사진 처리 흐름
@@ -216,7 +216,7 @@ Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 �
 | 일기 분석   | 30초                  | signature별 Promise·결과 캐시        | 첨삭 없는 미리보기, 선택 재시도 |
 | 그림 생성   | 120초                 | 사진 캐시·진행 ledger                | 원본 사진, 선택 재시도          |
 | Canvas 합성 | 별도 timeout 없음     | 완성 버튼의 `saving` 상태            | 토스트 재시도                   |
-| 보관        | SDK/브라우저 API 의존 | 서비스 직렬 queue·이미지 중복 검사   | 토스트 또는 달력 오류 메시지    |
+| 보관        | SDK/브라우저 API 의존 | 서비스 직렬 queue·초안 ID 교체       | 토스트 또는 달력 오류 메시지    |
 | 저장·공유   | SDK/브라우저 API 의존 | 모달·뷰어의 busy 상태                | 현재 화면의 오류 메시지         |
 
 클라이언트 timeout은 서버 실행 취소를 보장하지 않습니다. 분석 timeout 후 quota를 다시 조회하고, 그림은 확인 불가 결과로 ledger를 해제한 뒤 snapshot을 갱신할 수 있도록 구성되어 있습니다.

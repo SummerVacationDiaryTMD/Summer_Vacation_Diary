@@ -5,6 +5,22 @@ export interface DiaryDateParts {
   weekday: string;
 }
 
+// toISOString() reports UTC, which is "yesterday" for Korean users before
+// 09:00. Build the date from local parts so the picker and draft use the
+// device's current calendar date.
+export function localTodayString(referenceDate = new Date()): string {
+  const month = String(referenceDate.getMonth() + 1).padStart(2, "0");
+  const day = String(referenceDate.getDate()).padStart(2, "0");
+  return `${referenceDate.getFullYear()}-${month}-${day}`;
+}
+
+export function clampDiaryDateToToday(
+  date: string,
+  today = localTodayString(),
+): string {
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= today ? date : today;
+}
+
 /**
  * Produces the exact date labels shared by the DOM preview and export canvas.
  * Keeping this in one place prevents the saved image from formatting a date

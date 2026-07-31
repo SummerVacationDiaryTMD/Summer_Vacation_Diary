@@ -221,6 +221,8 @@ function App() {
   const [renderedDiaryPreview, setRenderedDiaryPreview] =
     useState<RenderedDiaryPreview | null>(null);
   const [previewAnimationRunning, setPreviewAnimationRunning] = useState(false);
+  const [previewProcessingEnabled, setPreviewProcessingEnabled] =
+    useState(false);
   const [finishedDiary, setFinishedDiary] = useState<{
     imageDataUrl: string;
     fileName: string;
@@ -386,15 +388,22 @@ function App() {
 
     setHasVisitedPreview(true);
 
-    const runSketchAi =
-      isSketchAiConnected && draft.sketchDataUrl === null && sketchAllowed;
-    const runAnalyzeAi =
-      isAiConnected && analysisState.status !== "success" && analyzeAllowed;
+    const needsSketch = draft.sketchDataUrl === null;
+    const needsAnalysis = analysisState.status !== "success";
+    const willProcessSketch = needsSketch && sketchAllowed;
+    const willProcessAnalysis = needsAnalysis && analyzeAllowed;
+    const runSketchAi = isSketchAiConnected && willProcessSketch;
+    const runAnalyzeAi = isAiConnected && willProcessAnalysis;
     const inspection =
       runSketchAi || runAnalyzeAi
         ? createDiaryInspectionContext(runSketchAi, runAnalyzeAi)
         : undefined;
     setInspectionContext(inspection);
+    // Decide at entry time whether this visit has real work to wait for.
+    // When the shared AI budget is spent, both `willProcess*` values are false,
+    // so PreviewStep skips its three-stage animation and shows the fallback
+    // preview immediately.
+    setPreviewProcessingEnabled(willProcessSketch || willProcessAnalysis);
 
     // Navigation is never gated on the budget: unavailable AI results fall
     // back to the original photo or an uncommented diary, and 완성하기 still
@@ -406,8 +415,7 @@ function App() {
       runAnalysis(inspection);
     }
 
-    const needsAiWork =
-      draft.sketchDataUrl === null || analysisState.status !== "success";
+    const needsAiWork = needsSketch || needsAnalysis;
     if (aiQuotaSpent && needsAiWork) {
       toast.openToast("오늘 AI 검사 기회를 모두 사용했어요.");
     }
@@ -528,6 +536,7 @@ function App() {
         archivedImageRef.current = imageDataUrl;
         try {
           await saveDiary({
+            draftId: draft.draftId,
             date: draft.date,
             // Stored as typed. The empty-title fallback is a display choice, and
             // baking it in here would make it impossible to tell apart from a
@@ -689,6 +698,7 @@ function App() {
           onRetry={retryAnalysis}
           sketchState={sketchState}
           onSketchRetry={retryDrawing}
+          processingEnabled={previewProcessingEnabled}
           onProcessingVisibilityChange={setPreviewAnimationRunning}
           onRenderedImageChange={setRenderedDiaryPreview}
         />
@@ -782,7 +792,7 @@ function App() {
             tone="secondary"
             stable
             fullWidth
-            disabled={saving}
+            disabled={saving || previewPreparing}
             onClick={() => {
               setAnalyzeRecheckNoticeVisible(true);
               setStep("write");

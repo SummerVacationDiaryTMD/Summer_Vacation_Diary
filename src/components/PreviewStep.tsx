@@ -57,6 +57,7 @@ interface PreviewStepProps {
   onRetry: () => void;
   sketchState: SketchState;
   onSketchRetry: () => void;
+  processingEnabled: boolean;
   onProcessingVisibilityChange: (visible: boolean) => void;
   onRenderedImageChange: (preview: RenderedDiaryPreview | null) => void;
 }
@@ -388,6 +389,7 @@ export function PreviewStep({
   onRetry,
   sketchState,
   onSketchRetry,
+  processingEnabled,
   onProcessingVisibilityChange,
   onRenderedImageChange,
 }: PreviewStepProps) {
@@ -416,7 +418,8 @@ export function PreviewStep({
     (isSketchAiConnected && sketchState.status === "success") ||
     (isAiConnected && analysisState.status === "success");
   const isAiRequestLoading =
-    analysisState.status === "loading" || sketchState.status === "loading";
+    processingEnabled &&
+    (analysisState.status === "loading" || sketchState.status === "loading");
   const analysisRetryable =
     analysisState.status === "error" && analysisState.retryable;
   const sketchRetryable =
@@ -465,6 +468,7 @@ export function PreviewStep({
   useEffect(() => {
     if (errorMessages.length === 0) {
       errorDialogKeyRef.current = null;
+      setErrorModalOpen(false);
       return;
     }
 
@@ -613,6 +617,15 @@ export function PreviewStep({
       <p className="visually-hidden" role="status">
         {sketchAnnouncement}
       </p>
+
+      <div className="preview-save-notice" role="note">
+        <span className="preview-save-notice-symbol" aria-hidden="true">
+          ✓
+        </span>
+        <span>
+          아래 <strong>일기 완성하기</strong>를 눌러야 달력에 저장돼요.
+        </span>
+      </div>
 
       {isProcessingVisible ? (
         <DiaryProcessingStage currentStep={processingStep} />

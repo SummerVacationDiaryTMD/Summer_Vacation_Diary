@@ -8,6 +8,10 @@ import {
 } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import type { DiaryDraft } from "../hooks/useDiaryDraft";
+import {
+  clampDiaryDateToToday,
+  localTodayString,
+} from "../utils/diaryDate";
 import { diaryContentCellCount, fitDiaryContent } from "../utils/diaryFrameLayout";
 
 interface WriteStepProps {
@@ -74,13 +78,6 @@ function formatDateValue(date: string): string {
   return `${year}. ${Number(month)}. ${Number(day)}.`;
 }
 
-function todayString(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${now.getFullYear()}-${month}-${day}`;
-}
-
 /**
  * Step 2: title, diary text, date and weather.
  * All fields write straight into the shared draft, so leaving this screen
@@ -89,6 +86,7 @@ function todayString(): string {
 export function WriteStep({ draft, onChange }: WriteStepProps) {
   const [titleLimitShakeCount, setTitleLimitShakeCount] = useState(0);
   const [contentLimitShakeCount, setContentLimitShakeCount] = useState(0);
+  const maxDiaryDate = localTodayString();
   const titleLength = Array.from(draft.title).length;
   const titleAtLimit = titleLength >= TITLE_MAX_LENGTH;
   const contentLength = diaryContentCellCount(draft.content);
@@ -192,7 +190,7 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
               type="date"
               aria-label="일기 날짜"
               value={draft.date}
-              max={todayString()}
+              max={maxDiaryDate}
               // Without this only the calendar glyph opens the picker — tapping
               // the date text does nothing, which reads as a dead button.
               // showPicker is Chrome 99+/Safari 16+ and throws if it is not
@@ -209,7 +207,12 @@ export function WriteStep({ draft, onChange }: WriteStepProps) {
                 // Some browsers emit an empty string while the picker is being
                 // cleared; keep the previous date instead of storing an invalid one.
                 if (event.target.value !== "") {
-                  onChange({ date: event.target.value });
+                  onChange({
+                    date: clampDiaryDateToToday(
+                      event.target.value,
+                      maxDiaryDate,
+                    ),
+                  });
                 }
               }}
             />

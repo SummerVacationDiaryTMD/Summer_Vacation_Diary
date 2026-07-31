@@ -49,6 +49,11 @@ function entryStorageKey(id: string): string {
 /** What a list screen needs. Deliberately excludes the image. */
 export interface DiarySummary {
   id: string;
+  /**
+   * Identifies one logical draft across edits and date changes. Optional only
+   * so records saved before this field existed remain readable.
+   */
+  draftId?: string;
   /** The date the user picked, local YYYY-MM-DD — same meaning as in the draft. */
   date: string;
   /** ISO 8601 instant of the save itself; formatting it is the screen's job. */
@@ -64,7 +69,12 @@ export interface DiaryRecord extends DiarySummary {
   includesAiGeneratedContent: boolean;
 }
 
-export type SaveDiaryInput = Omit<DiaryRecord, "id" | "savedAt">;
+export type SaveDiaryInput = Omit<
+  DiaryRecord,
+  "id" | "savedAt" | "draftId"
+> & {
+  draftId: string;
+};
 
 export type DiaryStoreErrorCode =
   | "storage-full"
@@ -170,13 +180,15 @@ function isSummary(value: unknown): value is DiarySummary {
   if (typeof value !== "object" || value === null) {
     return false;
   }
-  const { id, date, savedAt, title, weather } = value as Record<
+  const { id, draftId, date, savedAt, title, weather } = value as Record<
     string,
     unknown
   >;
   return (
     typeof id === "string" &&
     id !== "" &&
+    (draftId === undefined ||
+      (typeof draftId === "string" && draftId !== "")) &&
     typeof date === "string" &&
     DATE_PATTERN.test(date) &&
     typeof savedAt === "string" &&
@@ -203,6 +215,7 @@ function isRecord(value: unknown): value is DiaryRecord {
 function toSummary(record: DiaryRecord): DiarySummary {
   return {
     id: record.id,
+    ...(record.draftId === undefined ? {} : { draftId: record.draftId }),
     date: record.date,
     savedAt: record.savedAt,
     title: record.title,
@@ -278,6 +291,14 @@ export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
       throw readFailedError();
     }
 
+    // Re-saving the same logical draft moves it to the newly selected date
+    // instead of creating another calendar entry. The image cannot identify
+    // this reliably because its pixels include the selected date.
+    const replacedIds = new Set(
+      index
+        .filter((summary) => summary.draftId === input.draftId)
+        .map((summary) => summary.id),
+    );
     let diariesOnDate = 0;
     for (const summary of index) {
       if (summary.date !== input.date) {
@@ -300,8 +321,15 @@ export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
       if (!isRecord(existing)) {
         continue;
       }
+      if (existing.draftId === input.draftId) {
+        replacedIds.add(summary.id);
+        continue;
+      }
+      // Migrate an exact same-date record saved by the older schema into the
+      // draft-ID model rather than leaving one legacy duplicate behind.
       if (existing.imageDataUrl === input.imageDataUrl) {
-        return existing;
+        replacedIds.add(summary.id);
+        continue;
       }
       diariesOnDate += 1;
     }
@@ -312,6 +340,7 @@ export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
 
     const record: DiaryRecord = {
       id: createDiaryId(),
+      draftId: input.draftId,
       date: input.date,
       savedAt: new Date().toISOString(),
       title: clamp(input.title, TITLE_MAX_LENGTH),
@@ -332,7 +361,10 @@ export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
     }
 
     try {
-      await writeIndex([...index, toSummary(record)]);
+      await writeIndex([
+        ...index.filter((summary) => !replacedIds.has(summary.id)),
+        toSummary(record),
+      ]);
     } catch {
       try {
         await getBackend().removeItem(entryStorageKey(record.id));
@@ -340,6 +372,16 @@ export function saveDiary(input: SaveDiaryInput): Promise<DiaryRecord> {
         // Leaves an orphan entry. It costs space but shows up nowhere.
       }
       throw storageFullError();
+    }
+
+    // The index swap above is the visible commit. Old entry cleanup is best
+    // effort: a failure leaves only unreachable bytes, never duplicate dates.
+    for (const replacedId of replacedIds) {
+      try {
+        await getBackend().removeItem(entryStorageKey(replacedId));
+      } catch {
+        // The old record is already absent from the index.
+      }
     }
 
     return record;
