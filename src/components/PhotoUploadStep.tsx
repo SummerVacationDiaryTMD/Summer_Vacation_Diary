@@ -6,7 +6,8 @@ import {
   useToast,
 } from "@toss/tds-mobile";
 import { colors } from "@toss/tds-colors";
-import { lazy, Suspense, useRef, useState } from "react";
+import { graniteEvent } from "@apps-in-toss/web-framework";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 import familyDiaryPlaceholder from "../assets/family-diary-placeholder.jpg";
 
@@ -85,6 +86,57 @@ export function PhotoUploadStep({
 
   const toast = useToast();
   const { openAlert, openConfirm } = useDialog();
+
+  useEffect(() => {
+    const handleBack = (event: PopStateEvent) => {
+      if (event.state?.diaryOverlayReturn === "crop") {
+        const state = { ...event.state };
+        delete state.diaryOverlayReturn;
+        window.history.replaceState(state, "");
+        setCropSource(null);
+      }
+    };
+
+    window.addEventListener("popstate", handleBack);
+    return () => window.removeEventListener("popstate", handleBack);
+  }, []);
+
+  useEffect(() => {
+    if (cropSource === null) {
+      return;
+    }
+
+    window.history.replaceState(
+      { ...window.history.state, diaryOverlayReturn: "crop" },
+      "",
+    );
+    window.history.pushState(
+      { ...window.history.state, diaryOverlayReturn: undefined },
+      "",
+    );
+
+    return graniteEvent.addEventListener("backEvent", {
+      onEvent: () => window.history.back(),
+    });
+  }, [cropSource]);
+
+  useEffect(() => {
+    if (!consentOpen) {
+      return;
+    }
+
+    return graniteEvent.addEventListener("backEvent", {
+      onEvent: () => {
+        setConsentOpen(false);
+        setAgreed(false);
+      },
+    });
+  }, [consentOpen]);
+
+  const closeCrop = () => {
+    setCropSource(null);
+    window.history.back();
+  };
 
   const commitPhoto = async (croppedDataUrl: string) => {
     const sourceHash = sourceHashRef.current;
@@ -300,9 +352,9 @@ export function PhotoUploadStep({
         <Suspense fallback={null}>
           <PhotoCropModal
             imageDataUrl={cropSource}
-            onCancel={() => setCropSource(null)}
+            onCancel={closeCrop}
             onConfirm={(croppedDataUrl) => {
-              setCropSource(null);
+              closeCrop();
               void commitPhoto(croppedDataUrl);
             }}
             onError={() => {
