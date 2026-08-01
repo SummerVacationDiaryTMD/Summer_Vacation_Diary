@@ -296,11 +296,15 @@ export function DiaryCalendarView({
 
   const step = (delta: number) => {
     setViewerIndex((index) => {
-      if (index === null || viewerEntries.length === 0) {
+      if (index === null) {
         return null;
       }
+      const next = index + delta;
+      if (next < 0 || next >= viewerEntries.length) {
+        return index;
+      }
       setPageDirection(delta > 0 ? "forward" : "backward");
-      return (index + delta + viewerEntries.length) % viewerEntries.length;
+      return next;
     });
   };
 
@@ -532,7 +536,7 @@ export function DiaryCalendarView({
               <DiaryButton
                 tone="secondary"
                 stable
-                disabled={viewerEntries.length <= 1}
+                disabled={viewerIndex === 0}
                 onClick={() => step(-1)}
                 aria-label="이 날의 이전 일기"
               >
@@ -546,7 +550,7 @@ export function DiaryCalendarView({
               <DiaryButton
                 tone="secondary"
                 stable
-                disabled={viewerEntries.length <= 1}
+                disabled={viewerIndex === viewerEntries.length - 1}
                 onClick={() => step(1)}
                 aria-label="이 날의 다음 일기"
               >
