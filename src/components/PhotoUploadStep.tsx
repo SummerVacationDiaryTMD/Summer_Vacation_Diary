@@ -6,7 +6,8 @@ import {
   useToast,
 } from "@toss/tds-mobile";
 import { colors } from "@toss/tds-colors";
-import { lazy, Suspense, useRef, useState } from "react";
+import { graniteEvent } from "@apps-in-toss/web-framework";
+import { useEffect, useRef, useState } from "react";
 
 import familyDiaryPlaceholder from "../assets/family-diary-placeholder.jpg";
 
@@ -20,12 +21,7 @@ import {
 import { getCachedSketch, hashPhotoFile } from "../services/sketchCache";
 import { isAiTestMode, isSupabaseConfigured } from "../services/supabaseEdge";
 import { DiaryButton } from "./DiaryButton";
-
-const loadPhotoCropModal = () => import("./PhotoCropModal");
-const PhotoCropModal = lazy(async () => {
-  const module = await loadPhotoCropModal();
-  return { default: module.PhotoCropModal };
-});
+import { PhotoCropModal } from "./PhotoCropModal";
 
 export interface PhotoSelection {
   dataUrl: string;
@@ -86,6 +82,61 @@ export function PhotoUploadStep({
   const toast = useToast();
   const { openAlert, openConfirm } = useDialog();
 
+  useEffect(() => {
+    const handleBack = (event: PopStateEvent) => {
+      if (event.state?.diaryOverlayReturn === "crop") {
+        const state = { ...event.state };
+        delete state.diaryOverlayReturn;
+        window.history.replaceState(state, "");
+        setCropSource(null);
+      }
+    };
+
+    window.addEventListener("popstate", handleBack);
+    return () => window.removeEventListener("popstate", handleBack);
+  }, []);
+
+  useEffect(() => {
+    if (cropSource === null) {
+      return;
+    }
+
+    window.history.replaceState(
+      { ...window.history.state, diaryOverlayReturn: "crop" },
+      "",
+    );
+    window.history.pushState(
+      { ...window.history.state, diaryOverlayReturn: undefined },
+      "",
+    );
+
+    if (!("ReactNativeWebView" in window)) {
+      return;
+    }
+
+    return graniteEvent.addEventListener("backEvent", {
+      onEvent: () => window.history.back(),
+    });
+  }, [cropSource]);
+
+  useEffect(() => {
+    if (!consentOpen || !("ReactNativeWebView" in window)) {
+      return;
+    }
+
+    return graniteEvent.addEventListener("backEvent", {
+      onEvent: () => {
+        setConsentOpen(false);
+        setAgreed(false);
+      },
+    });
+  }, [consentOpen]);
+
+  const closeCrop = () => {
+    setCropSource(null);
+    window.history.back();
+  };
+
   const commitPhoto = async (croppedDataUrl: string) => {
     const sourceHash = sourceHashRef.current;
     const cachedSketch = getCachedSketch(sourceHash);
@@ -135,11 +186,6 @@ export function PhotoUploadStep({
   };
 
   const requestPhotoSelection = () => {
-    // Cropping is only needed after a valid photo selection. Start fetching its
-    // code from the user's tap so it is ready while the consent sheet or native
-    // image picker is open, without adding it to the initial app bundle.
-    void loadPhotoCropModal();
-
     // 이전 사진 처리가 진행 중이면 중복 선택을 막습니다.
     if (processing) {
       return;
@@ -297,19 +343,17 @@ export function PhotoUploadStep({
       />
 
       {cropSource !== null && (
-        <Suspense fallback={null}>
-          <PhotoCropModal
-            imageDataUrl={cropSource}
-            onCancel={() => setCropSource(null)}
-            onConfirm={(croppedDataUrl) => {
-              setCropSource(null);
-              void commitPhoto(croppedDataUrl);
-            }}
-            onError={() => {
-              toast.openToast(IMAGE_ERROR_MESSAGES["load-failed"]);
-            }}
-          />
-        </Suspense>
+        <PhotoCropModal
+          imageDataUrl={cropSource}
+          onCancel={closeCrop}
+          onConfirm={(croppedDataUrl) => {
+            closeCrop();
+            void commitPhoto(croppedDataUrl);
+          }}
+          onError={() => {
+            toast.openToast(IMAGE_ERROR_MESSAGES["load-failed"]);
+          }}
+        />
       )}
 
       <Modal
