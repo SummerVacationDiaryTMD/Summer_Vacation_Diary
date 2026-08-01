@@ -1,5 +1,5 @@
 import { Top, useDialog, useToast } from "@toss/tds-mobile";
-import { SafeAreaInsets } from "@apps-in-toss/web-framework";
+import { graniteEvent, SafeAreaInsets } from "@apps-in-toss/web-framework";
 import {
   lazy,
   Suspense,
@@ -45,6 +45,28 @@ type Step = "upload" | "write" | "preview" | "calendar";
 type WizardStep = Exclude<Step, "calendar">;
 
 const CALENDAR_PATH = "/calendar";
+const HISTORY_STEP_KEY = "summerDiaryStep";
+
+function historyStateFor(step: Step): Record<string, unknown> {
+  const current = window.history.state;
+  return {
+    ...(typeof current === "object" && current !== null ? current : {}),
+    [HISTORY_STEP_KEY]: step,
+  };
+}
+
+function stepFromHistoryState(state: unknown): Step | null {
+  if (typeof state !== "object" || state === null) {
+    return null;
+  }
+  const value = (state as Record<string, unknown>)[HISTORY_STEP_KEY];
+  return value === "upload" ||
+    value === "write" ||
+    value === "preview" ||
+    value === "calendar"
+    ? value
+    : null;
+}
 
 const loadPreviewStep = () => import("./components/PreviewStep");
 const loadDiaryCalendarView = () => import("./components/DiaryCalendarView");
@@ -172,6 +194,15 @@ function App() {
   const [step, setStep] = useState<Step>(() =>
     isCalendarDeepLink() ? "calendar" : "upload",
   );
+  const stepRef = useRef(step);
+  const navigateToStep = (nextStep: Step, replace = false) => {
+    stepRef.current = nextStep;
+    window.history[replace ? "replaceState" : "pushState"](
+      historyStateFor(nextStep),
+      "",
+    );
+    setStep(nextStep);
+  };
   const [calendarReturnStep, setCalendarReturnStep] = useState<
     "upload" | "write" | "new"
   >("upload");
@@ -256,13 +287,52 @@ function App() {
     useState(false);
 
   useEffect(() => {
-    // A destroyed WebView loses this state naturally. pagehide also covers a
-    // host that caches the page and later restores it instead of remounting.
-    const endPhotoConsentSession = () => setHasPhotoSessionConsent(false);
-    window.addEventListener("pagehide", endPhotoConsentSession);
-    return () =>
-      window.removeEventListener("pagehide", endPhotoConsentSession);
+    window.history.replaceState(historyStateFor(stepRef.current), "");
+
+    const handleHistoryNavigation = (event: PopStateEvent) => {
+      const nextStep = stepFromHistoryState(event.state);
+      if (nextStep === null || event.state?.diaryOverlayReturn === "crop") {
+        return;
+      }
+
+      const previousStep = stepRef.current;
+      if (previousStep === "upload") {
+        window.history.back();
+        return;
+      }
+      if (previousStep === "preview" && nextStep === "write") {
+        setAnalyzeRecheckNoticeVisible(true);
+        setWriteEntryId((entryId) => entryId + 1);
+      }
+      if (previousStep === "calendar") {
+        setCalendarInitialDate(undefined);
+        setCalendarReveal(null);
+        if (nextStep === "write") {
+          setWriteEntryId((entryId) => entryId + 1);
+        }
+      }
+
+      stepRef.current = nextStep;
+      setStep(nextStep);
+    };
+
+    window.addEventListener("popstate", handleHistoryNavigation);
+    return () => window.removeEventListener("popstate", handleHistoryNavigation);
   }, []);
+
+  useEffect(() => {
+    if (step === "upload" || !("ReactNativeWebView" in window)) {
+      return;
+    }
+
+    return graniteEvent.addEventListener("backEvent", {
+      onEvent: () => {
+        if (step !== "preview") {
+          window.history.back();
+        }
+      },
+    });
+  }, [step]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -411,7 +481,7 @@ function App() {
     setCalendarInitialDate(undefined);
     setCalendarReveal(null);
     setCalendarShareRequest(null);
-    setStep("upload");
+    navigateToStep("upload", true);
   };
 
   const handleStartWriting = () => {
@@ -428,7 +498,7 @@ function App() {
     // a photo can enter the draft, so another confirmation here would repeat
     // the same notice and interrupt the user a second time.
     setWriteEntryId((entryId) => entryId + 1);
-    setStep("write");
+    navigateToStep("write");
   };
 
   const handlePreview = () => {
@@ -485,7 +555,7 @@ function App() {
       toast.openToast("오늘 AI 검사 기회를 모두 사용했어요.");
     }
 
-    setStep("preview");
+    navigateToStep("preview");
   };
 
   const retryAnalysis = () => {
@@ -614,7 +684,7 @@ function App() {
       setCalendarReturnStep("new");
       setCalendarInitialDate(undefined);
       setCalendarReveal({ date: draft.date, diaryId: saveResult.record.id });
-      setStep("calendar");
+      navigateToStep("calendar");
     } catch (error) {
       const message =
         error instanceof DiaryStoreError
@@ -766,7 +836,7 @@ function App() {
               setCalendarReturnStep("write");
               setCalendarInitialDate(date);
               setCalendarReveal(null);
-              setStep("calendar");
+              navigateToStep("calendar");
             }}
             onChange={(patch) => {
               if (
@@ -824,7 +894,7 @@ function App() {
                 setCalendarReturnStep("upload");
                 setCalendarInitialDate(undefined);
                 setCalendarReveal(null);
-                setStep("calendar");
+                navigateToStep("calendar");
               }}
             >
               일기장 보기
@@ -852,12 +922,11 @@ function App() {
               setCalendarInitialDate(undefined);
               setCalendarReveal(null);
               if (calendarReturnStep === "write") {
-                setWriteEntryId((entryId) => entryId + 1);
-                setStep("write");
+                window.history.back();
               } else if (calendarReturnStep === "new") {
                 startNewDiary();
               } else {
-                setStep("upload");
+                window.history.back();
               }
             }}
           >
@@ -876,7 +945,7 @@ function App() {
             stable
             fullWidth
             onClick={() => {
-              setStep("upload");
+              window.history.back();
             }}
           >
             사진 변경
@@ -905,9 +974,7 @@ function App() {
             fullWidth
             disabled={saving || previewPreparing}
             onClick={() => {
-              setAnalyzeRecheckNoticeVisible(true);
-              setWriteEntryId((entryId) => entryId + 1);
-              setStep("write");
+              window.history.back();
             }}
           >
             일기 수정

@@ -459,9 +459,9 @@ export function PreviewStep({
     [animatedAnalysis, draft.content],
   );
   const commentWriteDurationMs =
-    Math.max(animatedAnalysis?.comment.length ?? 0, 1) * 180;
+    Math.max(animatedAnalysis?.comment.length ?? 0, 1) * 50;
   const commentDelayMs = annotationTimeline.totalDurationMs + 350;
-  const stampDelayMs = commentDelayMs + commentWriteDurationMs + 300;
+  const stampDelayMs = commentDelayMs + commentWriteDurationMs + 1_000;
 
   useEffect(() => {
     if (errorMessages.length === 0) {
@@ -806,7 +806,7 @@ export function PreviewStep({
                   style={
                     {
                       ...frameRegionStyle(frameLayout.comment, frameLayout),
-                      "--comment-write-duration": `${Math.max(animatedAnalysis.comment.length, 1) * 50}ms`,
+                      "--comment-write-duration": `${commentWriteDurationMs}ms`,
                       "--comment-delay": `${commentDelayMs}ms`,
                       "--comment-write-steps": Math.max(
                         animatedAnalysis.comment.length,
