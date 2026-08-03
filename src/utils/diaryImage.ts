@@ -618,12 +618,7 @@ export async function composeDiaryImage(
 
   const titleX = TITLE.x;
   const titleY = TITLE.y;
-  const titleWidth = TITLE.width;
   const titleHeight = TITLE.height;
-  context.save();
-  context.beginPath();
-  context.rect(titleX, titleY, titleWidth, titleHeight);
-  context.clip();
   context.font = TITLE_FONT;
   context.fillStyle = "#222222";
   const titleText = input.title || "제목 없는 일기";
@@ -637,8 +632,6 @@ export async function composeDiaryImage(
     TITLE_HANDWRITING_STRENGTH,
     titleTracking,
   );
-  context.restore();
-
   drawContent(context, input.content, input.analysis, markImages);
   drawComment(context, input.analysis, frameLayout);
 

@@ -3657,7 +3657,7 @@ html:has(
 .diary-title-row strong {
   display: block;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
   font-size: inherit;
   letter-spacing: 0.1em;
   white-space: nowrap;
