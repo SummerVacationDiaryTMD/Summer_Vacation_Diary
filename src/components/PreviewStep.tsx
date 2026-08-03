@@ -77,51 +77,7 @@ const PREVIEW_PROCESSING_STEPS = [
 const PROCESSING_READ_STEP_DELAY_MS = 2_500;
 const PROCESSING_FINISH_STEP_DELAY_MS = 5_500;
 const PROCESSING_FINISH_MIN_VISIBLE_MS = 1_200;
-
-function DiaryProcessingIcon({ step }: { step: number }) {
-  if (step === 0) {
-    return (
-      <svg
-        key={step}
-        className="diary-processing-icon"
-        viewBox="0 0 64 64"
-        focusable="false"
-      >
-        <path d="M10 16h44v34H10V16Z" />
-        <path d="m14 44 11-12 8 7 7-6 10 11" />
-        <path d="M23 27a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
-      </svg>
-    );
-  }
-
-  if (step === 1) {
-    return (
-      <svg
-        key={step}
-        className="diary-processing-icon"
-        viewBox="0 0 64 64"
-        focusable="false"
-      >
-        <path d="M8 16c8-2 16 0 24 6v30c-8-6-16-8-24-5V16Z" />
-        <path d="M56 16c-8-2-16 0-24 6v30c8-6 16-8 24-5V16Z" />
-        <path d="M32 22v30" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg
-      key={step}
-      className="diary-processing-icon"
-      viewBox="0 0 64 64"
-      focusable="false"
-    >
-      <path d="m12 48 4-14 23-23 11 11-23 23-15 3Z" />
-      <path d="m35 16 10 10M16 34l11 11" />
-      <path d="m39 45 5 5 10-13" />
-    </svg>
-  );
-}
+const PROCESSING_MASCOT_URL = "/mascot/stamp-friend-faceplant-stable.png";
 
 function DiaryProcessingStage({ currentStep }: { currentStep: number }) {
   return (
@@ -136,7 +92,18 @@ function DiaryProcessingStage({ currentStep }: { currentStep: number }) {
       <div className="diary-processing-visual" aria-hidden="true">
         <span className="diary-processing-orbit" />
         <span className="diary-processing-badge">
-          <DiaryProcessingIcon key={currentStep} step={currentStep} />
+          <picture>
+            <source
+              media="(prefers-reduced-motion: reduce)"
+              srcSet="/mascot/stamp-friend-idle.png"
+            />
+            <img
+              className="diary-processing-mascot"
+              src={PROCESSING_MASCOT_URL}
+              alt=""
+              draggable={false}
+            />
+          </picture>
         </span>
         <span className="diary-processing-spark diary-processing-spark-one" />
         <span className="diary-processing-spark diary-processing-spark-two" />

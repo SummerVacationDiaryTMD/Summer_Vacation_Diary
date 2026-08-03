@@ -3252,8 +3252,8 @@ html:has(
 .diary-processing-visual {
   position: relative;
   display: grid;
-  width: 104px;
-  height: 104px;
+  width: 156px;
+  height: 156px;
   flex: 0 0 auto;
   place-items: center;
 }
@@ -3269,9 +3269,10 @@ html:has(
 }
 
 .diary-processing-badge {
+  position: relative;
   display: grid;
-  width: 78px;
-  height: 78px;
+  width: 132px;
+  height: 132px;
   box-sizing: border-box;
   place-items: center;
   border: 2px solid #78bda1;
@@ -3287,33 +3288,24 @@ html:has(
     inset 0 0 0 4px rgba(255, 255, 255, 0.62),
     1px 3px 0 rgba(61, 122, 92, 0.16);
   color: #276a52;
-  animation: diary-processing-breathe 1.8s ease-in-out infinite;
 }
 
-.diary-processing-icon {
-  width: 46px;
-  height: 46px;
+.diary-processing-badge picture {
+  position: relative;
+  display: block;
+  z-index: 1;
+  width: 150px;
+  height: 150px;
   overflow: visible;
-  fill: none;
-  stroke: currentcolor;
-  stroke-width: 3.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
-.diary-processing-icon > * {
-  stroke-dasharray: 160;
-  stroke-dashoffset: 160;
-  animation: diary-processing-icon-draw 2.4s ease-in-out infinite;
+.diary-processing-mascot {
+  display: block;
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
 }
 
-.diary-processing-icon > *:nth-child(2) {
-  animation-delay: 180ms;
-}
-
-.diary-processing-icon > *:nth-child(3) {
-  animation-delay: 360ms;
-}
 
 .diary-processing-spark {
   position: absolute;
@@ -3472,32 +3464,6 @@ html:has(
 @keyframes diary-processing-orbit {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@keyframes diary-processing-breathe {
-  0%,
-  100% {
-    transform: scale(0.97);
-  }
-  50% {
-    transform: scale(1.03);
-  }
-}
-
-@keyframes diary-processing-icon-draw {
-  0% {
-    opacity: 0.35;
-    stroke-dashoffset: 160;
-  }
-  45%,
-  78% {
-    opacity: 1;
-    stroke-dashoffset: 0;
-  }
-  100% {
-    opacity: 0.35;
-    stroke-dashoffset: -160;
   }
 }
 
@@ -3993,7 +3959,6 @@ html:has(
   .diary-processing-stage,
   .diary-processing-orbit,
   .diary-processing-badge,
-  .diary-processing-icon > *,
   .diary-processing-steps .is-current > span,
   .diary-card-reveal {
     animation: none;
@@ -4014,10 +3979,6 @@ html:has(
   .diary-stamp {
     transform: rotate(-35deg);
     opacity: 0.75;
-  }
-
-  .diary-processing-icon > * {
-    stroke-dashoffset: 0;
   }
 
   .diary-processing-spark {
