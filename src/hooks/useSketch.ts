@@ -24,7 +24,7 @@ import {
   sketchErrorMessage,
   transferPhotoToSketch,
 } from "../services/styleTransfer";
-import type { DiaryDraft } from "./useDiaryDraft";
+import type { DiaryDraft, DiaryDraftPatch } from "./useDiaryDraft";
 
 // Shown when the daily budget is already spent, so no request is ever made.
 const QUOTA_SPENT_MESSAGE = sketchCauseMessage("daily-limit-exceeded");
@@ -56,7 +56,7 @@ const CACHE_MAX_ENTRIES = 2;
  */
 export function useSketch(
   draft: Pick<DiaryDraft, "photoDataUrl" | "sketchDataUrl">,
-  updateDraft: (patch: Partial<DiaryDraft>) => void,
+  updateDraft: (patch: DiaryDraftPatch) => void,
   active: boolean,
   /**
    * False only when the budget is known to be spent — counting the requests

@@ -53,13 +53,13 @@ function entryStorageKey(id: string): string {
 export interface DiarySummary {
   id: string;
   /**
-   * Identifies one logical draft across edits and date changes. Optional only
-   * so records saved before this field existed remain readable.
+   * Identifies one logical draft across edits. Optional only so records saved
+   * before this field existed remain readable.
    */
   draftId?: string;
   /** Hash of the AI input revision: original photo + diary body. */
   revisionKey?: string;
-  /** The date the user picked, local YYYY-MM-DD — same meaning as in the draft. */
+  /** The day the diary was written, local YYYY-MM-DD — as in the draft. */
   date: string;
   /** ISO 8601 instant of the save itself; formatting it is the screen's job. */
   savedAt: string;
@@ -313,8 +313,8 @@ export function saveDiary(input: SaveDiaryInput): Promise<SaveDiaryResult> {
     const normalizedTitle = clamp(input.title, TITLE_MAX_LENGTH);
     const normalizedContent = clamp(input.content, CONTENT_MAX_LENGTH);
     // A revision follows the exact AI input: original photo + diary body.
-    // Date, title and weather edits update that revision; changing either AI
-    // input creates a new record even inside the same draft.
+    // Title and weather edits update that revision; changing either AI input
+    // creates a new record even inside the same draft.
     const replacedIds = new Set(
       index
         .filter(
@@ -449,18 +449,10 @@ export function listDiaries(): Promise<DiarySummary[]> {
 
 /**
  * Checks whether a date can accept another diary without loading image bytes
- * for unrelated dates. A record for the current draft revision is excluded
- * because saving it updates that record instead of consuming another slot.
+ * for unrelated dates. Every stored record counts: the caller asks before its
+ * own diary is saved, so none of the records found here is that diary.
  */
-export function getDiaryDateCapacity({
-  date,
-  draftId,
-  revisionKey,
-}: {
-  date: string;
-  draftId: string;
-  revisionKey?: string;
-}): Promise<DiaryDateCapacity> {
+export function getDiaryDateCapacity(date: string): Promise<DiaryDateCapacity> {
   return withLock(async () => {
     let index: DiarySummary[];
     try {
@@ -472,13 +464,6 @@ export function getDiaryDateCapacity({
     let diariesOnDate = 0;
     for (const summary of index) {
       if (summary.date !== date) {
-        continue;
-      }
-      if (
-        revisionKey !== undefined &&
-        summary.draftId === draftId &&
-        summary.revisionKey === revisionKey
-      ) {
         continue;
       }
 

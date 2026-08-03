@@ -113,7 +113,7 @@ interface DiaryDraft {
 
 ## 완성 일기 보관
 
-`src/services/diaryStore.ts`는 완성한 일기를 기기에 보관하는 서비스 계층입니다. `App.tsx`가 JPEG 합성 직후 초안 ID와 AI 입력인 사진·본문의 revision hash를 `saveDiary`에 전달합니다. 같은 초안과 revision hash의 날짜·제목·날씨 변경은 기존 항목에 반영하고, 사진 또는 본문이 바뀐 버전은 새 ID로 별도 보관합니다. `DiaryCalendarView`는 목록·상세 조회, 저장·공유 모달 진입과 삭제를 제공합니다. 작업 사본인 draft와 달리 저장 실패를 `DiaryStoreError`로 알립니다.
+`src/services/diaryStore.ts`는 완성한 일기를 기기에 보관하는 서비스 계층입니다. `App.tsx`가 JPEG 합성 직후 초안 ID와 AI 입력인 사진·본문의 revision hash를 `saveDiary`에 전달합니다. 같은 초안과 revision hash의 제목·날씨 변경은 기존 항목에 반영하고, 사진 또는 본문이 바뀐 버전은 새 ID로 별도 보관합니다. `DiaryCalendarView`는 목록·상세 조회, 저장·공유 모달 진입과 삭제를 제공합니다. 작업 사본인 draft와 달리 저장 실패를 `DiaryStoreError`로 알립니다.
 
 - 저장 위치: 토스 앱에서는 Apps in Toss `Storage` 브리지, 브라우저 개발 환경에서는 localStorage. WebView의 웹 저장소는 미니앱 URL 기준으로 분리되고 OS가 정리할 수 있어 네이티브 저장소를 기본 경로로 둡니다. 그 결과 같은 토스 앱 안에서도 draft와 보관 일기의 보존 수명이 다릅니다.
 - key 구조: 목록용 `summer-vacation-diary:diary-index:v1`(이미지 없는 요약 배열)과 일기별 `summer-vacation-diary:diary:v1:<id>`. 목록 조회가 이미지 바이트를 읽지 않고, 저장이 기존 일기를 다시 쓰지 않도록 나눴습니다.
@@ -158,7 +158,7 @@ sequenceDiagram
 
 ## 일기 검사 흐름
 
-`검사 받기`가 명시적으로 `runAnalysis()`를 호출합니다. 입력 signature는 사진과 본문의 JSON 배열입니다. 제목·날짜·날씨는 분석 입력이 아니므로 수정해도 기존 결과를 재사용합니다.
+`검사 받기`가 명시적으로 `runAnalysis()`를 호출합니다. 입력 signature는 사진과 본문의 JSON 배열입니다. 제목·날씨는 분석 입력이 아니므로 수정해도 기존 결과를 재사용합니다.
 
 - 같은 signature의 진행 중 Promise 재사용
 - 성공 결과 최근 3개 메모리 캐시

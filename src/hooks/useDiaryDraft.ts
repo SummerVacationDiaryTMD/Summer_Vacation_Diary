@@ -6,10 +6,7 @@ import {
   WEATHER_OPTIONS,
 } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
-import {
-  clampDiaryDateToToday,
-  localTodayString,
-} from "../utils/diaryDate";
+import { localTodayString } from "../utils/diaryDate";
 
 export type TimeOfDay = "day" | "night";
 
@@ -26,12 +23,22 @@ export interface DiaryDraft {
   sketchDataUrl: string | null;
   title: string;
   content: string;
-  /** Local date in YYYY-MM-DD, matching what <input type="date"> uses. */
+  /**
+   * Local date in YYYY-MM-DD, fixed to the day the draft was created. A diary
+   * belongs to the day it is written on, so this is derived once and never
+   * edited — `DiaryDraftPatch` excludes it so no screen can drift from that.
+   */
   date: string;
   weather: WeatherValue;
   /** Visual-only sky theme. It is never included in an AI request. */
   timeOfDay: TimeOfDay;
 }
+
+/**
+ * What a screen may change. Everything except the two fields that identify the
+ * diary itself: `draftId` (its identity) and `date` (the day it is written for).
+ */
+export type DiaryDraftPatch = Partial<Omit<DiaryDraft, "draftId" | "date">>;
 
 function currentTimeOfDay(): TimeOfDay {
   const hour = new Date().getHours();
@@ -97,11 +104,10 @@ function loadDraft(): DiaryDraft {
           ? Array.from(candidate.title).slice(0, TITLE_MAX_LENGTH).join("")
           : "",
       content: typeof candidate.content === "string" ? candidate.content : "",
-      date:
-        typeof candidate.date === "string" &&
-        /^\d{4}-\d{2}-\d{2}$/.test(candidate.date)
-          ? clampDiaryDateToToday(candidate.date)
-          : localTodayString(),
+      // The stored date is deliberately ignored: a restored draft is still
+      // being written today, so it is today's diary regardless of when the
+      // text was typed.
+      date: localTodayString(),
       weather: WEATHER_VALUES.includes(candidate.weather as WeatherValue)
         ? (candidate.weather as WeatherValue)
         : "sunny",
@@ -184,12 +190,8 @@ export function useDiaryDraft({ restoreOnStart = true } = {}) {
     return () => clearTimeout(timer);
   }, [draft]);
 
-  const updateDraft = useCallback((patch: Partial<DiaryDraft>) => {
-    const normalizedPatch =
-      patch.date === undefined
-        ? patch
-        : { ...patch, date: clampDiaryDateToToday(patch.date) };
-    setDraft((previous) => ({ ...previous, ...normalizedPatch }));
+  const updateDraft = useCallback((patch: DiaryDraftPatch) => {
+    setDraft((previous) => ({ ...previous, ...patch }));
   }, []);
 
   const clearDraft = useCallback(() => {
