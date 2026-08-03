@@ -78,8 +78,19 @@ const PROCESSING_READ_STEP_DELAY_MS = 2_500;
 const PROCESSING_FINISH_STEP_DELAY_MS = 5_500;
 const PROCESSING_FINISH_MIN_VISIBLE_MS = 1_200;
 const PROCESSING_MASCOT_URL = "/mascot/stamp-friend-faceplant-stable.png";
+const PROCESSING_MASCOT_REPLAY_MS = 1_300;
 
 function DiaryProcessingStage({ currentStep }: { currentStep: number }) {
+  const [mascotLoop, setMascotLoop] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(
+      () => setMascotLoop((current) => current + 1),
+      PROCESSING_MASCOT_REPLAY_MS,
+    );
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <section
       className="diary-processing-stage"
@@ -98,8 +109,9 @@ function DiaryProcessingStage({ currentStep }: { currentStep: number }) {
               srcSet="/mascot/stamp-friend-idle.png"
             />
             <img
+              key={mascotLoop}
               className="diary-processing-mascot"
-              src={PROCESSING_MASCOT_URL}
+              src={`${PROCESSING_MASCOT_URL}?loop=${mascotLoop}`}
               alt=""
               draggable={false}
             />

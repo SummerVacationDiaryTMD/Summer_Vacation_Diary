@@ -90,7 +90,7 @@ export function PhotoCropModal({
           zoom={zoom}
           rotation={rotation}
           aspect={3 / 2}
-          objectFit="cover"
+          objectFit="contain"
           minZoom={1}
           maxZoom={3}
           showGrid={false}
