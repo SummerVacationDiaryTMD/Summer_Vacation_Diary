@@ -3265,7 +3265,7 @@ html:has(
   border: 2px dashed rgba(76, 151, 120, 0.35);
   border-top-color: var(--summer-coral);
   border-radius: 48% 52% 45% 55% / 53% 45% 55% 47%;
-  animation: diary-processing-orbit 2.8s linear infinite;
+  animation: diary-processing-orbit 8s linear infinite;
 }
 
 .diary-processing-badge {
@@ -3297,6 +3297,7 @@ html:has(
   width: 150px;
   height: 150px;
   overflow: visible;
+  animation: diary-processing-mascot-breathe 4.8s ease-in-out infinite;
 }
 
 .diary-processing-mascot {
@@ -3322,7 +3323,7 @@ html:has(
     0 50%,
     38% 36%
   );
-  animation: diary-processing-spark 1.8s ease-in-out infinite;
+  animation: diary-processing-spark 3.2s ease-in-out infinite;
 }
 
 .diary-processing-spark-one {
@@ -3433,7 +3434,7 @@ html:has(
   border-color: #78bda1;
   background: #78bda1;
   color: #fff;
-  animation: diary-processing-current 1.15s ease-in-out infinite;
+  animation: diary-processing-current 2.4s ease-in-out infinite;
 }
 
 .diary-processing-steps .is-complete {
@@ -3464,6 +3465,16 @@ html:has(
 @keyframes diary-processing-orbit {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes diary-processing-mascot-breathe {
+  0%,
+  100% {
+    transform: translate(-6px, -8px) scale(0.99);
+  }
+  50% {
+    transform: translate(-6px, -10px) scale(1.01);
   }
 }
 
@@ -3959,6 +3970,7 @@ html:has(
   .diary-processing-stage,
   .diary-processing-orbit,
   .diary-processing-badge,
+  .diary-processing-badge picture,
   .diary-processing-steps .is-current > span,
   .diary-card-reveal {
     animation: none;
@@ -3979,6 +3991,10 @@ html:has(
   .diary-stamp {
     transform: rotate(-35deg);
     opacity: 0.75;
+  }
+
+  .diary-processing-badge picture {
+    transform: translate(-6px, -8px);
   }
 
   .diary-processing-spark {
