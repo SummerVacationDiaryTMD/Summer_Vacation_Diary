@@ -14,6 +14,10 @@ import { AiQuotaNotice, AiRecheckNotice } from "./components/AiQuotaNotice";
 import { DiaryButton } from "./components/DiaryButton";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
 import { StreakMilestoneModal } from "./components/StreakMilestoneModal";
+import {
+  TODAY_DIARY_FULL_TITLE,
+  todayDiaryFullDescription,
+} from "./constants/diary";
 import type {
   CalendarRevealRequest,
   CalendarShareRequest,
@@ -27,7 +31,7 @@ import {
   useAiQuota,
 } from "./hooks/useAiQuota";
 import { useDiaryAnalysis } from "./hooks/useDiaryAnalysis";
-import { useDiaryDraft } from "./hooks/useDiaryDraft";
+import { useDiaryDraft, type DiaryDraft } from "./hooks/useDiaryDraft";
 import { useDiaryProgress } from "./hooks/useDiaryProgress";
 import { useSketch } from "./hooks/useSketch";
 import {
@@ -105,6 +109,21 @@ interface DiaryConfirmOptions {
   // action: a stray dimmer tap there reads as "dismissed by accident", and
   // the user never learns why the save did not go through.
   closeOnDimmerClick?: boolean;
+}
+
+type PreviewDraftSnapshot = Pick<
+  DiaryDraft,
+  "photoDataUrl" | "title" | "content" | "weather" | "timeOfDay"
+>;
+
+function previewDraftSnapshot(draft: DiaryDraft): PreviewDraftSnapshot {
+  return {
+    photoDataUrl: draft.photoDataUrl,
+    title: draft.title,
+    content: draft.content,
+    weather: draft.weather,
+    timeOfDay: draft.timeOfDay,
+  };
 }
 
 function sameDiaryImageInput(
@@ -308,6 +327,7 @@ function App() {
 
   const [hasVisitedWrite, setHasVisitedWrite] = useState(false);
   const [hasVisitedPreview, setHasVisitedPreview] = useState(false);
+  const lastPreviewDraftRef = useRef<PreviewDraftSnapshot | null>(null);
   const [analyzeRecheckNoticeVisible, setAnalyzeRecheckNoticeVisible] =
     useState(false);
 
@@ -563,6 +583,24 @@ function App() {
   const canWrite = draft.photoDataUrl !== null;
   // trim() on both fields so whitespace-only input can't pass validation.
   const canPreview = draft.title.trim() !== "" && draft.content.trim() !== "";
+  const lastPreviewDraft = lastPreviewDraftRef.current;
+  const previewAiInputChanged =
+    lastPreviewDraft !== null &&
+    (draft.photoDataUrl !== lastPreviewDraft.photoDataUrl ||
+      draft.content !== lastPreviewDraft.content);
+  const previewDisplayChanged =
+    lastPreviewDraft !== null &&
+    (draft.title !== lastPreviewDraft.title ||
+      draft.weather !== lastPreviewDraft.weather ||
+      draft.timeOfDay !== lastPreviewDraft.timeOfDay);
+  const writePrimaryLabel =
+    !hasVisitedPreview || lastPreviewDraft === null
+      ? "검사 받기"
+      : previewAiInputChanged
+        ? "다시 검사 받기"
+        : previewDisplayChanged
+          ? "수정 내용 확인하기"
+          : "미리보기로 돌아가기";
   const previewPreparing =
     sketchState.status === "loading" ||
     analysisState.status === "loading" ||
@@ -630,6 +668,7 @@ function App() {
     setPreviewModuleLoading(false);
     setHasVisitedWrite(false);
     setHasVisitedPreview(false);
+    lastPreviewDraftRef.current = null;
     setAnalyzeRecheckNoticeVisible(false);
     setCalendarReturnStep("upload");
     setCalendarInitialDate(undefined);
@@ -675,6 +714,7 @@ function App() {
     }
 
     setHasVisitedPreview(true);
+    lastPreviewDraftRef.current = previewDraftSnapshot(draft);
     setPreviewModuleLoading(true);
     void loadPreviewStep().finally(() => setPreviewModuleLoading(false));
 
@@ -873,8 +913,8 @@ function App() {
         // label behind a dialog that says nothing is being saved.
         setSaving(false);
         const openRecords = await openDiaryConfirm({
-          title: "오늘 일기가 가득 찼어요",
-          description: `하루에는 일기를 최대 ${MAX_DIARIES_PER_DATE}개까지 저장할 수 있어요. 오늘 새 일기를 쓰려면 기존 일기를 삭제해 주세요.`,
+          title: TODAY_DIARY_FULL_TITLE,
+          description: todayDiaryFullDescription(MAX_DIARIES_PER_DATE),
           confirmLabel: "일기장 보기",
           cancelLabel: "닫기",
           closeOnDimmerClick: false,
@@ -1044,10 +1084,10 @@ function App() {
             draft={draft}
             entryId={writeEntryId}
             endAnchorRef={writeFormEndRef}
-            onOpenCalendar={(date) => {
+            onOpenCalendar={() => {
               void loadDiaryCalendarView();
               setCalendarReturnStep("write");
-              setCalendarInitialDate(date);
+              setCalendarInitialDate(draft.date);
               setCalendarReveal(null);
               navigateToStep("calendar");
             }}
@@ -1106,23 +1146,21 @@ function App() {
       )}
 
       {step === "upload" && (
-        <AppBottomBar double={!hasVisitedWrite}>
-          {!hasVisitedWrite && (
-            <DiaryButton
-              tone="secondary"
-              stable
-              fullWidth
-              onClick={() => {
-                void loadDiaryCalendarView();
-                setCalendarReturnStep("upload");
-                setCalendarInitialDate(undefined);
-                setCalendarReveal(null);
-                navigateToStep("calendar");
-              }}
-            >
-              일기장 보기
-            </DiaryButton>
-          )}
+        <AppBottomBar double>
+          <DiaryButton
+            tone="secondary"
+            stable
+            fullWidth
+            onClick={() => {
+              void loadDiaryCalendarView();
+              setCalendarReturnStep("upload");
+              setCalendarInitialDate(undefined);
+              setCalendarReveal(null);
+              navigateToStep("calendar");
+            }}
+          >
+            일기장 보기
+          </DiaryButton>
 
           <DiaryButton
             stable
@@ -1183,11 +1221,7 @@ function App() {
             aria-disabled={!canPreview}
             onClick={handlePreview}
           >
-            {analysisState.status === "success"
-              ? "미리보기로 돌아가기"
-              : hasVisitedPreview
-                ? "다시 검사 받기"
-                : "검사 받기"}
+            {writePrimaryLabel}
           </DiaryButton>
         </AppBottomBar>
       )}

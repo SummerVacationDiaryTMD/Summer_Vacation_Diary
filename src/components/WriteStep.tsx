@@ -15,8 +15,10 @@ import {
 
 import {
   CONTENT_MAX_LENGTH,
+  TODAY_DIARY_FULL_TITLE,
   TITLE_MAX_LENGTH,
   WEATHER_OPTIONS,
+  todayDiaryFullDescription,
 } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
 import type { DiaryDraft, DiaryDraftPatch } from "../hooks/useDiaryDraft";
@@ -32,7 +34,7 @@ interface WriteStepProps {
   entryId: number;
   endAnchorRef: RefObject<HTMLDivElement>;
   onChange: (patch: DiaryDraftPatch) => void;
-  onOpenCalendar: (date: string) => void;
+  onOpenCalendar: () => void;
 }
 
 // The form sits on a permanently cream sheet, so an adaptive token here would
@@ -168,14 +170,14 @@ export function WriteStep({
       }
 
       const openRecords = await openConfirm({
-        title: "오늘 일기가 가득 찼어요",
-        description: `하루에는 일기를 최대 ${capacity.limit}개까지 저장할 수 있어요. 오늘 새 일기를 쓰려면 기존 일기를 삭제해 주세요.`,
+        title: TODAY_DIARY_FULL_TITLE,
+        description: todayDiaryFullDescription(capacity.limit),
         confirmButton: <DiaryButton>일기장 보기</DiaryButton>,
         cancelButton: <DiaryButton tone="secondary">닫기</DiaryButton>,
         closeOnDimmerClick: false,
       });
       if (openRecords) {
-        onOpenCalendar(draft.date);
+        onOpenCalendar();
       }
     } catch (error) {
       if (checkId !== capacityCheckIdRef.current) {
