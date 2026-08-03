@@ -6,13 +6,13 @@
   <img src="./public/branding/app-icon.png" width="160" alt="나의 여름방학 일기 앱 아이콘" />
 </p>
 
-사진 선택·자르기와 일기 작성, 그림 변환, 선생님 첨삭, 결과물 저장과 일기 달력 보관까지 하나의 흐름으로 제공합니다.
+사진 선택·자르기와 일기 작성, 그림 변환, 선생님 첨삭, 결과물 저장, 일기 달력 보관과 연속 작성 도장까지 하나의 흐름으로 제공합니다.
 
 [![React](https://img.shields.io/badge/React-18.3.1-61DAFB?logo=react&logoColor=white)](https://react.dev/) [![TypeScript](https://img.shields.io/badge/TypeScript-5.7.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Vite](https://img.shields.io/badge/Vite-6.4.3-646CFF?logo=vite&logoColor=white)](https://vite.dev/) [![Apps in Toss](https://img.shields.io/badge/Apps_in_Toss-2.10.7-0064FF?logo=toss&logoColor=white)](https://developers-apps-in-toss.toss.im/) [![TDS Mobile](https://img.shields.io/badge/TDS_Mobile-2.5.0-0064FF?logo=toss&logoColor=white)](https://tossmini-docs.toss.im/tds-mobile/) [![React Easy Crop](https://img.shields.io/badge/React_Easy_Crop-6.2.3-61DAFB?logo=react&logoColor=white)](https://valentinh.github.io/react-easy-crop/) [![Supabase](https://img.shields.io/badge/Supabase-Edge_Functions_%26_PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 
 ## 동작 화면
 
-아래 화면은 온보딩부터 사진 동의·자르기, 일기 작성과 AI 검사, 완성 후 기기 보관·공유, 일기 달력 재열람과 최종 결과물까지 현재 앱의 핵심 흐름을 보여줍니다. 완성 일기는 저장 직후 달력에 자동 보관되고, 같은 날짜의 여러 기록은 상세 뷰어에서 넘겨 볼 수 있습니다.
+아래 화면은 온보딩부터 사진 동의·자르기, 일기 작성과 AI 검사, 완성 후 기기 보관·공유, 연속 작성 기록, 일기 달력 재열람과 최종 결과물까지 현재 앱의 핵심 흐름을 보여줍니다. 완성 일기는 저장 직후 달력에 자동 보관되고, 같은 날짜의 여러 기록은 상세 뷰어의 이전·다음 버튼으로 넘겨 볼 수 있습니다.
 
 <table>
   <tr>
@@ -23,8 +23,8 @@
     </td>
     <td align="center" width="50%">
       <strong>2. 사진 업로드</strong><br /><br />
-      <img src="./docs/screenshots/02-photo-upload.png" width="300" alt="그림일기로 만들 사진을 업로드하는 화면" /><br /><br />
-      <sub>사진 형식·용량과 하루 AI 검사 기회를 확인하고 사진 선택을 시작하는 화면</sub>
+      <img src="./docs/screenshots/02-photo-upload.png" width="300" alt="오늘의 도장과 연속 작성일, AI 검사 기회를 확인하며 사진을 업로드하는 화면" /><br /><br />
+      <sub>오늘의 도장 완료 여부와 연속 작성일, 하루 AI 검사 기회를 함께 확인하고 사진 선택을 시작하는 화면</sub>
     </td>
   </tr>
   <tr>
@@ -60,7 +60,7 @@
     <td align="center" width="50%">
       <strong>8. 저장된 일기 상세</strong><br /><br />
       <img src="./docs/screenshots/08-saved-diary-detail.png" width="300" alt="저장된 그림일기 상세 화면" /><br /><br />
-      <sub>같은 날짜의 기록을 이전·다음 버튼이나 좌우 스와이프로 넘겨 보고 삭제·저장 및 공유를 선택하는 화면</sub>
+      <sub>같은 날짜의 기록을 이전·다음 버튼으로 넘겨 보고 삭제·저장 및 공유를 선택하는 화면</sub>
     </td>
   </tr>
   <tr>
@@ -71,8 +71,8 @@
     </td>
     <td align="center" width="50%">
       <strong>10. 일기 달력</strong><br /><br />
-      <img src="./docs/screenshots/10-diary-calendar.png" width="300" alt="완성한 날짜에 도장이 표시된 일기 달력 화면" /><br /><br />
-      <sub>월을 이동하고 완성한 날짜의 도장을 눌러 저장된 일기를 다시 여는 화면</sub>
+      <img src="./docs/screenshots/10-diary-calendar.png" width="300" alt="연속 작성일과 누적 기록일, 완성 도장이 표시된 일기 달력 화면" /><br /><br />
+      <sub>현재 연속 작성일과 누적 기록일을 확인하고, 월별 완료 도장을 눌러 저장된 일기를 다시 여는 화면</sub>
     </td>
   </tr>
   <tr>
@@ -101,6 +101,7 @@
 | 결과 이미지 생성 | 처리 중 하단 작업을 잠그고 공개 애니메이션 뒤 1080×1350 그림일기를 JPEG로 합성          | 구현 완료 |
 | 저장·공유        | 토스에서는 기기 저장·공유 API, 브라우저에서는 다운로드·Web Share·링크 복사 사용         | 구현 완료 |
 | 일기 달력        | 사진·본문이 같으면 기존 기록을 교체하고 둘 중 하나가 바뀌면 별도 기록으로 보관          | 구현 완료 |
+| 연속 작성 기록   | 오늘의 완료 도장, 현재 연속·누적 작성일, 재방문 문구와 지정 구간 축하 모달 표시         | 구현 완료 |
 
 세부 사전 조건, 예외 흐름, 권한과 근거 파일은 [기능 명세](./docs/functional-specification.md)에 정리되어 있습니다.
 
@@ -116,26 +117,27 @@ flowchart LR
     F --> S["기기 저장"]
     F --> H["앱 링크 공유"]
     F --> A["일기 달력 보관"]
+    A --> R["오늘의 도장·연속 기록 반영"]
     A --> V["날짜별 열람·이미지 저장·앱 링크 공유·삭제"]
     P --> W
     W --> C
 ```
 
-사진 변환과 일기 검사는 `검사 받기`를 눌렀을 때 필요한 작업만 실행합니다. 두 작업은 사용자에게 하나의 AI 검사 기회로 제공되며 총 3회 사용할 수 있습니다. 같은 사진의 그림과 같은 입력의 분석 결과는 재사용합니다. 사용량이 이미 소진되어 실행할 작업이 없으면 처리 애니메이션을 건너뛰고 원본 기반 미리보기를 바로 표시합니다. 완성한 JPEG를 일기 달력에 저장하면 `일기가 달력에 저장되었어요! (현재 개수/3)` 토스트를 표시하고, 해당 날짜에 도장이 찍힌 뒤 새 기록을 자동으로 엽니다.
+사진 변환과 일기 검사는 `검사 받기`를 눌렀을 때 필요한 작업만 실행합니다. 사진 또는 본문이 바뀌면 `다시 검사 받기`, 제목·날씨·낮/밤만 바뀌면 `수정 내용 확인하기`, 변경이 없으면 `미리보기로 돌아가기`로 다음 동작을 구분합니다. 두 AI 작업은 하나의 검사 기회로 제공되며 총 3회 사용할 수 있습니다. 같은 사진의 그림과 같은 입력의 분석 결과는 재사용합니다. 사용량이 이미 소진되어 실행할 작업이 없으면 처리 애니메이션을 건너뛰고 원본 기반 미리보기를 바로 표시합니다. 완성한 JPEG를 일기 달력에 저장하고 연속 기록까지 반영하면 `일기와 오늘의 도장을 저장했어요! (현재 개수/3)` 토스트를 표시하고, 해당 날짜에 도장이 찍힌 뒤 새 기록을 자동으로 엽니다. 진행 서버 확인에 실패해도 일기는 저장하며 별도 안내를 표시합니다.
 
 ## 입력 규칙
 
-| 항목        | 규칙                                         |
-| ----------- | -------------------------------------------- |
-| 사진        | JPEG/JPG, PNG, WEBP 1장                      |
-| 파일 크기   | 최대 10MB                                    |
-| 이미지 크기 | 가로·세로 각각 최소 200px                    |
-| 자르기 결과 | 3:2 비율, 1278×852 JPEG                      |
-| 제목        | 공백만 입력할 수 없음, 최대 15자             |
-| 일기        | 공백만 입력 불가, 입력 최대 65자             |
+| 항목        | 규칙                                                               |
+| ----------- | ------------------------------------------------------------------ |
+| 사진        | JPEG/JPG, PNG, WEBP 1장                                            |
+| 파일 크기   | 최대 10MB                                                          |
+| 이미지 크기 | 가로·세로 각각 최소 200px                                          |
+| 자르기 결과 | 3:2 비율, 1278×852 JPEG                                            |
+| 제목        | 공백만 입력할 수 없음, 최대 15자                                   |
+| 일기        | 공백만 입력 불가, 입력 최대 65자                                   |
 | 날짜        | 초안 생성 시점의 기기 로컬 날짜로 자동 확정, 사용자가 바꿀 수 없음 |
-| 날씨        | 맑음, 구름 조금, 흐림, 비, 천둥번개, 모름    |
-| 배경        | 낮 또는 밤                                   |
+| 날씨        | 맑음, 구름 조금, 흐림, 비, 천둥번개, 모름                          |
+| 배경        | 낮 또는 밤                                                         |
 
 ## 실행 모드
 
