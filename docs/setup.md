@@ -68,7 +68,7 @@ VITE_AI_TEST_MODE=true
 금지: OpenAI API key, Supabase secret/service-role key
 ```
 
-`diary-ai/index.ts`의 외부 스냅샷은 문서에 반영했지만 Function·prompt·quota RPC와 secret 설정은 이 저장소에서 version 관리되지 않습니다. 호환 Function을 연결할 때는 [API 명세](./api-specification.md), [ERD](./erd.md)의 RPC 계약과 실제 서버 설정을 대조해야 합니다.
+Edge Function source와 DB bootstrap SQL은 각각 `supabase/diary-ai/`, `supabase/sql/001_app_database.sql`에서 version 관리합니다. secret과 운영 배포 설정은 저장소에 포함하지 않습니다. 실제 Function을 연결할 때는 SQL을 먼저 적용하고 [API 명세](./api-specification.md), [ERD](./erd.md)의 계약과 배포본을 대조합니다.
 
 ## 실행 모드 선택
 

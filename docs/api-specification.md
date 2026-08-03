@@ -4,13 +4,13 @@
 
 ## 문서 범위
 
-아래 명세는 클라이언트가 실제로 호출하고 검증하는 계약과 2026-07-31에 별도로 제공된 `diary-ai/index.ts` 스냅샷을 기준으로 합니다. Edge Function 소스는 여전히 이 저장소에서 version 관리되지 않으므로, 운영 배포본과 스냅샷이 같은지는 별도로 확인해야 합니다.
+아래 명세는 클라이언트가 실제로 호출하고 검증하는 계약, 저장소의 `supabase/diary-ai/index.ts`, `supabase/sql/001_app_database.sql`을 기준으로 합니다. 운영 배포본과 저장소 source의 일치 여부는 배포 환경에서 확인해야 합니다.
 
 - **확인된 범위:** method·CORS, action별 입력 검증, OpenAI endpoint와 기본 model, 사용량 제한값, 차감·환불 분기, 응답·오류 계약
-- **확인 필요:** 운영 배포 version, import한 두 prompt의 실제 내용, PostgreSQL RPC 본문, 로그·DB 보존 정책
-- **근거:** `src/services/supabaseEdge.ts`, `src/services/diaryAnalysis.ts`, `src/services/styleTransfer.ts`, `src/services/aiQuotaStore.ts`, `src/hooks/useAiQuota.ts`, 외부 제공 `diary-ai/index.ts`
+- **확인 필요:** 운영 배포 version, secret 값, 로그·DB 보존 작업의 실제 schedule
+- **근거:** `src/services/supabaseEdge.ts`, `src/services/diaryProgress.ts`, `src/services/diaryAnalysis.ts`, `src/services/styleTransfer.ts`, `src/services/aiQuotaStore.ts`, `src/hooks/useAiQuota.ts`, `supabase/diary-ai/index.ts`, `supabase/sql/001_app_database.sql`
 
-이 API는 이 앱의 AI·사용량 외부 경계이며, 저장소가 공개 HTTP API로 제공하는 서버 구현은 아닙니다. 일기 달력의 저장·조회·삭제는 이 API를 사용하지 않고 기기 저장소에서만 처리합니다.
+이 API는 이 앱의 AI·사용량·연속 기록 외부 경계입니다. 완성 일기의 사진·본문·JPEG 저장·조회·삭제는 기기 저장소에서만 처리하고, 서버에는 익명 hash 기반 활동일만 저장합니다.
 
 ## 공통 계약
 
@@ -64,7 +64,7 @@
 | `testMode`       | `true`일 때만 true, 누락 시 false                           |
 
 클라이언트는 `quota.all`만 통합 `AI 검사 기회`의 권위값으로 사용합니다.
-Edge Function은 필요한 작업을 하나의 `inspect` 요청으로 묶고, 사용자 `all`과 IP counter를 요청당 한 번 예약하는 `consume_diary_ai_inspection_quota` RPC를 호출합니다. 서비스 counter는 실제 요청한 sketch·analyze 작업별로 전달합니다. 원자성의 최종 보장은 제공되지 않은 RPC SQL 본문 확인이 필요합니다.
+Edge Function은 필요한 작업을 하나의 `inspect` 요청으로 묶고, 사용자 `all`과 IP counter를 요청당 한 번 예약하는 `consume_diary_ai_inspection_quota` RPC를 호출합니다. 서비스 counter는 실제 요청한 sketch·analyze 작업별로 전달하며, 저장소 SQL은 advisory transaction lock과 upsert로 같은 식별자의 동시 차감을 직렬화합니다.
 
 일일 window는 매일 `00:00 UTC`, 한국 시간 `09:00`에 초기화됩니다. `DIARY_AI_TEST_MODE=true`인 서버 테스트 모드는 DB를 읽거나 차감하지 않고 `testMode: true`, limit `0`인 snapshot을 반환합니다.
 
@@ -283,6 +283,44 @@ invalid-response
 - **관련 기능:** F-06, F-10
 - **구현 파일:** `src/services/diaryAnalysis.ts`, `src/hooks/useDiaryAnalysis.ts`, `src/services/supabaseEdge.ts`
 
+## A-04 연속 기록
+
+네 action은 모두 빈 body의 `action` 값과 공통 `x-diary-client-id` header만 사용합니다. Edge Function이 client ID를 salt 포함 SHA-256으로 변환하고 service role로 아래 RPC를 호출하므로, 브라우저에는 hash나 DB 실행 권한이 노출되지 않습니다.
+
+| action              | RPC                                | 의미                                      |
+| ------------------- | ---------------------------------- | ----------------------------------------- |
+| `progress-visit`    | `record_diary_app_visit`           | 한국 날짜 기준 방문일 기록 후 snapshot 조회 |
+| `progress-status`   | `read_diary_progress`              | 쓰기 없는 현재 snapshot 조회              |
+| `progress-complete` | `record_diary_completion`          | 오늘 작성일을 멱등 기록하고 마일스톤 반환  |
+| `progress-delete`   | `delete_diary_progress`            | 해당 익명 hash의 진행 데이터 삭제          |
+
+요청 예시:
+
+```json
+{ "action": "progress-complete" }
+```
+
+조회·방문·완료 성공 응답은 `{ "progress": { ... } }`이며 주요 필드는 다음과 같습니다.
+
+```json
+{
+  "progress": {
+    "activityDate": "2026-08-03",
+    "daysAway": 0,
+    "visitDays": 7,
+    "currentStreak": 5,
+    "totalActivityDays": 12,
+    "completedToday": true,
+    "newlyCompleted": true,
+    "milestones": [
+      { "metric": "streak", "threshold": 5, "tier": "special", "title": "다섯 날의 리듬" }
+    ]
+  }
+}
+```
+
+`newlyCompleted`와 `milestones`는 완료 응답에만 필요합니다. 날짜별 활동 목록은 내려주지 않고 현재 연속 일수와 누적 작성일만 제공합니다. 같은 사용자·같은 한국 날짜의 완료는 primary key 충돌을 무시해 중복 적립하지 않으며, 두 요청이 동시에 와도 advisory transaction lock으로 직렬화합니다. 오류는 `503 { "error": "progress-unavailable" }`이며 일기 기기 저장을 되돌리지 않습니다.
+
 ## 보안과 공개 범위
 
 - publishable key는 클라이언트 공개 값이며 server secret이 아닙니다.
@@ -291,7 +329,7 @@ invalid-response
 - `x-diary-client-id`는 남용 방지 힌트이며 인증 수단이 아닙니다.
 - 원본 사진과 일기는 JSON request body로 전송됩니다.
 - 제목·날짜·날씨·낮/밤 배경과 완성 JPEG는 전송하지 않습니다.
-- 완성 일기의 자동 보관과 일기 달력 조회에는 네트워크 요청이 없습니다.
+- 완성 일기의 사진·본문·JPEG 보관과 달력 조회에는 네트워크 요청이 없습니다. 완성 성공 뒤 활동일 적립만 별도 진행 API를 호출합니다.
 - 사용자 ID와 IP는 `SHA-256("user|ip:{RATE_LIMIT_SALT}:{원본}")` 형식으로 각각 hash한 뒤 RPC에 전달하며 원본 IP를 DB에 보내지 않습니다.
 - 일반 요청 로그에는 action, 국가 header, client ID 존재 여부, body byte 크기와 결과 code만 남기도록 구현되어 있습니다. 사진·일기·원본 IP 값은 기록하지 않습니다.
 
@@ -314,9 +352,9 @@ invalid-response
 
 자세한 데이터 흐름과 확인 필요 항목은 [보안·데이터 처리](./security.md)를 참고하세요.
 
-## OpenAPI를 생성하지 않은 이유
+## OpenAPI 상태
 
-Edge Function 스냅샷은 제공되었지만 저장소에서 version 관리되지 않고, import 대상 prompt와 세 PostgreSQL RPC 구현도 함께 제공되지 않았습니다. 운영 배포와 일치한다는 보장 없이 `openapi.yaml`을 확정하면 실제 validation과 status를 잘못 선언할 수 있어 아직 생성하지 않았습니다.
+Edge Function과 SQL 계약은 저장소에서 version 관리하지만 `openapi.yaml`은 아직 생성하지 않았습니다. 배포 자동 검증을 추가할 때 현재 action union과 JSON validation을 기준으로 함께 생성합니다.
 
 ## 관련 문서
 

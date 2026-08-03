@@ -2,6 +2,7 @@ import { Modal } from "@toss/tds-mobile";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { formatKoreanDate } from "../constants/diary";
+import type { DiaryProgressView } from "../hooks/useDiaryProgress";
 import {
   DiaryStoreError,
   deleteDiary,
@@ -18,6 +19,7 @@ import {
   moveMonth,
 } from "../utils/diaryCalendar";
 import { DiaryButton } from "./DiaryButton";
+import { DiaryStreakCalendarCard } from "./DiaryStreakStatus";
 
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"] as const;
 const DAILY_COMPLETE_STAMP_URL = "/stamps/daily-complete.png";
@@ -41,6 +43,7 @@ export interface CalendarShareRequest {
 interface DiaryCalendarViewProps {
   initialDate?: string;
   reveal?: CalendarRevealRequest | null;
+  progress: DiaryProgressView;
   onRevealComplete?: () => void;
   onShareRequest: (request: CalendarShareRequest) => void;
 }
@@ -89,6 +92,7 @@ function diaryFileName(record: DiaryRecord): string {
 export function DiaryCalendarView({
   initialDate,
   reveal = null,
+  progress,
   onRevealComplete,
   onShareRequest,
 }: DiaryCalendarViewProps) {
@@ -292,7 +296,6 @@ export function DiaryCalendarView({
     calendarCells.push(null);
   }
   const byDay = diariesByDay(summaries, selectedMonth);
-  const monthIsEmpty = Object.keys(byDay).length === 0;
 
   const step = (delta: number) => {
     setViewerIndex((index) => {
@@ -384,6 +387,7 @@ export function DiaryCalendarView({
     // viewer shares .app-shell's stacking context and its z-index counts.
     <>
       <div className="step-body diary-calendar-view">
+        <DiaryStreakCalendarCard progress={progress} />
         <section className="diary-calendar-paper" aria-labelledby="diary-month">
           <div className="diary-calendar-month-picker">
             <DiaryButton
@@ -495,11 +499,6 @@ export function DiaryCalendarView({
             </p>
           )}
 
-          {load.status === "ready" && monthIsEmpty && (
-            <p className="diary-calendar-message">
-              이 달에는 아직 완성한 일기가 없어요. 첫 일기를 써 보세요!
-            </p>
-          )}
         </section>
       </div>
 
