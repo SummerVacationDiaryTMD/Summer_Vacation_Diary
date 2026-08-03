@@ -1,0 +1,70 @@
+--- index.ts
++++ index.ts
+@@
+ interface QuotaSnapshot {
+   all: QuotaCounter;
++  // Kept during the 7/28 client rollback. Both operations share one budget.
++  sketch: QuotaCounter;
++  analyze: QuotaCounter;
+   resetAt: string;
+@@
+ function buildSnapshot(
+@@
+ ): QuotaSnapshot {
++  const all = counter(counts.userAll, USAGE_LIMITS.userDaily);
+   return {
+-    all: counter(counts.userAll, USAGE_LIMITS.userDaily),
++    all,
++    sketch: all,
++    analyze: all,
+     resetAt: new Date(Date.parse(dayWindowStart) + DAY_MS).toISOString(),
+@@
+ function testModeSnapshot(request: Request): QuotaSnapshot {
+@@
+   return {
+     all: emptyCounter,
++    sketch: emptyCounter,
++    analyze: emptyCounter,
+     resetAt: new Date(Date.parse(dayWindowStart) + DAY_MS).toISOString(),
+@@
+-    const body = await request.json();
+-    if (typeof body?.action === "string") {
+-      action = body.action;
++    const requestBody = await request.json();
++    const legacyAction =
++      requestBody?.action === "analyze" || requestBody?.action === "sketch"
++        ? requestBody.action
++        : null;
++    const legacyInput = requestBody?.input as Record<string, unknown> | undefined;
++    const body =
++      legacyAction === "analyze"
++        ? {
++            action: "inspect",
++            runSketch: false,
++            runAnalyze: true,
++            input: {
++              photoDataUrl: legacyInput?.photoDataUrl ?? null,
++              content: legacyInput?.content ?? "",
++            },
++          }
++        : legacyAction === "sketch"
++          ? {
++              action: "inspect",
++              runSketch: true,
++              runAnalyze: false,
++              photoDataUrl: requestBody.photoDataUrl,
++            }
++          : requestBody;
++    if (typeof requestBody?.action === "string") {
++      action = requestBody.action;
+@@
+-    const result = {
++    const result = {
+       ...(runAnalyze ? { analysis: analysisResult } : {}),
+       ...(runSketch ? (sketchResult as Record<string, unknown>) : {}),
+     };
+     log.info(`${action} ok`);
+-    return responseJson(withQuota(result, quota));
++    return responseJson(
++      withQuota(legacyAction === "analyze" ? analysisResult : result, quota),
++    );
