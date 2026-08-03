@@ -45,6 +45,27 @@ erDiagram
 
 `diary_milestones`는 사용자별 달성 행을 저장하는 table이 아니라 version 관리되는 달성 기준입니다. 해당 날짜가 처음 적립될 때 현재 연속·누적 값과 일치하는 기준만 응답하므로 별도 “받음” table이 필요하지 않습니다.
 
+## 기기 보관 모델
+
+완성 일기 본문과 이미지는 서버가 아니라 기기 저장소에 남습니다. 기기 저장소는 관계형 데이터베이스가 아니므로 위 ERD에 포함하지 않습니다. 논리 구조는 다음과 같습니다.
+
+```text
+diary-index:v1
+└── DiarySummary[]: id, draftId, revisionKey, date, savedAt, title, weather
+
+diary:v1:<id>
+└── DiaryRecord: summary 필드 + content, imageDataUrl, includesAiGeneratedContent
+```
+
+- 하나의 summary는 같은 `id`의 record 하나를 가리킵니다.
+- `date`는 초안을 만든 시점의 기기 현지 날짜로 확정되며 사용자가 바꿀 수 없습니다.
+- `draftId`와 사진·본문의 `revisionKey`가 같은 일기는 제목·날씨를 바꿔 다시 저장해도 기존 항목을 대체해 하나만 유지합니다. 같은 `draftId`라도 사진 또는 본문이 달라지면 별도 항목으로 저장합니다. 이전 버전에서 저장해 `revisionKey`가 없는 기록도 계속 읽되, 사진 일치 여부를 확정할 수 없어 다른 기록과 자동 병합하지 않습니다.
+- 같은 날짜에는 유효한 record를 최대 3개 저장합니다.
+- 저장 순서는 record → index이며, 조회 중 끊어진 index 참조를 정리합니다.
+- 사용자 계정이나 서버 foreign key가 없어 다른 기기와 동기화되지 않습니다.
+
+기기의 `date`와 서버 활동일은 별개입니다. 서버는 아래 [날짜와 연속 계산](#날짜와-연속-계산)처럼 한국 날짜 기준 적립만 사용하고, 기기에 저장된 일기 `date`는 전달받지 않습니다.
+
 ## table 책임
 
 | table | 책임 | 주요 무결성 |

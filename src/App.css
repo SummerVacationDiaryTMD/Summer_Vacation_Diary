@@ -2806,8 +2806,9 @@ html:has(.diary-content-section textarea:focus) {
   font-weight: 700;
 }
 
-.date-input-wrap {
-  position: relative;
+/* Not an input: the date is fixed to today, so this is a plain plate that
+   keeps the same paper look the rest of the form uses. */
+.date-display {
   display: grid;
   place-items: center;
   width: 100%;
@@ -2824,9 +2825,11 @@ html:has(.diary-content-section textarea:focus) {
     inset 0 0 0 2px rgba(255, 255, 255, 0.76),
     1px 2px 0 rgba(180, 165, 110, 0.18),
     0 5px 10px rgba(90, 80, 40, 0.045);
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.date-input-value {
+.date-display-value {
   color: #5a442c;
   font-family: "NanumCoDingHeuiMang", sans-serif;
   font-size: 21px;
@@ -2835,7 +2838,6 @@ html:has(.diary-content-section textarea:focus) {
   letter-spacing: 0.04em;
   -webkit-text-stroke: 0.7px currentcolor;
   paint-order: stroke fill;
-  pointer-events: none;
 }
 
 .diary-weather-section {
@@ -3133,36 +3135,6 @@ html:has(.diary-content-section textarea:focus) {
 .diary-form-section > .form-section-label {
   width: 100%;
   font-size: var(--diary-label-size) !important;
-}
-
-.date-input {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: block;
-  width: 100% !important;
-  height: 100%;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  inline-size: 100%;
-  max-inline-size: 100%;
-  min-inline-size: 0;
-  box-sizing: border-box;
-  margin: 0;
-  min-height: 52px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background-color: transparent;
-  cursor: pointer;
-  opacity: 0;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.date-input-wrap:has(.date-input:focus-visible) {
-  outline: 3px solid rgba(201, 162, 74, 0.38);
-  outline-offset: 2px;
 }
 
 /* --- Preview step: diary card per the spec's basic layout --- */

@@ -13,10 +13,8 @@ import {
   WEATHER_OPTIONS,
 } from "../constants/diary";
 import type { WeatherValue } from "../constants/diary";
-import type { DiaryDraft } from "../hooks/useDiaryDraft";
+import type { DiaryDraft, DiaryDraftPatch } from "../hooks/useDiaryDraft";
 import { DiaryStoreError, getDiaryDateCapacity } from "../services/diaryStore";
-import { clampDiaryDateToToday, localTodayString } from "../utils/diaryDate";
-import { createDiaryRevisionKey } from "../utils/diaryIdentity";
 import {
   diaryContentCellCount,
   fitDiaryContent,
@@ -26,12 +24,12 @@ import { DiaryButton } from "./DiaryButton";
 interface WriteStepProps {
   draft: DiaryDraft;
   entryId: number;
-  onChange: (patch: Partial<DiaryDraft>) => void;
+  onChange: (patch: DiaryDraftPatch) => void;
   onOpenCalendar: (date: string) => void;
 }
 
 // The form sits on a permanently cream sheet, so an adaptive token here would
-// resolve to a near-white ink in dark mode. Fixed, like the date input's color.
+// resolve to a near-white ink in dark mode. Fixed, like the date's own color.
 const LABEL_INK = "#6B5E3F";
 const CONTENT_MAX_LINES = 5;
 const CONTENT_COUNTER_WIDTH = 48;
@@ -90,7 +88,8 @@ function formatDateValue(date: string): string {
 }
 
 /**
- * Step 2: title, diary text, date and weather.
+ * Step 2: title, diary text and weather. The date is shown but not editable —
+ * a diary always belongs to the day it is written on.
  * All fields write straight into the shared draft, so leaving this screen
  * (or the app) never loses input — the draft hook persists it.
  */
@@ -102,11 +101,10 @@ export function WriteStep({
 }: WriteStepProps) {
   const toast = useToast();
   const { openConfirm } = useDialog();
-  const dateCheckIdRef = useRef(0);
+  const capacityCheckIdRef = useRef(0);
   const checkedEntryIdRef = useRef<number | null>(null);
   const [titleLimitShakeCount, setTitleLimitShakeCount] = useState(0);
   const [contentLimitShakeCount, setContentLimitShakeCount] = useState(0);
-  const maxDiaryDate = localTodayString();
   const titleLength = Array.from(draft.title).length;
   const titleAtLimit = titleLength >= TITLE_MAX_LENGTH;
   const contentLength = diaryContentCellCount(draft.content);
@@ -147,90 +145,49 @@ export function WriteStep({
   // A whitespace-only title also blocks the preview button (App.tsx trims it),
   // so surface the reason here instead of leaving the button silently disabled.
   const titleBlank = draft.title.length > 0 && draft.title.trim() === "";
-  const checkDateCapacity = useCallback(
-    async (selectedDate: string, applyWhenAvailable: boolean) => {
-      const checkId = dateCheckIdRef.current + 1;
-      dateCheckIdRef.current = checkId;
+  // The daily limit still applies even though the date is fixed, so warn on
+  // arrival instead of letting the user write a whole diary that cannot be
+  // saved. Every stored record for today counts: this diary is not saved yet,
+  // so none of them is the one being written.
+  const checkDiaryCapacity = useCallback(async () => {
+    const checkId = capacityCheckIdRef.current + 1;
+    capacityCheckIdRef.current = checkId;
 
-      try {
-        // Entry checks count every stored record so a full date is announced
-        // on every visit. A user-selected date excludes the current revision,
-        // because saving that revision replaces it instead of adding a fourth.
-        const revisionKey =
-          !applyWhenAvailable || draft.photoDataUrl === null
-            ? undefined
-            : await createDiaryRevisionKey(draft.photoDataUrl, draft.content);
-        const capacity = await getDiaryDateCapacity({
-          date: selectedDate,
-          draftId: draft.draftId,
-          revisionKey,
-        });
-        if (checkId !== dateCheckIdRef.current) {
-          return;
-        }
-
-        if (capacity.isFull) {
-          const openRecords = await openConfirm({
-            title: `${formatDateValue(selectedDate)} 일기가 가득 찼어요`,
-            description: `하루에는 일기를 최대 ${capacity.limit}개까지 저장할 수 있어요. 이 날짜에 새 일기를 쓰려면 기존 일기를 삭제해 주세요.`,
-            confirmButton: <DiaryButton>일기장 보기</DiaryButton>,
-            cancelButton: <DiaryButton tone="secondary">닫기</DiaryButton>,
-            closeOnDimmerClick: false,
-          });
-          if (openRecords) {
-            onOpenCalendar(selectedDate);
-          }
-          return;
-        }
-
-        if (applyWhenAvailable) {
-          onChange({ date: selectedDate });
-        }
-      } catch (error) {
-        if (checkId !== dateCheckIdRef.current) {
-          return;
-        }
-        toast.openToast(
-          error instanceof DiaryStoreError
-            ? error.userMessage
-            : "저장된 일기를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.",
-        );
+    try {
+      const capacity = await getDiaryDateCapacity(draft.date);
+      if (checkId !== capacityCheckIdRef.current || !capacity.isFull) {
+        return;
       }
-    },
-    [
-      draft.content,
-      draft.draftId,
-      draft.photoDataUrl,
-      onChange,
-      onOpenCalendar,
-      openConfirm,
-      toast,
-    ],
-  );
+
+      const openRecords = await openConfirm({
+        title: "오늘 일기가 가득 찼어요",
+        description: `하루에는 일기를 최대 ${capacity.limit}개까지 저장할 수 있어요. 오늘 새 일기를 쓰려면 기존 일기를 삭제해 주세요.`,
+        confirmButton: <DiaryButton>일기장 보기</DiaryButton>,
+        cancelButton: <DiaryButton tone="secondary">닫기</DiaryButton>,
+        closeOnDimmerClick: false,
+      });
+      if (openRecords) {
+        onOpenCalendar(draft.date);
+      }
+    } catch (error) {
+      if (checkId !== capacityCheckIdRef.current) {
+        return;
+      }
+      toast.openToast(
+        error instanceof DiaryStoreError
+          ? error.userMessage
+          : "저장된 일기를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.",
+      );
+    }
+  }, [draft.date, onOpenCalendar, openConfirm, toast]);
 
   useEffect(() => {
     if (checkedEntryIdRef.current === entryId) {
       return;
     }
     checkedEntryIdRef.current = entryId;
-    void checkDateCapacity(draft.date, false);
-  }, [checkDateCapacity, draft.date, entryId]);
-
-  const handleDateChange = async (value: string) => {
-    if (value === "") {
-      return;
-    }
-
-    const selectedDate = clampDiaryDateToToday(value, maxDiaryDate);
-    if (value > maxDiaryDate) {
-      toast.openToast("오늘 이후 날짜는 선택할 수 없어서 오늘로 바꿨어요.");
-    }
-    if (selectedDate === draft.date) {
-      return;
-    }
-
-    await checkDateCapacity(selectedDate, true);
-  };
+    void checkDiaryCapacity();
+  }, [checkDiaryCapacity, entryId]);
 
   return (
     <div className="step-body write-form">
@@ -283,32 +240,14 @@ export function WriteStep({
           >
             날짜
           </Paragraph>
-          {/* Native date input: the OS date picker on mobile beats any custom
-              calendar for effort-to-quality, and TDS has no date picker widget. */}
-          <div className="date-input-wrap">
-            <span className="date-input-value" aria-hidden="true">
+          {/* Read-only on purpose: the diary is always written for today, so
+              there is nothing to pick. Plain text rather than a disabled input
+              — a greyed-out control would read as something temporarily
+              unavailable instead of a value that is simply fixed. */}
+          <div className="date-display">
+            <span className="date-display-value">
               {formatDateValue(draft.date)}
             </span>
-            <input
-              className="date-input"
-              type="date"
-              aria-label="일기 날짜"
-              value={draft.date}
-              max={maxDiaryDate}
-              // Without this only the calendar glyph opens the picker — tapping
-              // the date text does nothing, which reads as a dead button.
-              // showPicker is Chrome 99+/Safari 16+ and throws if it is not
-              // user-activated or unsupported, so a failure just leaves the
-              // native behaviour in place.
-              onClick={(event) => {
-                try {
-                  event.currentTarget.showPicker();
-                } catch {
-                  // Older WebView: the indicator still works.
-                }
-              }}
-              onChange={(event) => void handleDateChange(event.target.value)}
-            />
           </div>
         </section>
 
