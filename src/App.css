@@ -2479,10 +2479,6 @@ html:has(.diary-content-section textarea:focus) {
   background: transparent;
 }
 
-.diary-date-section {
-  --diary-label-accent: #e5bd57;
-}
-
 .diary-weather-section {
   --diary-label-accent: #73b99e;
 }
@@ -2806,30 +2802,26 @@ html:has(.diary-content-section textarea:focus) {
   font-weight: 700;
 }
 
-/* Not an input: the date is fixed to today, so this is a plain plate that
-   keeps the same paper look the rest of the form uses. */
-.date-display {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  min-height: 52px;
-  box-sizing: border-box;
-  margin: 0;
-  overflow: hidden;
-  border: 1.5px solid #d8c7ab;
-  border-radius: 13px 10px 12px 11px;
-  background: linear-gradient(180deg, #fffef9 0%, #fdf7e9 100%);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.76),
-    1px 2px 0 rgba(180, 165, 110, 0.18),
-    0 5px 10px rgba(90, 80, 40, 0.045);
-  user-select: none;
-  -webkit-user-select: none;
+/* Label left, date right on one line. `baseline` rather than `center` so the
+   two different faces sit on the same writing line the way they would on real
+   ruled paper — their cap heights differ, so centring would look misaligned.
+   The label keeps its own bottom margin, which is what still spaces this row
+   off the title field. */
+.diary-title-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.date-display-value {
+/* Same face, size, colour and stroke as the plate this replaced — only the
+   frame is gone, so the date still reads as the diary's own handwriting.
+   `flex: 0 0 auto` overrides the `width: 100%` that `.diary-form-section > *`
+   would otherwise hand it. */
+.diary-title-heading .write-form-date {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: none;
   color: #5a442c;
   font-family: "NanumCoDingHeuiMang", sans-serif;
   font-size: 21px;
@@ -2838,6 +2830,9 @@ html:has(.diary-content-section textarea:focus) {
   letter-spacing: 0.04em;
   -webkit-text-stroke: 0.7px currentcolor;
   paint-order: stroke fill;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .diary-weather-section {
