@@ -64,6 +64,13 @@ export default defineConfig({
     },
   },
 
+  // Disable the native iOS/WKWebView history gesture itself. CSS, touch
+  // handlers and popstate guards run inside the page and therefore cannot stop
+  // the interactive back/forward transition shown by the Toss container.
+  webViewProps: {
+    allowsBackForwardNavigationGestures: false,
+  },
+
   permissions: [],
   // The Apps in Toss SDK renders the native non-game navigation itself.
   // Keep only the required controls: back, app title/logo, more and close.

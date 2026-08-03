@@ -56,6 +56,16 @@ export const AI_CONTENT_WATERMARK = "AI 생성 콘텐츠";
 // would be a lie for anyone who runs out in the evening and comes back before
 // breakfast. One constant so every screen and error message agrees.
 export const QUOTA_RESET_NOTICE = "내일 아침 9시에 기회가 다시 생겨요.";
+
+// The writing date is always today. Keep the capacity dialog copy shared by
+// the early writing-step check and the final save guard so an old
+// selected-date message cannot reappear in only one of those paths.
+export const TODAY_DIARY_FULL_TITLE = "오늘 일기가 가득 찼어요";
+
+export function todayDiaryFullDescription(limit: number): string {
+  return `하루에는 일기를 최대 ${limit}개까지 저장할 수 있어요. 오늘 새 일기를 쓰려면 기존 일기를 삭제해 주세요.`;
+}
+
 // The expandable frame supports 100 characters across ten 11-cell rows.
 export { CONTENT_MAX_LENGTH } from "../utils/diaryFrameLayout";
 
