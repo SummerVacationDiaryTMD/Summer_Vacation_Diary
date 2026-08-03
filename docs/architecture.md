@@ -28,11 +28,15 @@ flowchart TD
     App --> Sketch["useSketch"]
     App --> Analysis["useDiaryAnalysis"]
     App --> Quota["useAiQuota"]
+    App --> Progress["useDiaryProgress"]
 
     Draft <--> Local[("localStorage")]
     Sketch --> Transfer["styleTransfer"]
     Analysis --> Analyzer["diaryAnalysis"]
     Quota --> EdgeClient["supabaseEdge"]
+    Progress --> ProgressService["diaryProgress"]
+    ProgressService --> EdgeClient
+    ProgressService --> Local
     Transfer --> EdgeClient
     Analyzer --> EdgeClient
 
@@ -84,7 +88,7 @@ saveDiary → calendarReveal={date, diaryId}
 step=calendar → 도장 표시 후 저장 기록 열람
 ```
 
-별도 라우터 없이 화면 상태를 사용하되 `/calendar` deep link만 초기 달력 상태로 매핑합니다.
+별도 라우터 없이 화면 상태를 사용하되 `/calendar` deep link만 초기 달력 상태로 매핑합니다. 각 화면 전환은 History API에 단계 값을 넣고 토스 `backEvent`와 동기화합니다. iOS 컨테이너의 상호작용형 앞·뒤 스와이프는 `allowsBackForwardNavigationGestures: false`로 막아 페이지 상태와 네이티브 전환이 어긋나지 않게 합니다.
 
 ## 핵심 데이터 모델
 
@@ -120,7 +124,7 @@ interface DiaryDraft {
 - 일관성: 저장은 항목 → index 순으로 씁니다. 중간에 실패하면 화면에 보이지 않는 항목만 남고, 목록에 있는데 열 수 없는 일기는 생기지 않습니다. index에 남은 끊어진 참조는 `getDiary`가 발견할 때 정리합니다.
 - 정렬은 저장이 아니라 조회 시점에 날짜·저장 시각 내림차순으로 수행합니다.
 - 같은 날짜에는 서로 다른 일기를 최대 3개 저장합니다. `draftId`와 사진·본문 `revisionKey`가 모두 같은 기록만 교체하고, 사진 또는 본문이 달라진 기록은 함께 유지합니다.
-- 달력은 월 단위로 이동하며 기록이 있는 날짜에 도장을 표시합니다. 같은 날 여러 일기는 버튼 또는 좌우 스와이프로 넘깁니다.
+- 달력은 월 단위로 이동하며 기록이 있는 날짜에 도장을 표시합니다. 같은 날 여러 일기는 이전·다음 버튼으로만 넘깁니다.
 
 ## 사진 처리 흐름
 
@@ -158,7 +162,7 @@ sequenceDiagram
 
 ## 일기 검사 흐름
 
-`검사 받기`가 명시적으로 `runAnalysis()`를 호출합니다. 입력 signature는 사진과 본문의 JSON 배열입니다. 제목·날씨는 분석 입력이 아니므로 수정해도 기존 결과를 재사용합니다.
+`검사 받기`가 명시적으로 `runAnalysis()`를 호출합니다. 입력 signature는 사진과 본문의 JSON 배열입니다. 제목·날씨·낮/밤은 분석 입력이 아니므로 수정해도 기존 결과를 재사용하며 CTA를 `수정 내용 확인하기`로 바꿉니다. 사진 또는 본문이 바뀐 경우에만 `다시 검사 받기`, 아무 변경이 없으면 `미리보기로 돌아가기`를 표시합니다.
 
 - 같은 signature의 진행 중 Promise 재사용
 - 성공 결과 최근 3개 메모리 캐시
@@ -185,7 +189,7 @@ Edge Function은 사용자 `all`과 IP를 요청당 한 번 예약하고 실제 
 
 일기 완성 시 순서는 `JPEG 합성 → 기기 일기 저장 → progress-complete`입니다. 따라서 진행 서버 장애가 사용자의 완성 일기를 잃게 만들지 않습니다. 완료 요청이 실패하면 한국 날짜를 pending marker로 남겨 같은 날 다음 앱 복귀에 재시도하고, 날짜가 바뀐 marker는 폐기합니다.
 
-연속 일수는 `diary_activity_days`의 오늘부터 이어진 날짜만 계산합니다. 최고 기록은 모델에 없으며 달력 날짜 도장은 기존 완성 일기의 시각 언어로 유지합니다. 마스코트는 업로드 카드의 동기 부여와 지정 마일스톤 모달에만 사용해 정보 밀도를 제한합니다.
+연속 일수는 `diary_activity_days`의 오늘부터 이어진 날짜만 계산합니다. 최고 기록은 모델에 없습니다. 업로드 카드에는 오늘의 도장 상태와 현재 연속 일수를 AI 잔여량 위에 표시하고, 달력 요약 카드에는 현재 연속 일수와 누적 작성일을 표시합니다. 완성 후 새 특별 마일스톤이 있으면 저장 기록 공개 애니메이션 뒤 축하 모달을 엽니다.
 
 ## 완성 이미지 흐름
 
@@ -194,7 +198,7 @@ Edge Function은 사용자 `all`과 IP를 요청당 한 번 예약하고 실제 
 1. 프레임·폰트·날씨·첨삭·도장 이미지를 로드합니다.
 2. 날짜·날씨·제목·사진·13×5 본문·한마디를 Canvas에 그립니다.
 3. 외부 생성 결과가 있으면 `AI 생성 콘텐츠` watermark를 표시합니다.
-4. `image/jpeg` data URL을 일기 달력에 보관하고 성공하면 저장 완료 토스트를 표시합니다.
+4. `image/jpeg` data URL을 일기 달력에 보관한 뒤 오늘의 완료를 기록하고, 두 작업의 결과를 구분한 토스트를 표시합니다.
 5. 저장 날짜의 도장 애니메이션을 보여준 뒤 상세 뷰어를 엽니다.
 6. 상세 뷰어의 `저장 및 공유` 모달에서 같은 data URL을 토스 저장 또는 브라우저 다운로드에 사용합니다.
 
@@ -204,14 +208,14 @@ Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 �
 
 ## 외부 서비스와 저장소
 
-| 대상                | 전송 또는 저장 데이터                                                        | 경계                      |
-| ------------------- | ---------------------------------------------------------------------------- | ------------------------- |
-| Supabase `diary-ai` | inspect·quota와 익명 hash 기반 방문·완료 action                              | `supabaseEdge.ts`         |
-| Supabase PostgreSQL | 요청 횟수, 익명 사용자 방문일·활동일·마일스톤 정의                           | rate-limit·progress tables |
-| OpenAI              | 분석은 Chat Completions, 그림은 Images Edits로 사진·본문 전송                | 외부 `diary-ai/index.ts`  |
-| Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지, 완성 일기 보관(`Storage`)   | web-framework runtime API |
-| localStorage        | draft, quota/progress snapshot, 브라우저 ID, 완성 일기와 progress 대체 경로  | 기기 내                   |
-| 메모리              | 분석 캐시, 그림 캐시, 진행 요청 ledger, 완성 JPEG                            | 현재 앱 실행              |
+| 대상                | 전송 또는 저장 데이터                                                       | 경계                         |
+| ------------------- | --------------------------------------------------------------------------- | ---------------------------- |
+| Supabase `diary-ai` | inspect·quota와 익명 hash 기반 방문·완료 action                             | `supabaseEdge.ts`            |
+| Supabase PostgreSQL | 요청 횟수, 익명 사용자 방문일·활동일·마일스톤 정의                          | rate-limit·progress tables   |
+| OpenAI              | 분석은 Chat Completions, 그림은 Images Edits로 사진·본문 전송               | `supabase/diary-ai/index.ts` |
+| Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지, 완성 일기 보관(`Storage`)  | web-framework runtime API    |
+| localStorage        | draft, quota/progress snapshot, 브라우저 ID, 완성 일기와 progress 대체 경로 | 기기 내                      |
+| 메모리              | 분석 캐시, 그림 캐시, 진행 요청 ledger, 완성 JPEG                           | 현재 앱 실행                 |
 
 ## 인증·인가
 

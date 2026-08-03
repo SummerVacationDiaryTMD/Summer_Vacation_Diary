@@ -61,13 +61,13 @@ npm run deploy
 
 ## 환경별 권장 확인
 
-| 환경           | 확인 항목                                                               |
-| -------------- | ----------------------------------------------------------------------- |
-| 브라우저       | mock/필터, JPEG 다운로드, Web Share·링크 복사, localStorage 달력        |
-| Toss 샌드박스  | deep link, safe area, `saveBase64Data`, Toss 공유창, `Storage` 달력     |
-| iOS 실기기     | 세로·가로 사진의 cover 자르기·회전, 저장 화면, 보관 일기 열람·공유·삭제 |
-| Android 실기기 | 빈 MIME, 저장 파일명, back 동작, 달력 스와이프                          |
-| 실제 Supabase  | inspect·quota-status·progress action, 멱등 완료, timeout, 오류 code      |
+| 환경           | 확인 항목                                                           |
+| -------------- | ------------------------------------------------------------------- |
+| 브라우저       | mock/필터, JPEG 다운로드, Web Share·링크 복사, localStorage 달력    |
+| Toss 샌드박스  | deep link, safe area, `saveBase64Data`, Toss 공유창, `Storage` 달력 |
+| iOS 실기기     | cover 자르기·회전, native back, 앞·뒤 스와이프 차단, 보관 일기 관리 |
+| Android 실기기 | 빈 MIME, 저장 파일명, native back, 키보드 닫힘 뒤 하단 CTA 복원     |
+| 실제 Supabase  | inspect·quota-status·progress action, 멱등 완료, timeout, 오류 code |
 
 ## 출시 전 체크리스트
 
@@ -84,6 +84,9 @@ npm run deploy
 - [ ] 일기 날짜가 초안 생성 시점으로 확정되고 화면에서 사용자가 바꿀 수 없다.
 - [ ] SQL을 Function보다 먼저 적용했고, 같은 한국 날짜의 `progress-complete` 반복 호출이 1일만 적립한다.
 - [ ] 연속 기록 장애가 일기 저장을 막지 않고 같은 날 앱 복귀 시 완료 동기화를 재시도한다.
+- [ ] 업로드와 달력에 현재 연속·누적 작성 기록이 표시되고 특별 마일스톤 모달이 기록 공개 뒤 한 번만 열린다.
+- [ ] 같은 날 여러 일기는 화살표 버튼으로 이동하며 좌우 스와이프가 동작하지 않는다.
+- [ ] iOS 앞·뒤 스와이프가 비활성화되고 하단 버튼·네이티브 back이 동일한 제작 단계로 이동한다.
 - [ ] 보관 기록이 계정·기기·브라우저 환경 사이에 동기화되지 않는다는 제품 안내가 운영 정책과 맞다.
 - [ ] Edge Function 장애 시 원본 사진과 mock이 아니라 명시적 오류/fallback이 나타난다.
 - [ ] 린트, 타입 검사, build가 성공했다.
