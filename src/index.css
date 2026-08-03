@@ -20,7 +20,7 @@ html {
   overscroll-behavior-x: none;
   overscroll-behavior-y: none;
   /* Keep native scrolling while preventing pinch-to-zoom and viewport panning. */
-  touch-action: pan-x pan-y;
+  touch-action: pan-y;
   -webkit-text-size-adjust: 100%;
   background: var(--summer-page-background) !important;
 }
@@ -38,7 +38,7 @@ body {
   overflow: visible;
   overscroll-behavior-x: none;
   overscroll-behavior-y: none;
-  touch-action: pan-x pan-y;
+  touch-action: pan-y;
   background: var(--summer-page-background) !important;
 }
 
@@ -48,7 +48,7 @@ body {
   min-height: 100dvh;
   overflow: visible;
   overscroll-behavior-y: none;
-  touch-action: pan-x pan-y;
+  touch-action: pan-y;
   background: var(--summer-page-background);
 }
 

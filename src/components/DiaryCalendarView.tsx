@@ -24,9 +24,6 @@ import { DiaryStreakCalendarCard } from "./DiaryStreakStatus";
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"] as const;
 const DAILY_COMPLETE_STAMP_URL = "/stamps/daily-complete.png";
 
-// Below this a drag reads as a tap or a stray finger movement rather than an
-// intent to turn the page.
-const SWIPE_THRESHOLD_PX = 48;
 const REVEAL_VIEWER_DELAY_MS = 1500;
 type PageDirection = "forward" | "backward";
 
@@ -124,7 +121,6 @@ export function DiaryCalendarView({
   const [revealViewerPending, setRevealViewerPending] = useState(false);
   const [revealViewerAnimationFinished, setRevealViewerAnimationFinished] =
     useState(false);
-  const touchStartXRef = useRef<number | null>(null);
   const revealCellRef = useRef<HTMLButtonElement | null>(null);
   const handledRevealRef = useRef<string | null>(null);
   const initialDateOpenedRef = useRef(false);
@@ -540,21 +536,6 @@ export function DiaryCalendarView({
           role="dialog"
           aria-modal="true"
           aria-label={`${formatKoreanDate(current.date)}에 저장된 일기 ${viewerEntries.length}편`}
-          onTouchStart={(event) => {
-            touchStartXRef.current = event.changedTouches[0].clientX;
-          }}
-          onTouchEnd={(event) => {
-            const startX = touchStartXRef.current;
-            touchStartXRef.current = null;
-            if (startX === null) {
-              return;
-            }
-            const delta = event.changedTouches[0].clientX - startX;
-            if (Math.abs(delta) < SWIPE_THRESHOLD_PX) {
-              return;
-            }
-            step(delta < 0 ? 1 : -1);
-          }}
         >
           {/* Mounts once per open, so the pop animation plays on opening and
               not again on every swipe. */}
