@@ -5,7 +5,13 @@ import {
   useDialog,
   useToast,
 } from "@toss/tds-mobile";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 
 import {
   CONTENT_MAX_LENGTH,
@@ -24,6 +30,7 @@ import { DiaryButton } from "./DiaryButton";
 interface WriteStepProps {
   draft: DiaryDraft;
   entryId: number;
+  endAnchorRef: RefObject<HTMLDivElement>;
   onChange: (patch: DiaryDraftPatch) => void;
   onOpenCalendar: (date: string) => void;
 }
@@ -96,6 +103,7 @@ function formatDateValue(date: string): string {
 export function WriteStep({
   draft,
   entryId,
+  endAnchorRef,
   onChange,
   onOpenCalendar,
 }: WriteStepProps) {
@@ -342,9 +350,12 @@ export function WriteStep({
               onFocus={(event) => {
                 const textarea = event.currentTarget;
                 window.setTimeout(() => {
+                  if (document.activeElement !== textarea) {
+                    return;
+                  }
                   textarea.scrollIntoView({
                     behavior: "smooth",
-                    block: "center",
+                    block: "nearest",
                   });
                 }, 300);
               }}
@@ -375,6 +386,11 @@ export function WriteStep({
           </div>
         </section>
       </div>
+      <div
+        ref={endAnchorRef}
+        className="write-form-end-anchor"
+        aria-hidden="true"
+      />
     </div>
   );
 }

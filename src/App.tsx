@@ -199,6 +199,13 @@ function AppBottomBar({
 
 function App() {
   const isAndroid = /Android/i.test(navigator.userAgent);
+  const isIos =
+    /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const usesMobileKeyboard = isAndroid || isIos;
+  const [isKeyboardClosing, setIsKeyboardClosing] = useState(false);
+  const contentKeyboardSessionRef = useRef(false);
+  const writeFormEndRef = useRef<HTMLDivElement>(null);
   const [showOnboarding, setShowOnboarding] = useState(
     () => !isCalendarDeepLink(),
   );
@@ -303,6 +310,132 @@ function App() {
   const [hasVisitedPreview, setHasVisitedPreview] = useState(false);
   const [analyzeRecheckNoticeVisible, setAnalyzeRecheckNoticeVisible] =
     useState(false);
+
+  useEffect(() => {
+    if (!usesMobileKeyboard) {
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    let largestViewportHeight = viewport?.height ?? window.innerHeight;
+    let keyboardOpen = false;
+    let contentClosePending = false;
+    let firstScrollFrame = 0;
+    let secondScrollFrame = 0;
+
+    const isWriteFieldFocused = () => {
+      const activeElement = document.activeElement;
+      return (
+        activeElement instanceof HTMLElement &&
+        activeElement.matches(
+          ".write-form textarea, .write-form input[type='text'], .write-form input:not([type])",
+        )
+      );
+    };
+
+    const rememberFocusedField = (event: FocusEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+
+      if (target.matches(".diary-content-section textarea")) {
+        contentKeyboardSessionRef.current = true;
+      } else if (target.matches(".diary-title-section input")) {
+        contentKeyboardSessionRef.current = false;
+      }
+
+      updateKeyboardState();
+    };
+
+    const updateKeyboardState = () => {
+      const currentHeight = viewport?.height ?? window.innerHeight;
+      largestViewportHeight = Math.max(largestViewportHeight, currentHeight);
+
+      // Browser chrome can change the viewport by a few pixels. A software
+      // keyboard reduces it much more, so keep a conservative opening
+      // threshold. Once open, keep that state until the viewport is fully
+      // restored instead of treating the keyboard's closing animation as
+      // already closed.
+      const keyboardHeight = largestViewportHeight - currentHeight;
+      const nextKeyboardOpen = keyboardOpen
+        ? keyboardHeight > 8
+        : isWriteFieldFocused() && keyboardHeight > 120;
+
+      if (
+        keyboardOpen &&
+        !nextKeyboardOpen &&
+        contentKeyboardSessionRef.current
+      ) {
+        keyboardOpen = false;
+        contentClosePending = true;
+        contentKeyboardSessionRef.current = false;
+        setIsKeyboardClosing(true);
+
+        const activeElement = document.activeElement;
+        if (
+          activeElement instanceof HTMLTextAreaElement &&
+          activeElement.matches(".diary-content-section textarea")
+        ) {
+          activeElement.blur();
+        }
+
+        // Keep the fixed actions hidden until the mobile WebView has applied
+        // the blur and its restored viewport layout. Then jump to the form's
+        // real bottom marker and reveal the actions on the following render.
+        firstScrollFrame = window.requestAnimationFrame(() => {
+          secondScrollFrame = window.requestAnimationFrame(() => {
+            writeFormEndRef.current?.scrollIntoView({
+              behavior: "auto",
+              block: "end",
+              inline: "nearest",
+            });
+
+            // iOS WebViews can align the anchor inside the visual viewport
+            // without moving the root document to its true maximum scroll.
+            // Confirm the root position explicitly before revealing actions.
+            const scrollingElement = document.scrollingElement;
+            if (scrollingElement !== null) {
+              scrollingElement.scrollTo({
+                top: scrollingElement.scrollHeight,
+                behavior: "auto",
+              });
+            } else {
+              window.scrollTo(0, document.documentElement.scrollHeight);
+            }
+
+            contentClosePending = false;
+            setIsKeyboardClosing(false);
+          });
+        });
+        return;
+      }
+
+      if (contentClosePending) {
+        return;
+      }
+
+      keyboardOpen = nextKeyboardOpen;
+    };
+
+    const handleFocusOut = () => {
+      window.setTimeout(updateKeyboardState, 0);
+    };
+
+    viewport?.addEventListener("resize", updateKeyboardState);
+    window.addEventListener("resize", updateKeyboardState);
+    document.addEventListener("focusin", rememberFocusedField);
+    document.addEventListener("focusout", handleFocusOut);
+
+    return () => {
+      viewport?.removeEventListener("resize", updateKeyboardState);
+      window.removeEventListener("resize", updateKeyboardState);
+      document.removeEventListener("focusin", rememberFocusedField);
+      document.removeEventListener("focusout", handleFocusOut);
+      window.cancelAnimationFrame(firstScrollFrame);
+      window.cancelAnimationFrame(secondScrollFrame);
+    };
+  }, [usesMobileKeyboard]);
 
   useEffect(() => {
     window.history.replaceState(historyStateFor(stepRef.current), "");
@@ -778,7 +911,7 @@ function App() {
 
   return (
     <main
-      className={`app-shell app-shell-${step} weather-${draft.weather} time-${draft.timeOfDay}${isAndroid ? " app-shell-android" : ""}`}
+      className={`app-shell app-shell-${step} weather-${draft.weather} time-${draft.timeOfDay}${isAndroid ? " app-shell-android" : ""}${isKeyboardClosing ? " app-keyboard-closing" : ""}`}
     >
       <div
         key={`${draft.weather}-${draft.timeOfDay}-${weatherEffectKey}`}
@@ -910,6 +1043,7 @@ function App() {
           <WriteStep
             draft={draft}
             entryId={writeEntryId}
+            endAnchorRef={writeFormEndRef}
             onOpenCalendar={(date) => {
               void loadDiaryCalendarView();
               setCalendarReturnStep("write");
