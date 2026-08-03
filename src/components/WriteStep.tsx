@@ -355,7 +355,7 @@ export function WriteStep({
                   }
                   textarea.scrollIntoView({
                     behavior: "smooth",
-                    block: "center",
+                    block: "nearest",
                   });
                 }, 300);
               }}

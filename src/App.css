@@ -48,10 +48,9 @@
   --app-modal-bezel: clamp(16px, 5vw, 24px);
 }
 
-/* The bottom CTA is fixed only while the software keyboard is closed. Android
-   keeps a text field focused when its system keyboard-down button is pressed,
-   so :focus alone cannot represent keyboard visibility. App.tsx adds
-   .app-keyboard-open from the visual viewport height. */
+/* Focus hides the bottom CTA immediately, before a mobile WebView finishes
+   resizing the visual viewport. During content-keyboard cleanup App.tsx keeps
+   it hidden with .app-keyboard-closing until the bottom anchor is restored. */
 html {
   scroll-padding-top: var(--app-safe-top);
   scroll-padding-bottom: calc(120px + var(--app-safe-bottom));
@@ -62,11 +61,17 @@ html {
   box-sizing: border-box;
 }
 
-.app-shell-write.app-keyboard-open .app-bottom-bar {
+.app-shell-write.app-keyboard-closing .app-bottom-bar,
+.app-shell-write:has(
+    .write-form textarea:focus,
+    .write-form input[type="text"]:focus,
+    .write-form input:not([type]):focus
+  )
+  .app-bottom-bar {
   display: none;
 }
 
-html:has(.app-shell-write.app-keyboard-open):has(
+html:has(
   .write-form textarea:focus,
   .write-form input[type="text"]:focus,
   .write-form input:not([type]):focus
@@ -74,24 +79,13 @@ html:has(.app-shell-write.app-keyboard-open):has(
   scroll-padding-bottom: calc(8px + var(--app-safe-bottom));
 }
 
-.app-shell-write.app-keyboard-open:has(
+.app-shell-write:has(
     .write-form textarea:focus,
     .write-form input[type="text"]:focus,
     .write-form input:not([type]):focus
   )
   .write-form {
   padding-bottom: calc(8px + var(--app-safe-bottom));
-}
-
-html:has(
-  .app-shell-write.app-keyboard-open .diary-content-section textarea:focus
-) {
-  scroll-padding-bottom: calc(260px + var(--app-safe-bottom));
-}
-
-.app-shell-write.app-keyboard-open:has(.diary-content-section textarea:focus)
-  .write-form {
-  padding-bottom: calc(260px + var(--app-safe-bottom));
 }
 
 .app-modal-title:focus {

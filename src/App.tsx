@@ -199,7 +199,11 @@ function AppBottomBar({
 
 function App() {
   const isAndroid = /Android/i.test(navigator.userAgent);
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const isIos =
+    /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const usesMobileKeyboard = isAndroid || isIos;
+  const [isKeyboardClosing, setIsKeyboardClosing] = useState(false);
   const contentKeyboardSessionRef = useRef(false);
   const writeFormEndRef = useRef<HTMLDivElement>(null);
   const [showOnboarding, setShowOnboarding] = useState(
@@ -308,7 +312,7 @@ function App() {
     useState(false);
 
   useEffect(() => {
-    if (!isAndroid) {
+    if (!usesMobileKeyboard) {
       return;
     }
 
@@ -366,6 +370,7 @@ function App() {
         keyboardOpen = false;
         contentClosePending = true;
         contentKeyboardSessionRef.current = false;
+        setIsKeyboardClosing(true);
 
         const activeElement = document.activeElement;
         if (
@@ -375,9 +380,9 @@ function App() {
           activeElement.blur();
         }
 
-        // Keep the fixed actions hidden until Android has applied the blur and
-        // its restored viewport layout. Then jump to the form's real bottom
-        // marker and reveal the actions on the following React render.
+        // Keep the fixed actions hidden until the mobile WebView has applied
+        // the blur and its restored viewport layout. Then jump to the form's
+        // real bottom marker and reveal the actions on the following render.
         firstScrollFrame = window.requestAnimationFrame(() => {
           secondScrollFrame = window.requestAnimationFrame(() => {
             writeFormEndRef.current?.scrollIntoView({
@@ -385,8 +390,22 @@ function App() {
               block: "end",
               inline: "nearest",
             });
+
+            // iOS WebViews can align the anchor inside the visual viewport
+            // without moving the root document to its true maximum scroll.
+            // Confirm the root position explicitly before revealing actions.
+            const scrollingElement = document.scrollingElement;
+            if (scrollingElement !== null) {
+              scrollingElement.scrollTo({
+                top: scrollingElement.scrollHeight,
+                behavior: "auto",
+              });
+            } else {
+              window.scrollTo(0, document.documentElement.scrollHeight);
+            }
+
             contentClosePending = false;
-            setIsKeyboardOpen(false);
+            setIsKeyboardClosing(false);
           });
         });
         return;
@@ -397,7 +416,6 @@ function App() {
       }
 
       keyboardOpen = nextKeyboardOpen;
-      setIsKeyboardOpen(nextKeyboardOpen);
     };
 
     const handleFocusOut = () => {
@@ -417,7 +435,7 @@ function App() {
       window.cancelAnimationFrame(firstScrollFrame);
       window.cancelAnimationFrame(secondScrollFrame);
     };
-  }, [isAndroid]);
+  }, [usesMobileKeyboard]);
 
   useEffect(() => {
     window.history.replaceState(historyStateFor(stepRef.current), "");
@@ -893,7 +911,7 @@ function App() {
 
   return (
     <main
-      className={`app-shell app-shell-${step} weather-${draft.weather} time-${draft.timeOfDay}${isAndroid ? " app-shell-android" : ""}${isKeyboardOpen ? " app-keyboard-open" : ""}`}
+      className={`app-shell app-shell-${step} weather-${draft.weather} time-${draft.timeOfDay}${isAndroid ? " app-shell-android" : ""}${isKeyboardClosing ? " app-keyboard-closing" : ""}`}
     >
       <div
         key={`${draft.weather}-${draft.timeOfDay}-${weatherEffectKey}`}
