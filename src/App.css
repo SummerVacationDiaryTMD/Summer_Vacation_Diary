@@ -48,9 +48,10 @@
   --app-modal-bezel: clamp(16px, 5vw, 24px);
 }
 
-/* The bottom CTA is fixed only while no text field is active. Keyboard layout
-   is CSS-only: WebView performs its native focus scroll without JS viewport
-   measurements or programmatic scroll corrections. */
+/* The bottom CTA is fixed only while the software keyboard is closed. Android
+   keeps a text field focused when its system keyboard-down button is pressed,
+   so :focus alone cannot represent keyboard visibility. App.tsx adds
+   .app-keyboard-open from the visual viewport height. */
 html {
   scroll-padding-top: var(--app-safe-top);
   scroll-padding-bottom: calc(120px + var(--app-safe-bottom));
@@ -61,16 +62,11 @@ html {
   box-sizing: border-box;
 }
 
-.app-shell-write:has(
-    .write-form textarea:focus,
-    .write-form input[type="text"]:focus,
-    .write-form input:not([type]):focus
-  )
-  .app-bottom-bar {
+.app-shell-write.app-keyboard-open .app-bottom-bar {
   display: none;
 }
 
-html:has(
+html:has(.app-shell-write.app-keyboard-open):has(
   .write-form textarea:focus,
   .write-form input[type="text"]:focus,
   .write-form input:not([type]):focus
@@ -78,7 +74,7 @@ html:has(
   scroll-padding-bottom: calc(8px + var(--app-safe-bottom));
 }
 
-.app-shell-write:has(
+.app-shell-write.app-keyboard-open:has(
     .write-form textarea:focus,
     .write-form input[type="text"]:focus,
     .write-form input:not([type]):focus
@@ -87,11 +83,14 @@ html:has(
   padding-bottom: calc(8px + var(--app-safe-bottom));
 }
 
-html:has(.diary-content-section textarea:focus) {
+html:has(
+  .app-shell-write.app-keyboard-open .diary-content-section textarea:focus
+) {
   scroll-padding-bottom: calc(260px + var(--app-safe-bottom));
 }
 
-.app-shell-write:has(.diary-content-section textarea:focus) .write-form {
+.app-shell-write.app-keyboard-open:has(.diary-content-section textarea:focus)
+  .write-form {
   padding-bottom: calc(260px + var(--app-safe-bottom));
 }
 
@@ -2348,6 +2347,15 @@ html:has(.diary-content-section textarea:focus) {
      overhang that the two diagonal corner strips required. */
   padding-top: 12px;
   padding-bottom: calc(96px + var(--app-safe-bottom));
+}
+
+.write-form-end-anchor {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  pointer-events: none;
 }
 
 /* 종이 위쪽 가운데를 눌러 붙인 마스킹 테이프.
