@@ -201,13 +201,27 @@ export function WriteStep({
     <div className="step-body write-form">
       <div className="write-form-surface">
         <section className="diary-form-section diary-title-section">
-          <Paragraph
-            className="form-section-label"
-            typography="t7"
-            color={LABEL_INK}
-          >
-            제목
-          </Paragraph>
+          {/* The date rides on the label row instead of owning a field of its
+              own. It is fixed to the day the draft was created, so it is a
+              caption on the page rather than something to fill in — and a
+              labelled plate for a value that never changes just costs the
+              sheet a whole section. The handwriting face is kept so it still
+              reads as part of the diary and not as UI chrome. */}
+          <div className="diary-title-heading">
+            <Paragraph
+              className="form-section-label"
+              typography="t7"
+              color={LABEL_INK}
+            >
+              제목
+            </Paragraph>
+            <span className="write-form-date">
+              {/* Without this the date is announced as a bare number string
+                  now that the visible "날짜" label is gone. */}
+              <span className="visually-hidden">날짜 </span>
+              {formatDateValue(draft.date)}
+            </span>
+          </div>
           <div
             className={
               titleLimitShakeCount > 0
@@ -237,25 +251,6 @@ export function WriteStep({
                 {titleLength}/{TITLE_MAX_LENGTH}
               </strong>
             </div>
-          </div>
-        </section>
-
-        <section className="diary-form-section diary-date-section">
-          <Paragraph
-            className="form-section-label"
-            typography="t7"
-            color={LABEL_INK}
-          >
-            날짜
-          </Paragraph>
-          {/* Read-only on purpose: the diary is always written for today, so
-              there is nothing to pick. Plain text rather than a disabled input
-              — a greyed-out control would read as something temporarily
-              unavailable instead of a value that is simply fixed. */}
-          <div className="date-display">
-            <span className="date-display-value">
-              {formatDateValue(draft.date)}
-            </span>
           </div>
         </section>
 

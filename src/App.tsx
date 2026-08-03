@@ -37,7 +37,11 @@ import {
 import type { DiaryImageInput } from "./utils/diaryImage";
 import { createDiaryRevisionKey } from "./utils/diaryIdentity";
 import { isAiConnected } from "./services/diaryAnalysis";
-import { DiaryStoreError, saveDiary } from "./services/diaryStore";
+import {
+  DiaryStoreError,
+  MAX_DIARIES_PER_DATE,
+  saveDiary,
+} from "./services/diaryStore";
 import { isSketchAiConnected } from "./services/styleTransfer";
 import type { DiaryMilestone } from "./services/diaryProgress";
 
@@ -97,6 +101,10 @@ interface DiaryConfirmOptions {
   description: string;
   confirmLabel: string;
   cancelLabel: string;
+  // TDS defaults this to true. Opt out for dialogs that report a blocked
+  // action: a stray dimmer tap there reads as "dismissed by accident", and
+  // the user never learns why the save did not go through.
+  closeOnDimmerClick?: boolean;
 }
 
 function sameDiaryImageInput(
@@ -210,7 +218,7 @@ function App() {
     setStep(nextStep);
   };
   const [calendarReturnStep, setCalendarReturnStep] = useState<
-    "upload" | "write" | "new"
+    "upload" | "write" | "preview" | "new"
   >("upload");
   const [calendarInitialDate, setCalendarInitialDate] = useState<string>();
   const [writeEntryId, setWriteEntryId] = useState(0);
@@ -265,12 +273,14 @@ function App() {
     description,
     confirmLabel,
     cancelLabel,
+    closeOnDimmerClick,
   }: DiaryConfirmOptions) =>
     openConfirm({
       title,
       description,
       confirmButton: <DiaryButton>{confirmLabel}</DiaryButton>,
       cancelButton: <DiaryButton tone="secondary">{cancelLabel}</DiaryButton>,
+      closeOnDimmerClick,
     });
   const regionNoticeShownRef = useRef(false);
   const toast = useToast();
@@ -835,6 +845,35 @@ function App() {
       setCalendarReveal({ date: draft.date, diaryId: saveResult.record.id });
       navigateToStep("calendar");
     } catch (error) {
+      // The daily limit is the one save failure that retrying cannot clear —
+      // the user has to delete something first. A toast with 다시 시도 would
+      // loop them straight back into the same error, so mirror the 작성 화면
+      // dialog and hand them the calendar instead.
+      if (error instanceof DiaryStoreError && error.code === "daily-limit") {
+        // The save is already over, and the dimmer does not cover the bottom
+        // bar — leaving it on 완성 중… until `finally` would show a spinner
+        // label behind a dialog that says nothing is being saved.
+        setSaving(false);
+        const openRecords = await openDiaryConfirm({
+          title: "오늘 일기가 가득 찼어요",
+          description: `하루에는 일기를 최대 ${MAX_DIARIES_PER_DATE}개까지 저장할 수 있어요. 오늘 새 일기를 쓰려면 기존 일기를 삭제해 주세요.`,
+          confirmLabel: "일기장 보기",
+          cancelLabel: "닫기",
+          closeOnDimmerClick: false,
+        });
+        if (openRecords) {
+          void loadDiaryCalendarView();
+          // "preview", not "write": the completed diary is still sitting in the
+          // preview, and that is where deleting an old entry has to return the
+          // user so they can finish saving it.
+          setCalendarReturnStep("preview");
+          setCalendarInitialDate(draft.date);
+          setCalendarReveal(null);
+          navigateToStep("calendar");
+        }
+        return;
+      }
+
       const message =
         error instanceof DiaryStoreError
           ? error.userMessage
@@ -1098,9 +1137,11 @@ function App() {
           >
             {calendarReturnStep === "write"
               ? "일기 쓰기로 돌아가기"
-              : calendarReturnStep === "new"
-                ? "새 일기 쓰기"
-                : "돌아가기"}
+              : calendarReturnStep === "preview"
+                ? "미리보기로 돌아가기"
+                : calendarReturnStep === "new"
+                  ? "새 일기 쓰기"
+                  : "돌아가기"}
           </DiaryButton>
         </AppBottomBar>
       )}
