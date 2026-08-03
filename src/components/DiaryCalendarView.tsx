@@ -2,6 +2,7 @@ import { Modal } from "@toss/tds-mobile";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 import { formatKoreanDate } from "../constants/diary";
+import type { DiaryProgressView } from "../hooks/useDiaryProgress";
 import {
   DiaryStoreError,
   deleteDiary,
@@ -18,6 +19,7 @@ import {
   moveMonth,
 } from "../utils/diaryCalendar";
 import { DiaryButton } from "./DiaryButton";
+import { DiaryStreakCalendarCard } from "./DiaryStreakStatus";
 
 const WEEKDAYS = ["월", "화", "수", "목", "금", "토", "일"] as const;
 const DAILY_COMPLETE_STAMP_URL = "/stamps/daily-complete.png";
@@ -41,6 +43,7 @@ export interface CalendarShareRequest {
 interface DiaryCalendarViewProps {
   initialDate?: string;
   reveal?: CalendarRevealRequest | null;
+  progress: DiaryProgressView;
   onRevealComplete?: () => void;
   onShareRequest: (request: CalendarShareRequest) => void;
 }
@@ -89,6 +92,7 @@ function diaryFileName(record: DiaryRecord): string {
 export function DiaryCalendarView({
   initialDate,
   reveal = null,
+  progress,
   onRevealComplete,
   onShareRequest,
 }: DiaryCalendarViewProps) {
@@ -117,6 +121,9 @@ export function DiaryCalendarView({
   const [revealingDiaryId, setRevealingDiaryId] = useState<string | null>(
     null,
   );
+  const [revealViewerPending, setRevealViewerPending] = useState(false);
+  const [revealViewerAnimationFinished, setRevealViewerAnimationFinished] =
+    useState(false);
   const touchStartXRef = useRef<number | null>(null);
   const revealCellRef = useRef<HTMLButtonElement | null>(null);
   const handledRevealRef = useRef<string | null>(null);
@@ -215,6 +222,8 @@ export function DiaryCalendarView({
 
     handledRevealRef.current = revealKey;
     setRevealingDiaryId(reveal.diaryId);
+    setRevealViewerPending(false);
+    setRevealViewerAnimationFinished(false);
     setManageOnly(false);
 
     const rect = cell.getBoundingClientRect();
@@ -224,15 +233,17 @@ export function DiaryCalendarView({
     });
 
     // AIDEV-NOTE: 순서 중요 — 도장 뒤 1.5초 대기는 저장 위치를 인지한 다음 상세를 열기 위한 것이다.
-    const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ? 180
-      : REVEAL_VIEWER_DELAY_MS;
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const delay = reducedMotion ? 180 : REVEAL_VIEWER_DELAY_MS;
     const timer = window.setTimeout(() => {
       setViewerEntries(entries);
       setPageDirection("forward");
       setViewerIndex(revealedIndex);
       setRevealingDiaryId(null);
-      onRevealCompleteRef.current?.();
+      setRevealViewerPending(true);
+      setRevealViewerAnimationFinished(reducedMotion);
     }, delay);
 
     return () => window.clearTimeout(timer);
@@ -276,6 +287,28 @@ export function DiaryCalendarView({
     };
   }, [current]);
 
+  useEffect(() => {
+    if (
+      !revealViewerPending ||
+      !revealViewerAnimationFinished ||
+      current === null ||
+      current === undefined ||
+      (record?.id !== current.id && recordError === null)
+    ) {
+      return;
+    }
+
+    setRevealViewerPending(false);
+    setRevealViewerAnimationFinished(false);
+    onRevealCompleteRef.current?.();
+  }, [
+    current,
+    record,
+    recordError,
+    revealViewerAnimationFinished,
+    revealViewerPending,
+  ]);
+
   const [selectedYear, selectedMonthNumber] = selectedMonth
     .split("-")
     .map(Number);
@@ -292,7 +325,6 @@ export function DiaryCalendarView({
     calendarCells.push(null);
   }
   const byDay = diariesByDay(summaries, selectedMonth);
-  const monthIsEmpty = Object.keys(byDay).length === 0;
 
   const step = (delta: number) => {
     setViewerIndex((index) => {
@@ -384,6 +416,7 @@ export function DiaryCalendarView({
     // viewer shares .app-shell's stacking context and its z-index counts.
     <>
       <div className="step-body diary-calendar-view">
+        <DiaryStreakCalendarCard progress={progress} />
         <section className="diary-calendar-paper" aria-labelledby="diary-month">
           <div className="diary-calendar-month-picker">
             <DiaryButton
@@ -495,11 +528,6 @@ export function DiaryCalendarView({
             </p>
           )}
 
-          {load.status === "ready" && monthIsEmpty && (
-            <p className="diary-calendar-message">
-              이 달에는 아직 완성한 일기가 없어요. 첫 일기를 써 보세요!
-            </p>
-          )}
         </section>
       </div>
 
@@ -530,7 +558,18 @@ export function DiaryCalendarView({
         >
           {/* Mounts once per open, so the pop animation plays on opening and
               not again on every swipe. */}
-          <div className="diary-viewer-card">
+          <div
+            className="diary-viewer-card"
+            onAnimationEnd={(event) => {
+              if (
+                event.target === event.currentTarget &&
+                event.animationName === "diary-viewer-pop" &&
+                revealViewerPending
+              ) {
+                setRevealViewerAnimationFinished(true);
+              }
+            }}
+          >
             <div className="diary-viewer-nav">
               <DiaryButton
                 tone="secondary"

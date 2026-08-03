@@ -47,16 +47,17 @@ npm run deploy
 
 ## 외부 기능 배포
 
-클라이언트는 `{VITE_SUPABASE_URL}/functions/v1/diary-ai`를 호출합니다. 2026-07-31에 `index.ts` 스냅샷이 별도로 제공되었지만 다음 서버 산출물은 저장소에서 version 관리되지 않습니다.
+클라이언트는 `{VITE_SUPABASE_URL}/functions/v1/diary-ai`를 호출합니다. 서버 source는 `supabase/diary-ai/`, 전체 DB bootstrap은 `supabase/sql/001_app_database.sql`에서 version 관리합니다. secret과 운영 배포 설정은 저장소에 넣지 않습니다.
 
-- Edge Function source와 import 대상 `prompt_analysis.ts`, `prompt_sketch.ts`
-- Supabase 사용량 테이블의 versioned migration 파일
-- 세 quota RPC의 SQL 원문
-- 서버 secret과 운영 배포 설정
+권장 배포 순서는 다음과 같습니다.
 
-제공된 table metadata, 재현용 DDL과 설치된 RPC를 복구하는 SQL은 [ERD](./erd.md)에 문서화했습니다. 프론트엔드 배포만으로 실제 그림 생성·분석과 사용량 강제가 활성화되지는 않습니다. 호환 Function, prompt, 테이블과 세 RPC를 별도 배포한 뒤 공개 URL과 publishable key만 프론트엔드 build 환경에 주입해야 합니다.
+1. Supabase SQL Editor에서 `supabase/sql/001_app_database.sql` 전체를 실행합니다.
+2. `OPENAI_API_KEY`, `RATE_LIMIT_SALT`, Supabase secret 등 [API 명세](./api-specification.md#서버-환경-변수)의 server secret을 설정합니다.
+3. `supabase/diary-ai` source를 프로젝트의 `diary-ai` Edge Function으로 배포합니다.
+4. `quota-status`, `progress-visit`, `progress-complete`, `inspect` 순으로 smoke test합니다.
+5. 공개 URL과 publishable key만 프론트엔드 build 환경에 주입합니다.
 
-제공된 스냅샷의 요청·응답, quota 값과 한국 지역 정책은 [API 명세](./api-specification.md)를 따릅니다. 운영 배포 version과 보존 기간은 실제 서버에서 확인해야 합니다.
+프론트엔드 배포만으로 실제 그림 생성·분석·사용량 강제·연속 기록 동기화가 활성화되지는 않습니다. 운영 배포 version, rate-limit 정리 schedule과 보존 기간은 실제 서버에서 확인해야 합니다.
 
 ## 환경별 권장 확인
 
@@ -66,7 +67,7 @@ npm run deploy
 | Toss 샌드박스  | deep link, safe area, `saveBase64Data`, Toss 공유창, `Storage` 달력     |
 | iOS 실기기     | 세로·가로 사진의 cover 자르기·회전, 저장 화면, 보관 일기 열람·공유·삭제 |
 | Android 실기기 | 빈 MIME, 저장 파일명, back 동작, 달력 스와이프                          |
-| 실제 Supabase  | analyze·sketch·quota-status contract, timeout, 오류 code                |
+| 실제 Supabase  | inspect·quota-status·progress action, 멱등 완료, timeout, 오류 code      |
 
 ## 출시 전 체크리스트
 
@@ -80,6 +81,8 @@ npm run deploy
 - [ ] iOS·Android에서 저장·공유를 실기기로 확인했다.
 - [ ] 완성 JPEG가 일기 달력에 자동 보관되고 앱 재실행 후에도 열리는지 확인했다.
 - [ ] 날짜별 3개 제한, 같은 사진·본문의 날짜 변경 시 기존 기록 교체, 사진 또는 본문 수정 시 별도 기록 유지, 삭제 확인과 저장소 부족 오류를 확인했다.
+- [ ] SQL을 Function보다 먼저 적용했고, 같은 한국 날짜의 `progress-complete` 반복 호출이 1일만 적립한다.
+- [ ] 연속 기록 장애가 일기 저장을 막지 않고 같은 날 앱 복귀 시 완료 동기화를 재시도한다.
 - [ ] 보관 기록이 계정·기기·브라우저 환경 사이에 동기화되지 않는다는 제품 안내가 운영 정책과 맞다.
 - [ ] Edge Function 장애 시 원본 사진과 mock이 아니라 명시적 오류/fallback이 나타난다.
 - [ ] 린트, 타입 검사, build가 성공했다.

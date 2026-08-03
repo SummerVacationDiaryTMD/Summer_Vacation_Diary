@@ -177,7 +177,15 @@ sequenceDiagram
 `all` 사용량에 선반영하고, 통합 잔여량이 0이면 두 작업을 함께 선차단합니다.
 
 클라이언트는 필요한 그림·분석 작업을 하나의 `inspect` 요청으로 모읍니다.
-Edge Function은 사용자 `all`과 IP를 요청당 한 번 예약하고 실제 실행할 sketch·analyze service counter만 증가시키는 `consume_diary_ai_inspection_quota` RPC를 호출합니다. 이 계약의 실제 원자성은 운영 DB에 설치된 RPC SQL 본문을 확인해야 합니다.
+Edge Function은 사용자 `all`과 IP를 요청당 한 번 예약하고 실제 실행할 sketch·analyze service counter만 증가시키는 `consume_diary_ai_inspection_quota` RPC를 호출합니다. 저장소 SQL은 transaction advisory lock과 upsert로 같은 식별자의 동시 요청을 직렬화합니다.
+
+## 연속 기록 흐름
+
+`useDiaryProgress`는 앱 mount와 `visibilitychange` 복귀 시 방문을 기록합니다. `diaryProgress` 서비스가 Supabase 설정 여부에 따라 Edge Function 또는 localStorage 구현을 선택하고, UI는 동일한 snapshot만 사용합니다.
+
+일기 완성 시 순서는 `JPEG 합성 → 기기 일기 저장 → progress-complete`입니다. 따라서 진행 서버 장애가 사용자의 완성 일기를 잃게 만들지 않습니다. 완료 요청이 실패하면 한국 날짜를 pending marker로 남겨 같은 날 다음 앱 복귀에 재시도하고, 날짜가 바뀐 marker는 폐기합니다.
+
+연속 일수는 `diary_activity_days`의 오늘부터 이어진 날짜만 계산합니다. 최고 기록은 모델에 없으며 달력 날짜 도장은 기존 완성 일기의 시각 언어로 유지합니다. 마스코트는 업로드 카드의 동기 부여와 지정 마일스톤 모달에만 사용해 정보 밀도를 제한합니다.
 
 ## 완성 이미지 흐름
 
@@ -198,11 +206,11 @@ Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 �
 
 | 대상                | 전송 또는 저장 데이터                                                        | 경계                      |
 | ------------------- | ---------------------------------------------------------------------------- | ------------------------- |
-| Supabase `diary-ai` | inspect: 필요한 사진 변환·사진/본문 분석, quota: 익명 식별 header            | `supabaseEdge.ts`         |
-| Supabase PostgreSQL | scope·식별자 hash·action·window별 요청 횟수                                  | `diary_ai_rate_limits`    |
+| Supabase `diary-ai` | inspect·quota와 익명 hash 기반 방문·완료 action                              | `supabaseEdge.ts`         |
+| Supabase PostgreSQL | 요청 횟수, 익명 사용자 방문일·활동일·마일스톤 정의                           | rate-limit·progress tables |
 | OpenAI              | 분석은 Chat Completions, 그림은 Images Edits로 사진·본문 전송                | 외부 `diary-ai/index.ts`  |
 | Apps in Toss        | 익명 key 조회, JPEG 저장, 앱 공유 링크와 메시지, 완성 일기 보관(`Storage`)   | web-framework runtime API |
-| localStorage        | draft, quota snapshot, 브라우저 설치 ID, 완성 일기 보관의 브라우저 대체 경로 | 기기 내                   |
+| localStorage        | draft, quota/progress snapshot, 브라우저 ID, 완성 일기와 progress 대체 경로  | 기기 내                   |
 | 메모리              | 분석 캐시, 그림 캐시, 진행 요청 ledger, 완성 JPEG                            | 현재 앱 실행              |
 
 ## 인증·인가
@@ -217,6 +225,7 @@ Canvas 합성과 외부 요청은 서로 분리되어 있어 Edge Function이 �
 | 작업        | timeout               | 중복 방지                            | 실패 후 동작                    |
 | ----------- | --------------------- | ------------------------------------ | ------------------------------- |
 | quota 조회  | 10초                  | 앱 시작 1회, 후속 응답 snapshot 사용 | 사용량 UI만 unknown             |
+| 진행 기록   | 10초                  | DB 날짜 PK·앱 foreground 갱신        | 일기는 유지, 당일 완료 재시도   |
 | 일기 분석   | 30초                  | signature별 Promise·결과 캐시        | 첨삭 없는 미리보기, 선택 재시도 |
 | 그림 생성   | 120초                 | 사진 캐시·진행 ledger                | 원본 사진, 선택 재시도          |
 | Canvas 합성 | 별도 timeout 없음     | 완성 버튼의 `saving` 상태            | 토스트 재시도                   |
@@ -251,9 +260,8 @@ flowchart LR
 ## 알려진 제약
 
 - 시작 시 저장된 draft를 복원하지 않습니다.
-- Edge Function `index.ts` 스냅샷은 제공되었지만 소스·prompt·DB RPC가 저장소에서 version 관리되지 않습니다.
-- Supabase 사용량 테이블 DDL은 확인됐지만 versioned migration 파일은 저장소에 없습니다.
-- 제공된 스냅샷에서 rate limit 값, SHA-256 식별자 hash와 환불 분기는 확인됐지만 운영 배포 일치 여부와 보존 기간은 확인할 수 없습니다.
+- Edge Function과 bootstrap SQL은 저장소에서 version 관리하지만 운영 배포 일치 여부는 별도 확인이 필요합니다.
+- rate-limit 정리 RPC는 제공되지만 실제 주기 실행 schedule과 hash 보존 기간은 운영 설정이 필요합니다.
 - 자동 테스트와 CI 품질 gate가 없습니다.
 - 계정 동기화, 클라우드 백업, PDF 내보내기가 없습니다.
 - 브라우저 저장·공유 fallback과 Toss 실제 동작은 각각 별도 환경 검증이 필요합니다.

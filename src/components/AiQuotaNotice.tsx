@@ -1,8 +1,10 @@
 import { Paragraph } from "@toss/tds-mobile";
 
 import { QUOTA_RESET_NOTICE } from "../constants/diary";
+import type { DiaryProgressView } from "../hooks/useDiaryProgress";
 import { isRegionBlocked, useAiQuota } from "../hooks/useAiQuota";
 import { isAiTestMode } from "../services/supabaseEdge";
+import { DiaryStreakLead } from "./DiaryStreakStatus";
 
 function NoticeBox({
   lines,
@@ -31,11 +33,13 @@ function NoticeBox({
 }
 
 function QuotaCounterNotice({
+  progress,
   label,
   used,
   limit,
   exhaustedMessage,
 }: {
+  progress: DiaryProgressView;
   label: string;
   used: number;
   limit: number;
@@ -47,11 +51,15 @@ function QuotaCounterNotice({
 
   return (
     <div
-      className={`ai-quota-notice ai-quota-counter${
+      className={`ai-quota-notice ai-quota-counter daily-status-card${
         available ? "" : " is-exhausted"
       }`}
       aria-live="polite"
     >
+      <DiaryStreakLead progress={progress} />
+
+      <div className="daily-status-divider" aria-hidden="true" />
+
       <div className="ai-quota-counter-header">
         <div className="ai-quota-counter-heading">
           <span className="ai-quota-counter-kicker">
@@ -95,8 +103,41 @@ function QuotaCounterNotice({
   );
 }
 
+function QuotaStatusMessage({
+  progress,
+  lines,
+  tone = "neutral",
+}: {
+  progress: DiaryProgressView;
+  lines: string[];
+  tone?: "neutral" | "warning";
+}) {
+  return (
+    <div
+      className={`ai-quota-notice daily-status-card daily-status-message is-${tone}`}
+      aria-live="polite"
+    >
+      <DiaryStreakLead progress={progress} />
+      <div className="daily-status-divider" aria-hidden="true" />
+      <div className="daily-status-ai-message">
+        <span className="ai-quota-notice-symbol" aria-hidden="true">
+          i
+        </span>
+        <div className="ai-quota-notice-copy">
+          {lines.map((line) => (
+            <Paragraph key={line} as="span" typography="t7" color="#5A442C">
+              {line}
+            </Paragraph>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface QuotaNoticeCopy {
   label: string;
+  localMode: string[];
   localTest: string[];
   serverTest: string[];
   regionBlocked: string[];
@@ -106,6 +147,7 @@ interface QuotaNoticeCopy {
 
 const QUOTA_NOTICE_COPY: QuotaNoticeCopy = {
   label: "AI 검사",
+  localMode: ["기기 안에서 그림일기를 만들고 검사해요."],
   localTest: ["테스트 모드 · AI 검사를 제한 없이 이용할 수 있어요."],
   serverTest: ["테스트 모드 · AI 검사를 제한 없이 이용할 수 있어요."],
   regionBlocked: [
@@ -116,29 +158,39 @@ const QUOTA_NOTICE_COPY: QuotaNoticeCopy = {
   exhausted: "오늘 기회를 모두 사용했어요",
 };
 
-function QuotaNotice() {
+function QuotaNotice({ progress }: { progress: DiaryProgressView }) {
   const quota = useAiQuota();
   const copy = QUOTA_NOTICE_COPY;
 
   if (isAiTestMode) {
-    return <NoticeBox lines={copy.localTest} />;
+    return <QuotaStatusMessage progress={progress} lines={copy.localTest} />;
   }
   if (isRegionBlocked(quota)) {
-    return <NoticeBox lines={copy.regionBlocked} tone="warning" />;
+    return (
+      <QuotaStatusMessage
+        progress={progress}
+        lines={copy.regionBlocked}
+        tone="warning"
+      />
+    );
   }
   if (quota.mode === "ready" && quota.testMode) {
-    return <NoticeBox lines={copy.serverTest} />;
+    return <QuotaStatusMessage progress={progress} lines={copy.serverTest} />;
   }
   if (quota.mode !== "ready") {
-    return quota.mode === "unknown" ? (
-      <NoticeBox lines={[copy.checking]} />
-    ) : null;
+    return (
+      <QuotaStatusMessage
+        progress={progress}
+        lines={quota.mode === "unknown" ? [copy.checking] : copy.localMode}
+      />
+    );
   }
 
   const { used, limit } = quota.completion;
 
   return (
     <QuotaCounterNotice
+      progress={progress}
       label={copy.label}
       used={used}
       limit={limit}
@@ -147,8 +199,8 @@ function QuotaNotice() {
   );
 }
 
-export function AiQuotaNotice() {
-  return <QuotaNotice />;
+export function AiQuotaNotice({ progress }: { progress: DiaryProgressView }) {
+  return <QuotaNotice progress={progress} />;
 }
 
 export function AiRecheckNotice() {

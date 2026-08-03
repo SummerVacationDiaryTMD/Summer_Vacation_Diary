@@ -4,7 +4,7 @@
 
 ## 범위
 
-이 문서는 저장소의 클라이언트와 2026-07-31에 별도로 제공된 `diary-ai/index.ts` 스냅샷에서 확인한 보안·데이터 흐름을 설명합니다. Edge Function·prompt·DB migration은 저장소에서 version 관리되지 않으며 운영 배포 일치 여부와 법적 보존 정책은 `확인 필요`로 구분합니다.
+이 문서는 저장소의 클라이언트, `supabase/diary-ai` Edge Function과 `supabase/sql/001_app_database.sql`에서 확인한 보안·데이터 흐름을 설명합니다. 운영 배포 일치 여부, secret·schedule과 법적 보존 정책은 `확인 필요`로 구분합니다.
 
 ## 처리 데이터
 
@@ -94,10 +94,10 @@ Supabase가 설정되지 않은 경우 사진·일기 내용은 외부 분석 �
 - Supabase 요청은 publishable key를 `apikey` header로 사용
 - `Authorization` header 없음
 - `x-diary-client-id`는 rate limit 힌트이며 신원 인증으로 사용할 수 없음
-- Edge Function은 `POST`와 `quota-status`·`inspect` action, 필수 client ID와 입력 구조를 검증함
+- Edge Function은 `POST`와 `quota-status`·`inspect`·`progress-*` action, 필수 client ID와 입력 구조를 검증함
 - CORS origin은 `*`; Supabase gateway의 JWT 검증 여부와 publishable key 강제 설정은 배포 구성 확인 필요
 
-Supabase에는 사용량 제한용 `public.diary_ai_rate_limits` 테이블이 있습니다. 제공된 table metadata에는 RLS·policy·grant가 나타나지 않으므로 실제 접근 정책은 확인이 필요합니다. 사용자 계정·사진·일기 원문을 저장하는 서버 테이블은 제공된 구조에서 확인되지 않았습니다.
+Supabase에는 사용량 제한용 `diary_ai_rate_limits`와 익명 진행용 `diary_user_progress`, `diary_activity_days`, 마일스톤 정의용 `diary_milestones`가 있습니다. 모든 public table은 RLS를 켜고 `anon`·`authenticated`의 table 권한을 회수합니다. 브라우저는 table/RPC에 직접 접근하지 않고 Edge Function의 service role 경로만 사용합니다. 사진·제목·본문·완성 JPEG는 진행 테이블에 저장하지 않습니다.
 
 ## 입력·응답 방어
 
@@ -139,7 +139,7 @@ Supabase에는 사용량 제한용 `public.diary_ai_rate_limits` 테이블이 �
 2. localStorage의 무작위 UUID → `web:{value}`
 3. 저장소 사용 불가 시 탭 메모리 UUID → `session:{value}`
 
-클라이언트는 raw 값을 `x-diary-client-id`로 보냅니다. Edge Function은 사용자 값을 `SHA-256("user:{RATE_LIMIT_SALT}:{clientId}")`, IP를 `SHA-256("ip:{RATE_LIMIT_SALT}:{ip}")`로 변환한 뒤 RPC에 전달합니다. IP가 없으면 `unavailable:{clientId}`를 대신 사용합니다. hash 행의 보존 기간과 삭제 정책은 확인이 필요합니다.
+클라이언트는 raw 값을 `x-diary-client-id`로 보냅니다. Edge Function은 사용자 값을 `SHA-256("user:{RATE_LIMIT_SALT}:{clientId}")`, IP를 `SHA-256("ip:{RATE_LIMIT_SALT}:{ip}")`로 변환한 뒤 RPC에 전달합니다. IP가 없으면 `unavailable:{clientId}`를 대신 사용합니다. 같은 user hash를 연속 기록에도 사용하며 `progress-delete`는 해당 진행 행과 cascade된 활동일을 삭제합니다.
 
 quota snapshot은 UI 표시와 선차단 용도입니다. 클라이언트는 공통 `all`
 카운터만 통합 AI 검사 기회로 사용합니다. 실제 강제는 `inspect` 요청을
@@ -150,6 +150,8 @@ quota snapshot은 UI 표시와 선차단 용도입니다. 클라이언트는 공
 그대로 사용하고 검사 기회를 추가로 소진하지 않습니다.
 
 서버 사용량 집계 구조는 [ERD](./erd.md)에 정리되어 있습니다.
+
+진행 snapshot은 기기에 cache되며, 서버 완료 호출 실패 시 `summer-vacation-diary:progress-pending-completion:v1`에 한국 날짜만 잠시 기록합니다. 같은 날 앱 복귀 시 재시도하고 날짜가 바뀌면 폐기합니다. Supabase 미설정 개발 모드에서는 `summer-vacation-diary:progress-local:v1`에 활동 날짜 배열을 저장합니다.
 
 ## 저장과 공유
 
@@ -164,13 +166,12 @@ quota snapshot은 UI 표시와 선차단 용도입니다. 클라이언트는 공
 
 ## 확인이 필요한 서버 항목
 
-- [ ] 제공된 Edge Function 스냅샷과 실제 배포 version의 일치
+- [ ] 저장소 Edge Function·SQL과 실제 배포 version의 일치
 - [ ] 서버 측 요청 body 크기·MIME 상한 추가 여부
-- [ ] import된 두 prompt의 정확한 내용과 version
+- [ ] prompt 내용과 운영 배포 version의 일치
 - [ ] 사진·본문·응답·로그의 저장 여부와 보존 기간
 - [ ] hash counter 행의 삭제·보존 정책과 salt rotation 절차
-- [ ] `diary_ai_rate_limits`의 RLS·role 권한과 보조 index
-- [ ] 세 RPC SQL 본문과 동시 요청에서 reserve·refund 원자성
+- [ ] rate-limit 정리 RPC의 주기 schedule과 hash 보존 기간
 - [ ] Supabase가 국가 header를 실제로 전달하는지
 - [ ] wildcard CORS와 Supabase gateway JWT 설정
 - [ ] incident 대응·공개 보안 신고 채널

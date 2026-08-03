@@ -159,7 +159,7 @@ flowchart LR
 | 외부 연동     | Supabase Edge Function                        | 사진 변환, 일기 분석, 사용량 조회       |
 | 로컬 저장     | Apps in Toss Storage, Web Storage, Web Crypto | 완성 일기, 작업 사본, 캐시, 익명 식별값 |
 
-라우터, 전역 상태 라이브러리, 사용자 계정 인증, 서버 일기 데이터베이스, 자동 테스트 프레임워크는 사용하지 않습니다. 완성 일기는 토스 `Storage` 또는 브라우저 `localStorage`에 보관하고, 서버 사용량 제한은 Supabase의 `diary_ai_rate_limits` 테이블에 집계합니다.
+라우터, 전역 상태 라이브러리, 사용자 계정 인증, 서버 일기 원문 데이터베이스, 자동 테스트 프레임워크는 사용하지 않습니다. 완성 일기는 토스 `Storage` 또는 브라우저 `localStorage`에 보관하고, 서버에는 AI 사용량과 익명 hash 기반 방문일·완성 활동일만 집계합니다.
 
 ## 빠른 시작
 
@@ -196,7 +196,7 @@ cp .env.example .env
 
 두 Supabase 변수는 함께 설정해야 합니다. 하나라도 비어 있으면 외부 요청을 보내지 않는 체험 모드로 동작합니다.
 
-> `VITE_*` 값은 클라이언트 번들에 포함됩니다. OpenAI API 키나 Supabase secret/service-role key를 넣지 마세요. `diary-ai`의 2026-07-31 외부 스냅샷은 문서화했지만 저장소에서 version 관리되지 않으므로, 실제 모드에는 호환 Function과 quota RPC를 별도로 배포해야 합니다.
+> `VITE_*` 값은 클라이언트 번들에 포함됩니다. OpenAI API 키나 Supabase secret/service-role key를 넣지 마세요. 실제 모드는 `supabase/sql/001_app_database.sql`을 먼저 적용한 뒤 저장소의 `diary-ai` Function과 server secret을 별도로 배포해야 합니다.
 
 ## 프로젝트 구조
 

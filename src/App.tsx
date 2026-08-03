@@ -13,6 +13,7 @@ import "./App.css";
 import { AiQuotaNotice, AiRecheckNotice } from "./components/AiQuotaNotice";
 import { DiaryButton } from "./components/DiaryButton";
 import { PhotoUploadStep } from "./components/PhotoUploadStep";
+import { StreakMilestoneModal } from "./components/StreakMilestoneModal";
 import type {
   CalendarRevealRequest,
   CalendarShareRequest,
@@ -27,6 +28,7 @@ import {
 } from "./hooks/useAiQuota";
 import { useDiaryAnalysis } from "./hooks/useDiaryAnalysis";
 import { useDiaryDraft } from "./hooks/useDiaryDraft";
+import { useDiaryProgress } from "./hooks/useDiaryProgress";
 import { useSketch } from "./hooks/useSketch";
 import {
   createDiaryInspectionContext,
@@ -37,6 +39,7 @@ import { createDiaryRevisionKey } from "./utils/diaryIdentity";
 import { isAiConnected } from "./services/diaryAnalysis";
 import { DiaryStoreError, saveDiary } from "./services/diaryStore";
 import { isSketchAiConnected } from "./services/styleTransfer";
+import type { DiaryMilestone } from "./services/diaryProgress";
 
 // Plain state instead of a router: the flow is a strict 3-step wizard. The
 // calendar is the one externally addressable destination, so its deep-link
@@ -220,6 +223,8 @@ function App() {
   const [inspectionContext, setInspectionContext] =
     useState<DiaryInspectionContext>();
   const quota = useAiQuota();
+  const { state: diaryProgress, completeToday: completeDiaryProgress } =
+    useDiaryProgress();
   // Refused outright by country, which unlike the daily budgets never comes
   // back — so it gates both operations rather than one.
   const regionBlocked = isRegionBlocked(quota);
@@ -277,6 +282,9 @@ function App() {
     useState<CalendarRevealRequest | null>(null);
   const [calendarShareRequest, setCalendarShareRequest] =
     useState<CalendarShareRequest | null>(null);
+  const [pendingMilestone, setPendingMilestone] =
+    useState<DiaryMilestone | null>(null);
+  const [milestoneVisible, setMilestoneVisible] = useState(false);
   // Consent is intentionally memory-only: it survives new-diary navigation
   // inside this execution, but a fresh mini-app launch asks again.
   const [hasPhotoSessionConsent, setHasPhotoSessionConsent] = useState(false);
@@ -404,8 +412,11 @@ function App() {
   }, [openAlert, regionBlocked, showOnboarding]);
 
   const header = STEP_HEADERS[step];
-  // No step counter on the calendar: it is not on the way to anywhere.
-  const progress = step === "calendar" ? null : STEP_PROGRESS[step];
+  // The upload screen already has the streak/quota card and photo picker, so a
+  // step counter adds more density than guidance there. Keep it only after the
+  // user has entered the actual writing flow.
+  const progress =
+    step === "calendar" || step === "upload" ? null : STEP_PROGRESS[step];
   const canWrite = draft.photoDataUrl !== null;
   // trim() on both fields so whitespace-only input can't pass validation.
   const canPreview = draft.title.trim() !== "" && draft.content.trim() !== "";
@@ -481,6 +492,8 @@ function App() {
     setCalendarInitialDate(undefined);
     setCalendarReveal(null);
     setCalendarShareRequest(null);
+    setPendingMilestone(null);
+    setMilestoneVisible(false);
     navigateToStep("upload", true);
   };
 
@@ -676,8 +689,29 @@ function App() {
         imageDataUrl,
         includesAiGeneratedContent,
       });
+      let progressRecorded = true;
+      try {
+        const progress = await completeDiaryProgress();
+        const specialMilestone =
+          progress.milestones.find(
+            (milestone) =>
+              milestone.metric === "streak" && milestone.tier === "special",
+          ) ??
+          progress.milestones.find(
+            (milestone) => milestone.tier === "special",
+          ) ??
+          null;
+        setPendingMilestone(specialMilestone);
+        setMilestoneVisible(false);
+      } catch {
+        progressRecorded = false;
+        setPendingMilestone(null);
+        setMilestoneVisible(false);
+      }
       toast.openToast(
-        `일기가 달력에 저장되었어요! (${saveResult.diariesOnDate}/${saveResult.limit})`,
+        progressRecorded
+          ? `일기와 오늘의 도장을 저장했어요! (${saveResult.diariesOnDate}/${saveResult.limit})`
+          : "일기는 저장했지만 오늘의 도장을 확인하지 못했어요.",
       );
 
       void loadDiaryCalendarView();
@@ -779,7 +813,13 @@ function App() {
           <DiaryCalendarView
             initialDate={calendarInitialDate}
             reveal={calendarReveal}
-            onRevealComplete={() => setCalendarReveal(null)}
+            progress={diaryProgress}
+            onRevealComplete={() => {
+              setCalendarReveal(null);
+              if (pendingMilestone !== null) {
+                setMilestoneVisible(true);
+              }
+            }}
             onShareRequest={(request) => {
               void loadDiaryShareModal();
               setCalendarShareRequest(request);
@@ -790,7 +830,7 @@ function App() {
 
       {step === "upload" && (
         <>
-          <AiQuotaNotice />
+          <AiQuotaNotice progress={diaryProgress} />
           <PhotoUploadStep
             photoDataUrl={draft.photoDataUrl}
             hasSessionConsent={hasPhotoSessionConsent}
@@ -880,6 +920,16 @@ function App() {
             onClose={() => setCalendarShareRequest(null)}
           />
         </Suspense>
+      )}
+
+      {milestoneVisible && pendingMilestone !== null && (
+        <StreakMilestoneModal
+          milestone={pendingMilestone}
+          onClose={() => {
+            setMilestoneVisible(false);
+            setPendingMilestone(null);
+          }}
+        />
       )}
 
       {step === "upload" && (
