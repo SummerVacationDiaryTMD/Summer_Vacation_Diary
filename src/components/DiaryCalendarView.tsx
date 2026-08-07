@@ -18,6 +18,7 @@ import {
   monthKeyOf,
   moveMonth,
 } from "../utils/diaryCalendar";
+import { BannerAd } from "./BannerAd";
 import { DiaryButton } from "./DiaryButton";
 import { DiaryStreakCalendarCard } from "./DiaryStreakStatus";
 
@@ -412,6 +413,7 @@ export function DiaryCalendarView({
     // viewer shares .app-shell's stacking context and its z-index counts.
     <>
       <div className="step-body diary-calendar-view">
+        <BannerAd label="달력 화면 광고" />
         <DiaryStreakCalendarCard progress={progress} />
         <section className="diary-calendar-paper" aria-labelledby="diary-month">
           <div className="diary-calendar-month-picker">

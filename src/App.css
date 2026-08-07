@@ -4195,6 +4195,47 @@ html:has(
   overflow: hidden;
 }
 
+/* The photo step's card once the AI counter was removed from it. Same chrome as
+   the counter card it replaced, so losing the numbers did not also change how
+   this block sits against the page. */
+.daily-status-plain {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 10px 12px 11px;
+  border: 1.5px solid rgba(87, 158, 131, 0.42);
+  background:
+    radial-gradient(
+      circle at 92% 0,
+      rgba(255, 255, 255, 0.82) 0 27%,
+      transparent 28%
+    ),
+    linear-gradient(135deg, #fffdf6 0%, #edf8f3 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.54),
+    0 5px 12px rgba(67, 122, 101, 0.09);
+  text-align: left;
+}
+
+/* Banner ad slot. Collapsed to nothing until the SDK reports a rendered ad, so
+   a local browser or a no-fill response leaves no gap above the diary. */
+.banner-ad {
+  width: 100%;
+  height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: 12px;
+}
+
+.banner-ad.is-rendered {
+  height: auto;
+  margin-bottom: 10px;
+}
+
+.banner-ad-slot {
+  width: 100%;
+}
+
 .diary-streak-lead {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
